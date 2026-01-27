@@ -1,0 +1,62 @@
+# Xero Integration - Sensitive Files
+config.ini
+*.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+xero_excel_env/
+venv/
+env/
+ENV/
+
+# Excel temporary files
+~$*.xlsx
+~$*.xlsm
+.tmp
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+
+# OAuth tokens and cache
+tokens/
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Credentials and secrets
+credentials.json
+*.pem
+*.key
+secrets.yaml
+secrets.yml
+
+# Security report files
+bandit-report.json
+gitleaks-report.json
+safety-report.json
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# MyPy cache
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
