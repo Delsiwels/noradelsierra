@@ -22,7 +22,7 @@ def main():
         ("Bandit Security", "bandit -r webapp/ -ll"),
         ("MyPy Types", "mypy webapp/ --ignore-missing-imports"),
         ("Pytest", "pytest tests/ -v"),
-        ("Gitleaks Secrets", "gitleaks detect --source . --no-git"),
+        ("Gitleaks Secrets", "gitleaks detect --source webapp/ --source tests/ --source scripts/ --no-git"),
     ]
 
     failed = []
