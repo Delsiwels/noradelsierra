@@ -20,7 +20,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install ruff bandit mypy safety pytest
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
       - name: Ruff Lint
         run: ruff check webapp/ --output-format=github
@@ -32,7 +33,9 @@ jobs:
         run: mypy webapp/ --ignore-missing-imports || true
 
       - name: Safety Dependency Check
-        run: safety check -r requirements.txt || true
+        run: |
+          if [ -f requirements.txt ]; then safety check -r requirements.txt || true; fi
+          if [ -f requirements-dev.txt ]; then safety check -r requirements-dev.txt || true; fi
 
       - name: Run Tests
         run: pytest tests/ -v --tb=short
