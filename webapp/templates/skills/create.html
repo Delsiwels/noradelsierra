@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <title>Create Skill</title>
+    <style>
+        :root {
+            --color-primary: #0F766E;
+            --color-primary-hover: #0D5D57;
+            --color-text-primary: #111827;
+            --color-text-muted: #6B7280;
+            --color-border: #E5E7EB;
+            --color-bg-page: #F9FAFB;
+            --color-bg-subtle: #F3F4F6;
+            --color-success: #16A34A;
+            --color-error: #DC2626;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg-page);
+            color: var(--color-text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.15s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-text-primary);
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-primary:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-subtle);
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 40px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--color-primary);
+            background: rgba(15, 118, 110, 0.05);
+        }
+
+        .upload-area.has-file {
+            border-color: var(--color-success);
+            background: rgba(22, 163, 74, 0.05);
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            color: var(--color-text-muted);
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .upload-text strong {
+            color: var(--color-primary);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--color-bg-subtle);
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .file-info-icon {
+            color: var(--color-success);
+        }
+
+        .file-info-name {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .file-info-remove {
+            padding: 4px;
+            background: none;
+            border: none;
+            color: var(--color-text-muted);
+            cursor: pointer;
+        }
+
+        .file-info-remove:hover {
+            color: var(--color-error);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+            color: var(--color-text-muted);
+            font-size: 14px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .editor-area {
+            width: 100%;
+            min-height: 400px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        .editor-area:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+        }
+
+        .template-example {
+            background: var(--color-bg-subtle);
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .message {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .message.error {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: var(--color-error);
+        }
+
+        .message.success {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: var(--color-success);
+        }
+
+        .validation-result {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .validation-result.valid {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: var(--color-success);
+        }
+
+        .validation-result.invalid {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: var(--color-error);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('skills.skills_list_page') }}" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Back to Skills
+        </a>
+
+        <div class="header">
+            <h1>Create New Skill</h1>
+            <p>Upload a SKILL.md file or create one from scratch</p>
+        </div>
+
+        <div id="message"></div>
+
+        <form id="createForm">
+            <div class="card">
+                <h2 class="card-title">Skill Settings</h2>
+
+                <div class="form-group">
+                    <label class="form-label">Visibility</label>
+                    <select class="form-select" id="scope" name="scope">
+                        <option value="private">Private - Only visible to me</option>
+                        <option value="shared">Shared - Visible to my team</option>
+                    </select>
+                    <p class="form-hint">Private skills can be shared with your team later.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Upload SKILL.md File</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept=".md" style="display: none;">
+                    <div class="upload-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    </div>
+                    <p class="upload-text">
+                        <strong>Click to upload</strong> or drag and drop<br>
+                        Markdown file (.md) up to 100KB
+                    </p>
+                </div>
+
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-info-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <span class="file-info-name" id="fileName"></span>
+                    <button type="button" class="file-info-remove" id="removeFile">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="divider">or write content directly</div>
+
+                <div class="form-group">
+                    <label class="form-label">SKILL.md Content</label>
+                    <div class="template-example">---
+name: my_custom_skill
+description: Brief description of what this skill does
+version: 1.0.0
+author: Your Name
+triggers:
+  - "trigger phrase 1"
+  - "trigger phrase 2"
+industries:
+  - general
+tags:
+  - custom
+---
+
+# My Custom Skill
+
+Instructions for the AI assistant...</div>
+                    <textarea class="editor-area" id="content" name="content" placeholder="Paste or type your SKILL.md content here..."></textarea>
+                    <p class="form-hint">Use YAML frontmatter for metadata, followed by Markdown content.</p>
+                </div>
+
+                <button type="button" class="btn btn-secondary" id="validateBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    Validate Content
+                </button>
+
+                <div id="validationResult"></div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('skills.skills_list_page') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    Create Skill
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // CSRF Protection
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                options.headers = options.headers || {};
+                if (!(options.headers instanceof Headers)) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                }
+            }
+            return originalFetch(url, options);
+        };
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const removeFile = document.getElementById('removeFile');
+        const content = document.getElementById('content');
+        const validateBtn = document.getElementById('validateBtn');
+        const validationResult = document.getElementById('validationResult');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageDiv = document.getElementById('message');
+
+        let selectedFile = null;
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFileSelect(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFileSelect(file);
+        });
+
+        removeFile.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            uploadArea.classList.remove('has-file');
+            content.value = '';
+        });
+
+        function handleFileSelect(file) {
+            if (!file.name.toLowerCase().endsWith('.md')) {
+                showMessage('Please select a Markdown file (.md)', 'error');
+                return;
+            }
+
+            if (file.size > 100 * 1024) {
+                showMessage('File too large. Maximum size is 100KB', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileInfo.style.display = 'flex';
+            uploadArea.classList.add('has-file');
+
+            // Read file content
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                content.value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        // Validate content
+        validateBtn.addEventListener('click', async () => {
+            const contentValue = content.value.trim();
+            if (!contentValue) {
+                validationResult.innerHTML = '<div class="validation-result invalid">Content is required</div>';
+                return;
+            }
+
+            validateBtn.disabled = true;
+            validateBtn.textContent = 'Validating...';
+
+            try {
+                const response = await fetch('/skills/api/skills/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: contentValue })
+                });
+                const data = await response.json();
+
+                if (data.valid) {
+                    validationResult.innerHTML = `
+                        <div class="validation-result valid">
+                            <strong>Valid!</strong><br>
+                            Name: ${data.metadata.name}<br>
+                            ${data.metadata.description ? `Description: ${data.metadata.description}<br>` : ''}
+                            Triggers: ${data.metadata.triggers?.length || 0}
+                        </div>
+                    `;
+                } else {
+                    validationResult.innerHTML = `<div class="validation-result invalid">${data.error}</div>`;
+                }
+            } catch (error) {
+                validationResult.innerHTML = '<div class="validation-result invalid">Validation failed</div>';
+            }
+
+            validateBtn.disabled = false;
+            validateBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                Validate Content
+            `;
+        });
+
+        // Form submission
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const contentValue = content.value.trim();
+            if (!contentValue) {
+                showMessage('Please provide skill content', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+
+            try {
+                const response = await fetch('/skills/api/skills/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: contentValue,
+                        scope: document.getElementById('scope').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.message || 'Skill created successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("skills.skills_list_page") }}';
+                    }, 1500);
+                } else {
+                    showMessage(data.error || 'Failed to create skill', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        Create Skill
+                    `;
+                }
+            } catch (error) {
+                showMessage('Failed to create skill', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    Create Skill
+                `;
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>

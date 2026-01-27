@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <title>Edit Skill - {{ skill.name }}</title>
+    <style>
+        :root {
+            --color-primary: #0F766E;
+            --color-primary-hover: #0D5D57;
+            --color-text-primary: #111827;
+            --color-text-muted: #6B7280;
+            --color-border: #E5E7EB;
+            --color-bg-page: #F9FAFB;
+            --color-bg-subtle: #F3F4F6;
+            --color-success: #16A34A;
+            --color-error: #DC2626;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg-page);
+            color: var(--color-text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.15s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-text-primary);
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-primary:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-subtle);
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .editor-area {
+            width: 100%;
+            min-height: 500px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        .editor-area:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .form-actions-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .message {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .message.error {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: var(--color-error);
+        }
+
+        .message.success {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: var(--color-success);
+        }
+
+        .skill-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px;
+            background: var(--color-bg-subtle);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .skill-meta-item {
+            font-size: 13px;
+        }
+
+        .skill-meta-item strong {
+            color: var(--color-text-muted);
+            font-weight: 500;
+        }
+
+        .validation-result {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .validation-result.valid {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: var(--color-success);
+        }
+
+        .validation-result.invalid {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: var(--color-error);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('skills.skills_list_page') }}" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Back to Skills
+        </a>
+
+        <div class="header">
+            <h1>Edit Skill: {{ skill.name }}</h1>
+            <p>Modify the skill content and save your changes</p>
+        </div>
+
+        <div id="message"></div>
+
+        <form id="editForm">
+            <div class="card">
+                <h2 class="card-title">Skill Information</h2>
+
+                <div class="skill-meta">
+                    <div class="skill-meta-item">
+                        <strong>Name:</strong> {{ skill.name }}
+                    </div>
+                    <div class="skill-meta-item">
+                        <strong>Version:</strong> {{ skill.version or '1.0.0' }}
+                    </div>
+                    <div class="skill-meta-item">
+                        <strong>Scope:</strong> {{ skill.scope }}
+                    </div>
+                    <div class="skill-meta-item">
+                        <strong>Created:</strong> {{ skill.created_at.strftime('%Y-%m-%d') if skill.created_at else 'Unknown' }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">SKILL.md Content</label>
+                    <textarea class="editor-area" id="content" name="content">{{ content or '' }}</textarea>
+                    <p class="form-hint">Note: The skill name cannot be changed. Create a new skill if you need a different name.</p>
+                </div>
+
+                <button type="button" class="btn btn-secondary" id="validateBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    Validate Content
+                </button>
+
+                <div id="validationResult"></div>
+            </div>
+
+            <div class="form-actions">
+                <div>
+                    <button type="button" class="btn btn-secondary" id="deleteBtn" style="color: var(--color-error);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        Delete Skill
+                    </button>
+                </div>
+                <div class="form-actions-right">
+                    <a href="{{ url_for('skills.skills_list_page') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // CSRF Protection
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                options.headers = options.headers || {};
+                if (!(options.headers instanceof Headers)) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                }
+            }
+            return originalFetch(url, options);
+        };
+
+        const skillId = '{{ skill.id }}';
+        const content = document.getElementById('content');
+        const validateBtn = document.getElementById('validateBtn');
+        const validationResult = document.getElementById('validationResult');
+        const submitBtn = document.getElementById('submitBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const messageDiv = document.getElementById('message');
+
+        // Validate content
+        validateBtn.addEventListener('click', async () => {
+            const contentValue = content.value.trim();
+            if (!contentValue) {
+                validationResult.innerHTML = '<div class="validation-result invalid">Content is required</div>';
+                return;
+            }
+
+            validateBtn.disabled = true;
+            validateBtn.textContent = 'Validating...';
+
+            try {
+                const response = await fetch('/skills/api/skills/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: contentValue })
+                });
+                const data = await response.json();
+
+                if (data.valid) {
+                    validationResult.innerHTML = `
+                        <div class="validation-result valid">
+                            <strong>Valid!</strong><br>
+                            Name: ${data.metadata.name}<br>
+                            ${data.metadata.description ? `Description: ${data.metadata.description}<br>` : ''}
+                            Triggers: ${data.metadata.triggers?.length || 0}
+                        </div>
+                    `;
+                } else {
+                    validationResult.innerHTML = `<div class="validation-result invalid">${data.error}</div>`;
+                }
+            } catch (error) {
+                validationResult.innerHTML = '<div class="validation-result invalid">Validation failed</div>';
+            }
+
+            validateBtn.disabled = false;
+            validateBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                Validate Content
+            `;
+        });
+
+        // Form submission
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const contentValue = content.value.trim();
+            if (!contentValue) {
+                showMessage('Please provide skill content', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const response = await fetch(`/skills/api/skills/${skillId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: contentValue })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.message || 'Skill updated successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("skills.skills_list_page") }}';
+                    }, 1500);
+                } else {
+                    showMessage(data.error || 'Failed to update skill', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save Changes
+                    `;
+                }
+            } catch (error) {
+                showMessage('Failed to update skill', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Changes
+                `;
+            }
+        });
+
+        // Delete skill
+        deleteBtn.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to delete this skill? This action cannot be undone.')) {
+                return;
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleting...';
+
+            try {
+                const response = await fetch(`/skills/api/skills/${skillId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Skill deleted successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("skills.skills_list_page") }}';
+                    }, 1000);
+                } else {
+                    showMessage(data.error || 'Failed to delete skill', 'error');
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        Delete Skill
+                    `;
+                }
+            } catch (error) {
+                showMessage('Failed to delete skill', 'error');
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    Delete Skill
+                `;
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>

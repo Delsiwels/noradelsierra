@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <title>Custom Skills</title>
+    <style>
+        :root {
+            --color-primary: #0F766E;
+            --color-primary-hover: #0D5D57;
+            --color-text-primary: #111827;
+            --color-text-muted: #6B7280;
+            --color-border: #E5E7EB;
+            --color-bg-page: #F9FAFB;
+            --color-bg-subtle: #F3F4F6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg-page);
+            color: var(--color-text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-subtle);
+        }
+
+        .btn-danger {
+            background: #DC2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #B91C1C;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: white;
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--color-border);
+        }
+
+        .tab {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .tab:hover {
+            color: var(--color-text-primary);
+            background: var(--color-bg-subtle);
+        }
+
+        .tab.active {
+            color: var(--color-primary);
+            background: rgba(15, 118, 110, 0.1);
+        }
+
+        .tab .count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--color-bg-subtle);
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+
+        .tab.active .count {
+            background: rgba(15, 118, 110, 0.2);
+            color: var(--color-primary);
+        }
+
+        .skills-container {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .skill-list {
+            list-style: none;
+        }
+
+        .skill-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            transition: background 0.15s ease;
+        }
+
+        .skill-item:last-child {
+            border-bottom: none;
+        }
+
+        .skill-item:hover {
+            background: var(--color-bg-subtle);
+        }
+
+        .skill-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .skill-icon.private {
+            background: #EFF6FF;
+            color: #2563EB;
+        }
+
+        .skill-icon.shared {
+            background: #F0FDF4;
+            color: #16A34A;
+        }
+
+        .skill-icon.public {
+            background: #F5F3FF;
+            color: #7C3AED;
+        }
+
+        .skill-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .skill-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 2px;
+        }
+
+        .skill-description {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .skill-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-right: 16px;
+        }
+
+        .skill-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .skill-badge.version {
+            background: var(--color-bg-subtle);
+            color: var(--color-text-muted);
+        }
+
+        .skill-triggers {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .skill-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .skill-action-btn {
+            padding: 8px;
+            background: transparent;
+            border: none;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .skill-action-btn:hover {
+            background: var(--color-bg-subtle);
+            color: var(--color-text-primary);
+        }
+
+        .skill-action-btn.delete:hover {
+            background: #FEF2F2;
+            color: #DC2626;
+        }
+
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--color-bg-subtle);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: var(--color-text-muted);
+        }
+
+        .empty-state-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin-bottom: 20px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .modal-text {
+            color: var(--color-text-muted);
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--color-text-muted);
+        }
+
+        .error-message {
+            padding: 16px;
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .skill-item {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .skill-meta {
+                margin-right: 0;
+            }
+
+            .skill-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if error is defined and error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+
+        <div class="header">
+            <div>
+                <h1>Custom Skills</h1>
+                <p>Extend AI capabilities with custom instructions and domain expertise</p>
+            </div>
+            <a href="{{ url_for('skills.skill_create_page') }}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                Create Skill
+            </a>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="private">
+                My Skills
+                <span class="count" id="privateCount">0</span>
+            </button>
+            <button class="tab" data-tab="shared">
+                Team Skills
+                <span class="count" id="sharedCount">0</span>
+            </button>
+            <button class="tab" data-tab="public">
+                Public Skills
+                <span class="count" id="publicCount">0</span>
+            </button>
+        </div>
+
+        <div class="skills-container">
+            <div class="loading" id="loading">Loading skills...</div>
+
+            <ul class="skill-list" id="skillList" style="display: none;"></ul>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-state-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                </div>
+                <div class="empty-state-title" id="emptyTitle">No skills yet</div>
+                <p class="empty-state-text" id="emptyText">Create your first skill to extend AI capabilities.</p>
+                <a href="{{ url_for('skills.skill_create_page') }}" class="btn btn-primary" id="emptyAction">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    Create Your First Skill
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <div class="modal-title">Delete Skill</div>
+            <p class="modal-text">Are you sure you want to delete this skill? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelDelete">Cancel</button>
+                <button class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CSRF Protection
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                options.headers = options.headers || {};
+                if (!(options.headers instanceof Headers)) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                }
+            }
+            return originalFetch(url, options);
+        };
+
+        let allSkills = { private: [], shared: [], public: [] };
+        let currentTab = 'private';
+        let skillToDelete = null;
+
+        // Load skills on page load
+        document.addEventListener('DOMContentLoaded', loadSkills);
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTab = tab.dataset.tab;
+                renderSkills();
+            });
+        });
+
+        async function loadSkills() {
+            try {
+                const response = await fetch('/skills/api/skills');
+                const data = await response.json();
+
+                if (data.success) {
+                    allSkills = data.skills;
+                    document.getElementById('privateCount').textContent = allSkills.private.length;
+                    document.getElementById('sharedCount').textContent = allSkills.shared.length;
+                    document.getElementById('publicCount').textContent = allSkills.public.length;
+                    renderSkills();
+                } else {
+                    showError(data.error || 'Failed to load skills');
+                }
+            } catch (error) {
+                console.error('Error loading skills:', error);
+                showError('Failed to load skills. Please refresh the page.');
+            }
+
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function renderSkills() {
+            const list = document.getElementById('skillList');
+            const emptyState = document.getElementById('emptyState');
+            const skills = allSkills[currentTab] || [];
+
+            if (skills.length === 0) {
+                list.style.display = 'none';
+                emptyState.style.display = 'block';
+                updateEmptyState();
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            list.style.display = 'block';
+
+            list.innerHTML = skills.map(skill => `
+                <li class="skill-item">
+                    <div class="skill-icon ${skill.source || currentTab}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    </div>
+                    <div class="skill-content">
+                        <div class="skill-name">${escapeHtml(skill.name)}</div>
+                        <div class="skill-description">${escapeHtml(skill.description || 'No description')}</div>
+                    </div>
+                    <div class="skill-meta">
+                        <span class="skill-badge version">v${escapeHtml(skill.version || '1.0.0')}</span>
+                        ${skill.triggers && skill.triggers.length > 0 ? `
+                            <span class="skill-triggers">${skill.triggers.length} trigger${skill.triggers.length !== 1 ? 's' : ''}</span>
+                        ` : ''}
+                    </div>
+                    ${currentTab !== 'public' ? `
+                        <div class="skill-actions">
+                            ${currentTab === 'private' ? `
+                                <button class="skill-action-btn" data-share="${skill.owner_id || ''}" data-name="${escapeHtml(skill.name)}" title="Share with team">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                                </button>
+                            ` : ''}
+                            <a href="/skills/${skill.owner_id || ''}/edit" class="skill-action-btn" title="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                            </a>
+                            <button class="skill-action-btn delete" data-delete="${skill.owner_id || ''}" data-name="${escapeHtml(skill.name)}" title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    ` : ''}
+                </li>
+            `).join('');
+        }
+
+        function updateEmptyState() {
+            const emptyTitle = document.getElementById('emptyTitle');
+            const emptyText = document.getElementById('emptyText');
+            const emptyAction = document.getElementById('emptyAction');
+
+            if (currentTab === 'private') {
+                emptyTitle.textContent = 'No private skills yet';
+                emptyText.textContent = 'Create your first skill to extend AI capabilities.';
+                emptyAction.style.display = 'inline-flex';
+            } else if (currentTab === 'shared') {
+                emptyTitle.textContent = 'No team skills yet';
+                emptyText.textContent = 'Share a private skill with your team or create a new one.';
+                emptyAction.style.display = 'inline-flex';
+            } else {
+                emptyTitle.textContent = 'No public skills available';
+                emptyText.textContent = 'Public skills will appear here when they are added.';
+                emptyAction.style.display = 'none';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            const container = document.querySelector('.container');
+            const existing = container.querySelector('.error-message');
+            if (existing) existing.remove();
+
+            const error = document.createElement('div');
+            error.className = 'error-message';
+            error.textContent = message;
+            container.insertBefore(error, container.firstChild);
+        }
+
+        // Event delegation for skill actions
+        document.getElementById('skillList').addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('[data-delete]');
+            if (deleteBtn) {
+                skillToDelete = deleteBtn.dataset.delete;
+                document.getElementById('deleteModal').classList.add('active');
+                return;
+            }
+
+            const shareBtn = e.target.closest('[data-share]');
+            if (shareBtn) {
+                shareSkill(shareBtn.dataset.share, shareBtn.dataset.name);
+                return;
+            }
+        });
+
+        // Delete modal
+        document.getElementById('cancelDelete').addEventListener('click', () => {
+            skillToDelete = null;
+            document.getElementById('deleteModal').classList.remove('active');
+        });
+
+        document.getElementById('confirmDelete').addEventListener('click', async () => {
+            if (!skillToDelete) return;
+
+            try {
+                const response = await fetch(`/skills/api/skills/${skillToDelete}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    await loadSkills();
+                    document.getElementById('deleteModal').classList.remove('active');
+                } else {
+                    showError(data.error || 'Failed to delete skill');
+                }
+            } catch (error) {
+                console.error('Error deleting skill:', error);
+                showError('Failed to delete skill');
+            }
+
+            skillToDelete = null;
+        });
+
+        document.getElementById('deleteModal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                skillToDelete = null;
+                document.getElementById('deleteModal').classList.remove('active');
+            }
+        });
+
+        async function shareSkill(skillId, skillName) {
+            if (!confirm(`Share "${skillName}" with your team?`)) return;
+
+            try {
+                const response = await fetch(`/skills/api/skills/${skillId}/share`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    await loadSkills();
+                    alert(`Skill "${skillName}" shared with team successfully!`);
+                } else {
+                    showError(data.error || 'Failed to share skill');
+                }
+            } catch (error) {
+                console.error('Error sharing skill:', error);
+                showError('Failed to share skill');
+            }
+        }
+    </script>
+</body>
+</html>

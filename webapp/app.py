@@ -4,8 +4,11 @@ import os
 
 from flask import Flask, jsonify
 
+from webapp.blueprints.skills import skills_bp
 from webapp.config import Config
+from webapp.models import db
 from webapp.routes import api_bp
+from webapp.skills.r2_skill_loader import init_r2_loader
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -13,8 +16,19 @@ def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Initialize SQLAlchemy
+    db.init_app(app)
+
+    # Create tables in development mode
+    with app.app_context():
+        db.create_all()
+
+    # Initialize R2 skill loader
+    init_r2_loader(app)
+
     # Register blueprints
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(skills_bp)
 
     @app.route("/health")
     def health_check():

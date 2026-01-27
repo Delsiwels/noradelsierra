@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ skill.name }} - Skill Details</title>
+    <style>
+        :root {
+            --color-primary: #0F766E;
+            --color-primary-hover: #0D5D57;
+            --color-text-primary: #111827;
+            --color-text-muted: #6B7280;
+            --color-border: #E5E7EB;
+            --color-bg-page: #F9FAFB;
+            --color-bg-subtle: #F3F4F6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg-page);
+            color: var(--color-text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.15s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-text-primary);
+        }
+
+        .header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .meta-item {
+            padding: 12px;
+            background: var(--color-bg-subtle);
+            border-radius: 8px;
+        }
+
+        .meta-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            background: var(--color-bg-subtle);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
+        .triggers-list {
+            list-style: none;
+        }
+
+        .trigger-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--color-bg-subtle);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .trigger-icon {
+            color: var(--color-primary);
+        }
+
+        .preview-content {
+            padding: 20px;
+            background: var(--color-bg-subtle);
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .scope-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .scope-badge.private {
+            background: #EFF6FF;
+            color: #2563EB;
+        }
+
+        .scope-badge.shared {
+            background: #F0FDF4;
+            color: #16A34A;
+        }
+
+        .scope-badge.public {
+            background: #F5F3FF;
+            color: #7C3AED;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('skills.skills_list_page') }}" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Back to Skills
+        </a>
+
+        <div class="header">
+            <div>
+                <h1>{{ skill.name }}</h1>
+                <p>{{ skill.description or 'No description provided' }}</p>
+            </div>
+            {% if skill.scope != 'public' %}
+            <a href="{{ url_for('skills.skill_edit_page', skill_id=skill.id) }}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                Edit Skill
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Skill Information</h2>
+            <div class="meta-grid">
+                <div class="meta-item">
+                    <div class="meta-label">Scope</div>
+                    <div class="meta-value">
+                        <span class="scope-badge {{ skill.scope }}">
+                            {{ skill.scope | title }}
+                        </span>
+                    </div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Version</div>
+                    <div class="meta-value">{{ skill.version or '1.0.0' }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Author</div>
+                    <div class="meta-value">{{ skill.author or 'Unknown' }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Created</div>
+                    <div class="meta-value">{{ skill.created_at.strftime('%Y-%m-%d') if skill.created_at else 'Unknown' }}</div>
+                </div>
+            </div>
+        </div>
+
+        {% if skill.triggers %}
+        <div class="card">
+            <h2 class="card-title">Triggers</h2>
+            <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 16px;">
+                The skill is activated when the user's message matches one of these triggers:
+            </p>
+            <ul class="triggers-list">
+                {% for trigger in skill.triggers %}
+                <li class="trigger-item">
+                    <span class="trigger-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </span>
+                    "{{ trigger }}"
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if skill.industries %}
+        <div class="card">
+            <h2 class="card-title">Industries</h2>
+            <div class="tags-list">
+                {% for industry in skill.industries %}
+                <span class="tag">{{ industry | title }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if skill.tags %}
+        <div class="card">
+            <h2 class="card-title">Tags</h2>
+            <div class="tags-list">
+                {% for tag in skill.tags %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <h2 class="card-title">Content Preview</h2>
+            <div class="preview-content" id="contentPreview">Loading content...</div>
+        </div>
+    </div>
+
+    <script>
+        // Load skill content
+        async function loadContent() {
+            try {
+                const response = await fetch('/skills/api/skills/{{ skill.id }}');
+                const data = await response.json();
+
+                if (data.success && data.skill && data.skill.content) {
+                    document.getElementById('contentPreview').textContent = data.skill.content;
+                } else {
+                    document.getElementById('contentPreview').textContent = 'Content not available';
+                }
+            } catch (error) {
+                document.getElementById('contentPreview').textContent = 'Failed to load content';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadContent);
+    </script>
+</body>
+</html>
