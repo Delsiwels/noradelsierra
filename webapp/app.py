@@ -4,6 +4,8 @@ import os
 
 from flask import Flask, jsonify
 
+from webapp.ai import init_ai_client, init_chat_service
+from webapp.blueprints.chat import chat_bp
 from webapp.blueprints.skills import skills_bp
 from webapp.config import Config
 from webapp.models import db
@@ -26,9 +28,14 @@ def create_app(config_class: type = Config) -> Flask:
     # Initialize R2 skill loader
     init_r2_loader(app)
 
+    # Initialize AI client and chat service
+    init_ai_client(app)
+    init_chat_service(app)
+
     # Register blueprints
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(skills_bp)
+    app.register_blueprint(chat_bp)
 
     @app.route("/health")
     def health_check():

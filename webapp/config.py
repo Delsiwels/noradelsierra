@@ -32,6 +32,18 @@ class Config:
     # R2 storage toggle (for graceful degradation)
     R2_STORAGE_ENABLED = os.environ.get("R2_STORAGE_ENABLED", "true").lower() == "true"
 
+    # AI Provider Configuration
+    AI_PROVIDER = os.environ.get("AI_PROVIDER", "anthropic")
+    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+    AI_MODEL = os.environ.get("AI_MODEL", "claude-sonnet-4-20250514")
+    AI_MAX_TOKENS = int(os.environ.get("AI_MAX_TOKENS", "2048"))
+
+    # Default system prompt
+    DEFAULT_SYSTEM_PROMPT = os.environ.get(
+        "DEFAULT_SYSTEM_PROMPT",
+        "You are a helpful AI assistant.",
+    )
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
@@ -51,3 +63,6 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     R2_STORAGE_ENABLED = False
+    # Use mock AI client in tests
+    ANTHROPIC_API_KEY = None
+    AI_PROVIDER = "anthropic"
