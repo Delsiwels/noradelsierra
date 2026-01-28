@@ -42,6 +42,10 @@ class Config:
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4-turbo-preview")
 
+    # Deepseek Configuration (OpenAI-compatible API)
+    DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
+    DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+
     # Token Usage Limits
     DEFAULT_MONTHLY_TOKEN_LIMIT = int(
         os.environ.get("DEFAULT_MONTHLY_TOKEN_LIMIT", "100000")

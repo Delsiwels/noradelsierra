@@ -30,13 +30,14 @@ except ImportError:
 
 
 class OpenAIClient(AIClient):
-    """OpenAI API client."""
+    """OpenAI API client (also supports OpenAI-compatible APIs like Deepseek)."""
 
     def __init__(
         self,
         api_key: str | None = None,
         model: str = "gpt-4-turbo-preview",
         max_tokens: int = 2048,
+        base_url: str | None = None,
     ):
         """
         Initialize the OpenAI client.
@@ -45,10 +46,12 @@ class OpenAIClient(AIClient):
             api_key: OpenAI API key (required for actual API calls)
             model: Model to use (default: gpt-4-turbo-preview)
             max_tokens: Default max tokens for responses
+            base_url: Optional custom base URL for OpenAI-compatible APIs
         """
         self.api_key = api_key
         self.model = model
         self.max_tokens = max_tokens
+        self.base_url = base_url
         self._client = None
 
     @property
@@ -57,14 +60,17 @@ class OpenAIClient(AIClient):
         if self._client is None:
             if not self.api_key:
                 raise APIKeyMissingError(
-                    "OPENAI_API_KEY is not configured. "
+                    "API key is not configured. "
                     "Set the environment variable or provide api_key parameter."
                 )
             if OpenAISDK is None:
                 raise AIClientError(
                     "openai package not installed. " "Install with: pip install openai"
                 )
-            self._client = OpenAISDK(api_key=self.api_key)
+            if self.base_url:
+                self._client = OpenAISDK(api_key=self.api_key, base_url=self.base_url)
+            else:
+                self._client = OpenAISDK(api_key=self.api_key)
         return self._client
 
     async def chat(

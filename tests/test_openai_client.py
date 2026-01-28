@@ -39,7 +39,7 @@ class TestOpenAIClient:
         with pytest.raises(APIKeyMissingError) as exc_info:
             _ = client.client
 
-        assert "OPENAI_API_KEY" in str(exc_info.value)
+        assert "API key is not configured" in str(exc_info.value)
 
     @patch("webapp.ai.openai_client.OpenAISDK")
     def test_client_lazy_initialization(self, mock_openai):

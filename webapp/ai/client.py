@@ -414,6 +414,26 @@ def init_ai_client(app: Flask) -> AIClient | None:
         )
         logger.info(f"AI client initialized with OpenAI (model: {model})")
 
+    elif provider == "deepseek":
+        from .openai_client import OpenAIClient
+
+        api_key = app.config.get("DEEPSEEK_API_KEY")
+        model = app.config.get("DEEPSEEK_MODEL", "deepseek-chat")
+
+        if not api_key:
+            logger.warning(
+                "DEEPSEEK_API_KEY not configured. AI features will be unavailable."
+            )
+            return None
+
+        _ai_client = OpenAIClient(
+            api_key=api_key,
+            model=model,
+            max_tokens=max_tokens,
+            base_url="https://api.deepseek.com",
+        )
+        logger.info(f"AI client initialized with Deepseek (model: {model})")
+
     else:
         logger.warning(f"Unknown AI provider: {provider}")
         return None
