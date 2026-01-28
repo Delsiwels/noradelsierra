@@ -33,15 +33,6 @@ class TestChatService:
     """Tests for ChatService class."""
 
     @pytest.fixture
-    def app(self):
-        """Create test Flask app."""
-        from webapp.app import create_app
-        from webapp.config import TestingConfig
-
-        app = create_app(TestingConfig)
-        return app
-
-    @pytest.fixture
     def mock_ai_client(self):
         """Create a mock AI client."""
         from webapp.ai import MockAIClient
@@ -84,7 +75,7 @@ class TestChatService:
         assert response.model == "mock-model"
         assert response.usage["input"] == 10
 
-    def test_send_message_with_skill_match(self, mock_ai_client):
+    def test_send_message_with_skill_match(self, app, mock_ai_client):
         """Test message sending with skill matching."""
         from webapp.ai import ChatService
         from webapp.skills.models import Skill, SkillMetadata, SkillMatch

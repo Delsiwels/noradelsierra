@@ -41,7 +41,7 @@ class TestOpenAIClient:
 
         assert "OPENAI_API_KEY" in str(exc_info.value)
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_client_lazy_initialization(self, mock_openai):
         """Test that client is lazily initialized."""
         client = OpenAIClient(api_key="test-key")
@@ -55,7 +55,7 @@ class TestOpenAIClient:
         # Now it should be initialized
         mock_openai.assert_called_once_with(api_key="test-key")
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_chat_sync_success(self, mock_openai):
         """Test successful synchronous chat."""
         # Setup mock response
@@ -84,7 +84,7 @@ class TestOpenAIClient:
         assert len(call_kwargs["messages"]) == 2  # System + user
         assert call_kwargs["messages"][0]["role"] == "system"
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_chat_sync_without_system_prompt(self, mock_openai):
         """Test chat without system prompt."""
         mock_response = MagicMock()
@@ -105,7 +105,7 @@ class TestOpenAIClient:
         call_kwargs = mock_client.chat.completions.create.call_args.kwargs
         assert len(call_kwargs["messages"]) == 1
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_chat_sync_rate_limit_error(self, mock_openai):
         """Test rate limit handling."""
         mock_client = MagicMock()
@@ -117,7 +117,7 @@ class TestOpenAIClient:
         with pytest.raises(RateLimitError):
             client.chat_sync([{"role": "user", "content": "Hello"}])
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_chat_sync_api_key_error(self, mock_openai):
         """Test API key error handling."""
         mock_client = MagicMock()
@@ -129,7 +129,7 @@ class TestOpenAIClient:
         with pytest.raises(APIKeyMissingError):
             client.chat_sync([{"role": "user", "content": "Hello"}])
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_chat_sync_generic_error(self, mock_openai):
         """Test generic error handling."""
         mock_client = MagicMock()
@@ -141,7 +141,7 @@ class TestOpenAIClient:
         with pytest.raises(AIProviderError):
             client.chat_sync([{"role": "user", "content": "Hello"}])
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_chat_async_wraps_sync(self, mock_openai):
         """Test that async chat wraps sync implementation."""
         mock_response = MagicMock()
@@ -161,7 +161,7 @@ class TestOpenAIClient:
         assert isinstance(response, AIResponse)
         assert response.content == "Response"
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_stream_chat_success(self, mock_openai):
         """Test streaming chat response."""
         # Create mock stream chunks
@@ -189,7 +189,7 @@ class TestOpenAIClient:
         assert any(c.content == "Hello " for c in chunks)
         assert any(c.done for c in chunks)
 
-    @patch("webapp.ai.openai_client.OpenAI")
+    @patch("webapp.ai.openai_client.OpenAISDK")
     def test_stream_chat_with_system_prompt(self, mock_openai):
         """Test streaming with system prompt."""
         chunk = MagicMock()
@@ -213,7 +213,7 @@ class TestOpenAIClient:
 
     def test_custom_max_tokens_in_chat(self):
         """Test that max_tokens can be overridden in chat calls."""
-        with patch("webapp.ai.openai_client.OpenAI") as mock_openai:
+        with patch("webapp.ai.openai_client.OpenAISDK") as mock_openai:
             mock_response = MagicMock()
             mock_response.choices = [MagicMock(message=MagicMock(content="OK"))]
             mock_response.usage.prompt_tokens = 5

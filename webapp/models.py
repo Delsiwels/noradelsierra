@@ -149,7 +149,9 @@ class Conversation(db.Model):  # type: ignore[name-defined]
             "message_count": self.messages.count() if self.messages else 0,
         }
         if include_messages:
-            data["messages"] = [m.to_dict() for m in self.messages.order_by(Message.created_at)]  # type: ignore[misc,operator]
+            data["messages"] = [
+                m.to_dict() for m in self.messages.order_by(Message.created_at)
+            ]
         return data
 
     def __repr__(self) -> str:
@@ -202,7 +204,9 @@ class SkillUsage(db.Model):  # type: ignore[name-defined]
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     skill_name = db.Column(db.String(100), nullable=False, index=True)
-    skill_source = db.Column(db.String(20), nullable=False)  # 'public', 'private', 'shared'
+    skill_source = db.Column(
+        db.String(20), nullable=False
+    )  # 'public', 'private', 'shared'
     user_id = db.Column(db.String(36), index=True)
     team_id = db.Column(db.String(36), index=True)
     trigger = db.Column(db.String(255))
@@ -249,8 +253,11 @@ class TokenUsage(db.Model):  # type: ignore[name-defined]
     # Unique constraint for one record per user/team per period
     __table_args__ = (
         db.UniqueConstraint(
-            "user_id", "team_id", "period_year", "period_month",
-            name="uq_token_usage_period"
+            "user_id",
+            "team_id",
+            "period_year",
+            "period_month",
+            name="uq_token_usage_period",
         ),
     )
 

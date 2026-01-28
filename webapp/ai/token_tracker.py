@@ -69,6 +69,9 @@ class TokenTracker:
     @property
     def enforce_limits(self) -> bool:
         """Check if limit enforcement is enabled."""
+        # If explicitly set in constructor, use that value
+        if not self._enforce_limits:
+            return False
         try:
             return bool(current_app.config.get("TOKEN_LIMIT_ENFORCEMENT", True))
         except RuntimeError:
@@ -134,7 +137,11 @@ class TokenTracker:
         usage = self._get_or_create_usage(user_id, team_id)
 
         # Determine limit (custom or default)
-        limit = usage.monthly_limit if usage.monthly_limit is not None else self.default_limit
+        limit = (
+            usage.monthly_limit
+            if usage.monthly_limit is not None
+            else self.default_limit
+        )
         remaining = max(0, limit - (usage.total_tokens or 0))
 
         allowed = remaining > 0

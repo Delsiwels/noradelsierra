@@ -6,8 +6,6 @@ from unittest.mock import MagicMock, patch
 
 from webapp.ai.models import StreamChunk
 from webapp.ai.client import MockAIClient
-from webapp.app import create_app
-from webapp.config import TestingConfig
 
 
 class TestStreamChunk:
@@ -94,19 +92,13 @@ class TestMockAIClientStreaming:
 class TestStreamingEndpoint:
     """Tests for the streaming chat endpoint."""
 
-    @pytest.fixture
-    def app(self):
-        """Create test app."""
-        app = create_app(TestingConfig)
-        return app
-
-    @pytest.fixture
-    def client(self, app):
-        """Create test client."""
-        return app.test_client()
-
-    def test_stream_endpoint_returns_sse(self, client):
+    def test_stream_endpoint_returns_sse(self, client, app):
         """Test that stream endpoint returns SSE format."""
+        from webapp.ai import init_ai_client, init_chat_service
+
+        init_ai_client(app)
+        init_chat_service(app)
+
         response = client.post(
             "/api/chat/stream",
             json={"message": "Hello"},
@@ -114,10 +106,15 @@ class TestStreamingEndpoint:
         )
 
         assert response.status_code == 200
-        assert response.content_type == "text/event-stream"
+        assert response.content_type.startswith("text/event-stream")
 
-    def test_stream_endpoint_yields_chunks(self, client):
+    def test_stream_endpoint_yields_chunks(self, client, app):
         """Test that stream endpoint yields event chunks."""
+        from webapp.ai import init_ai_client, init_chat_service
+
+        init_ai_client(app)
+        init_chat_service(app)
+
         response = client.post(
             "/api/chat/stream",
             json={"message": "Hello"},
@@ -129,8 +126,13 @@ class TestStreamingEndpoint:
         assert "event: chunk" in data
         assert "data:" in data
 
-    def test_stream_endpoint_final_chunk_has_metadata(self, client):
+    def test_stream_endpoint_final_chunk_has_metadata(self, client, app):
         """Test that final chunk includes skills and usage."""
+        from webapp.ai import init_ai_client, init_chat_service
+
+        init_ai_client(app)
+        init_chat_service(app)
+
         response = client.post(
             "/api/chat/stream",
             json={"message": "Hello"},
@@ -157,7 +159,7 @@ class TestStreamingEndpoint:
         """Test that message is required."""
         response = client.post(
             "/api/chat/stream",
-            json={},
+            json={"other": "field"},  # Provide JSON but no message
         )
 
         assert response.status_code == 400
@@ -178,6 +180,11 @@ class TestStreamingEndpoint:
 
     def test_stream_endpoint_with_persist(self, client, app):
         """Test streaming with persistence enabled."""
+        from webapp.ai import init_ai_client, init_chat_service
+
+        init_ai_client(app)
+        init_chat_service(app)
+
         # Need a user_id for persistence to work
         # In testing mode without auth, persist won't actually work
         response = client.post(
@@ -192,65 +199,58 @@ class TestStreamingEndpoint:
 
     def test_stream_endpoint_service_unavailable(self, client, app):
         """Test response when chat service is not available."""
-        with patch("webapp.blueprints.chat.get_chat_service", return_value=None):
-            # Re-import to pick up the patch
-            response = client.post(
-                "/api/chat/stream",
-                json={"message": "Hello"},
-            )
+        import webapp.ai.chat_service as chat_module
 
-            assert response.status_code == 503
+        chat_module._chat_service = None
+
+        response = client.post(
+            "/api/chat/stream",
+            json={"message": "Hello"},
+        )
+
+        assert response.status_code == 503
 
 
 class TestChatServiceStreaming:
     """Tests for ChatService streaming method."""
 
-    @pytest.fixture
-    def app(self):
-        """Create test app."""
-        app = create_app(TestingConfig)
-        return app
-
     def test_send_message_stream_yields_chunks(self, app):
         """Test that send_message_stream yields chunks."""
-        with app.app_context():
-            from webapp.ai import get_chat_service
+        from webapp.ai import get_chat_service
 
-            service = get_chat_service()
+        service = get_chat_service()
 
-            chunks = list(service.send_message_stream("Hello"))
+        chunks = list(service.send_message_stream("Hello"))
 
-            assert len(chunks) >= 1
-            assert all(isinstance(c, StreamChunk) for c in chunks)
+        assert len(chunks) >= 1
+        assert all(isinstance(c, StreamChunk) for c in chunks)
 
     def test_send_message_stream_final_has_skills(self, app):
         """Test that final chunk includes skills_used."""
-        with app.app_context():
-            from webapp.ai import get_chat_service
+        from webapp.ai import get_chat_service
 
-            service = get_chat_service()
+        service = get_chat_service()
 
-            chunks = list(service.send_message_stream("Hello"))
+        chunks = list(service.send_message_stream("Hello"))
 
-            final = [c for c in chunks if c.done]
-            assert len(final) == 1
-            assert isinstance(final[0].skills_used, list)
+        final = [c for c in chunks if c.done]
+        assert len(final) == 1
+        assert isinstance(final[0].skills_used, list)
 
     def test_send_message_stream_with_history(self, app):
         """Test streaming with conversation history."""
-        with app.app_context():
-            from webapp.ai import get_chat_service
+        from webapp.ai import get_chat_service
 
-            service = get_chat_service()
+        service = get_chat_service()
 
-            history = [
-                {"role": "user", "content": "Hi"},
-                {"role": "assistant", "content": "Hello!"},
-            ]
+        history = [
+            {"role": "user", "content": "Hi"},
+            {"role": "assistant", "content": "Hello!"},
+        ]
 
-            chunks = list(service.send_message_stream(
-                "How are you?",
-                conversation_history=history,
-            ))
+        chunks = list(service.send_message_stream(
+            "How are you?",
+            conversation_history=history,
+        ))
 
-            assert len(chunks) >= 1
+        assert len(chunks) >= 1

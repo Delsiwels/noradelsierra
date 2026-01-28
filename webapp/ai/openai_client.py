@@ -9,10 +9,24 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterator
 
-from .client import AIClient, AIClientError, AIProviderError, APIKeyMissingError, RateLimitError
+from .client import (
+    AIClient,
+    AIClientError,
+    AIProviderError,
+    APIKeyMissingError,
+    RateLimitError,
+)
 from .models import AIResponse, StreamChunk
 
 logger = logging.getLogger(__name__)
+
+# Try to import OpenAI at module level for better testability
+# This allows the class to be patched in tests
+OpenAISDK = None
+try:
+    from openai import OpenAI as OpenAISDK  # type: ignore[no-redef,attr-defined]  # noqa: F401
+except ImportError:
+    pass
 
 
 class OpenAIClient(AIClient):
@@ -46,15 +60,11 @@ class OpenAIClient(AIClient):
                     "OPENAI_API_KEY is not configured. "
                     "Set the environment variable or provide api_key parameter."
                 )
-            try:
-                from openai import OpenAI
-
-                self._client = OpenAI(api_key=self.api_key)
-            except ImportError as e:
+            if OpenAISDK is None:
                 raise AIClientError(
-                    "openai package not installed. "
-                    "Install with: pip install openai"
-                ) from e
+                    "openai package not installed. " "Install with: pip install openai"
+                )
+            self._client = OpenAISDK(api_key=self.api_key)
         return self._client
 
     async def chat(
@@ -123,7 +133,11 @@ class OpenAIClient(AIClient):
             error_str = str(e).lower()
             if "rate" in error_str and "limit" in error_str:
                 raise RateLimitError(f"Rate limited by OpenAI: {e}") from e
-            if "api key" in error_str or "authentication" in error_str or "invalid" in error_str:
+            if (
+                "api key" in error_str
+                or "authentication" in error_str
+                or "invalid" in error_str
+            ):
                 raise APIKeyMissingError(f"API key error: {e}") from e
             raise AIProviderError(f"OpenAI API error: {e}") from e
 
