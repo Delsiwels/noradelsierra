@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
-from .models import AIResponse
+from .models import AIResponse, StreamChunk
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -74,6 +75,26 @@ class AIClient(ABC):
 
         Returns:
             AIResponse with content, model, and usage info
+        """
+        ...
+
+    @abstractmethod
+    def stream_chat(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: str | None = None,
+        **kwargs,
+    ) -> Iterator[StreamChunk]:
+        """
+        Stream a chat response.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys
+            system_prompt: Optional system prompt
+            **kwargs: Additional provider-specific parameters
+
+        Yields:
+            StreamChunk objects with partial content
         """
         ...
 
@@ -187,6 +208,64 @@ class AnthropicClient(AIClient):
                 raise APIKeyMissingError(f"API key error: {e}") from e
             raise AIProviderError(f"Anthropic API error: {e}") from e
 
+    def stream_chat(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: str | None = None,
+        **kwargs,
+    ) -> Iterator[StreamChunk]:
+        """
+        Stream a chat response.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys
+            system_prompt: Optional system prompt
+            **kwargs: Additional parameters
+
+        Yields:
+            StreamChunk objects with partial content
+        """
+        max_tokens = kwargs.get("max_tokens", self.max_tokens)
+
+        try:
+            with self.client.messages.stream(
+                model=self.model,
+                max_tokens=max_tokens,
+                system=system_prompt or "",
+                messages=messages,
+            ) as stream:
+                accumulated_content = ""
+
+                for text in stream.text_stream:
+                    accumulated_content += text
+                    yield StreamChunk(
+                        content=text,
+                        done=False,
+                        model=self.model,
+                    )
+
+                # Get final message for usage info
+                final_message = stream.get_final_message()
+                usage = {
+                    "input": final_message.usage.input_tokens,
+                    "output": final_message.usage.output_tokens,
+                }
+
+                yield StreamChunk(
+                    content="",
+                    done=True,
+                    model=self.model,
+                    usage=usage,
+                )
+
+        except Exception as e:
+            error_str = str(e).lower()
+            if "rate" in error_str and "limit" in error_str:
+                raise RateLimitError(f"Rate limited by Anthropic: {e}") from e
+            if "api key" in error_str or "authentication" in error_str:
+                raise APIKeyMissingError(f"API key error: {e}") from e
+            raise AIProviderError(f"Anthropic API error: {e}") from e
+
 
 class MockAIClient(AIClient):
     """Mock AI client for testing."""
@@ -230,6 +309,40 @@ class MockAIClient(AIClient):
             usage={"input": 10, "output": 20},
         )
 
+    def stream_chat(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: str | None = None,
+        **kwargs,
+    ) -> Iterator[StreamChunk]:
+        """Record call and yield mock streaming response."""
+        self.call_history.append(
+            {
+                "messages": messages,
+                "system_prompt": system_prompt,
+                "kwargs": kwargs,
+                "streaming": True,
+            }
+        )
+
+        # Simulate streaming by yielding content in chunks
+        words = self.response_content.split()
+        for i, word in enumerate(words):
+            content = word + (" " if i < len(words) - 1 else "")
+            yield StreamChunk(
+                content=content,
+                done=False,
+                model="mock-model",
+            )
+
+        # Final chunk with done=True and usage
+        yield StreamChunk(
+            content="",
+            done=True,
+            model="mock-model",
+            usage={"input": 10, "output": 20},
+        )
+
 
 # Module-level client instance
 _ai_client: AIClient | None = None
@@ -249,12 +362,14 @@ def init_ai_client(app: Flask) -> AIClient | None:
 
     Returns:
         Configured AIClient or None if not configured
+
+    Supports providers:
+        - anthropic: Uses AnthropicClient with ANTHROPIC_API_KEY
+        - openai: Uses OpenAIClient with OPENAI_API_KEY
     """
     global _ai_client
 
     provider = app.config.get("AI_PROVIDER", "anthropic")
-    api_key = app.config.get("ANTHROPIC_API_KEY")
-    model = app.config.get("AI_MODEL", "claude-sonnet-4-20250514")
     max_tokens = app.config.get("AI_MAX_TOKENS", 2048)
 
     # In testing mode, use mock client
@@ -264,6 +379,9 @@ def init_ai_client(app: Flask) -> AIClient | None:
         return _ai_client
 
     if provider == "anthropic":
+        api_key = app.config.get("ANTHROPIC_API_KEY")
+        model = app.config.get("AI_MODEL", "claude-sonnet-4-20250514")
+
         if not api_key:
             logger.warning(
                 "ANTHROPIC_API_KEY not configured. AI features will be unavailable."
@@ -276,6 +394,26 @@ def init_ai_client(app: Flask) -> AIClient | None:
             max_tokens=max_tokens,
         )
         logger.info(f"AI client initialized with Anthropic (model: {model})")
+
+    elif provider == "openai":
+        from .openai_client import OpenAIClient
+
+        api_key = app.config.get("OPENAI_API_KEY")
+        model = app.config.get("OPENAI_MODEL", "gpt-4-turbo-preview")
+
+        if not api_key:
+            logger.warning(
+                "OPENAI_API_KEY not configured. AI features will be unavailable."
+            )
+            return None
+
+        _ai_client = OpenAIClient(
+            api_key=api_key,
+            model=model,
+            max_tokens=max_tokens,
+        )
+        logger.info(f"AI client initialized with OpenAI (model: {model})")
+
     else:
         logger.warning(f"Unknown AI provider: {provider}")
         return None

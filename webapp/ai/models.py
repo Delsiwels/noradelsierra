@@ -26,3 +26,16 @@ class ChatResponse:
     skills_used: list[str] = field(default_factory=list)
     model: str = ""
     usage: dict[str, int] = field(default_factory=dict)
+    conversation_id: str | None = None
+
+
+@dataclass
+class StreamChunk:
+    """A chunk of streaming response data."""
+
+    content: str
+    done: bool = False
+    model: str = ""
+    usage: dict[str, int] = field(default_factory=dict)
+    skills_used: list[str] = field(default_factory=list)
+    error: str | None = None

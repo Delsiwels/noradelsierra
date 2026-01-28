@@ -38,6 +38,23 @@ class Config:
     AI_MODEL = os.environ.get("AI_MODEL", "claude-sonnet-4-20250514")
     AI_MAX_TOKENS = int(os.environ.get("AI_MAX_TOKENS", "2048"))
 
+    # OpenAI Configuration
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4-turbo-preview")
+
+    # Token Usage Limits
+    DEFAULT_MONTHLY_TOKEN_LIMIT = int(
+        os.environ.get("DEFAULT_MONTHLY_TOKEN_LIMIT", "100000")
+    )
+    TOKEN_LIMIT_ENFORCEMENT = (
+        os.environ.get("TOKEN_LIMIT_ENFORCEMENT", "true").lower() == "true"
+    )
+
+    # Conversation Retention
+    CONVERSATION_RETENTION_DAYS = int(
+        os.environ.get("CONVERSATION_RETENTION_DAYS", "30")
+    )
+
     # Default system prompt
     DEFAULT_SYSTEM_PROMPT = os.environ.get(
         "DEFAULT_SYSTEM_PROMPT",
