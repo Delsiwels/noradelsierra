@@ -73,6 +73,7 @@ class Team(db.Model):  # type: ignore[name-defined]
     name = db.Column(db.String(255), nullable=False)
     owner_id = db.Column(db.String(36), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    client_email = db.Column(db.String(255), nullable=True)
 
     def to_dict(self) -> dict:
         """Convert team to dictionary."""
@@ -81,6 +82,7 @@ class Team(db.Model):  # type: ignore[name-defined]
             "name": self.name,
             "owner_id": self.owner_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "client_email": self.client_email,
         }
 
     def __repr__(self) -> str:

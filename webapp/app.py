@@ -128,6 +128,10 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.register_blueprint(readiness_bp)
 
+    from webapp.blueprints.super_reconciliation import super_recon_bp
+
+    app.register_blueprint(super_recon_bp)
+
     @app.route("/health")
     def health_check():
         """Health check endpoint."""
