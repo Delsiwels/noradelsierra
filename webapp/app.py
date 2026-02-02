@@ -2,24 +2,42 @@
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Flask, jsonify
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
 
 from webapp.ai import init_ai_client, init_chat_service
 from webapp.ai.token_tracker import init_token_tracker
 from webapp.blueprints.analytics import analytics_bp
+from webapp.blueprints.auth import auth_bp
 from webapp.blueprints.chat import chat_bp
 from webapp.blueprints.pages import pages_bp
 from webapp.blueprints.skills import skills_bp
 from webapp.blueprints.usage import usage_bp
 from webapp.config import Config
-from webapp.models import Conversation, db
+from webapp.models import Conversation, User, db
 from webapp.routes import api_bp
 from webapp.skills.analytics_service import init_analytics_service
 from webapp.skills.r2_skill_loader import init_r2_loader
 
 logger = logging.getLogger(__name__)
+
+bcrypt = Bcrypt()
+login_manager = LoginManager()
+
+
+@login_manager.user_loader
+def load_user(user_id: str):
+    """Load user by ID for Flask-Login."""
+    return User.query.get(user_id)
+
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Handle unauthorized access."""
+    return jsonify({"error": "Authentication required"}), 401
 
 
 def cleanup_expired_conversations(app: Flask) -> int:
@@ -55,8 +73,15 @@ def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Initialize SQLAlchemy
+    # Initialize extensions
     db.init_app(app)
+    bcrypt.init_app(app)
+    login_manager.init_app(app)
+
+    # Session config
+    app.permanent_session_lifetime = timedelta(
+        seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400)
+    )
 
     # Create tables in development mode
     with app.app_context():
@@ -77,16 +102,34 @@ def create_app(config_class: type = Config) -> Flask:
 
     # Register blueprints
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(skills_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(usage_bp)
 
+    # Import and register Phase 2-5 blueprints
+    from webapp.blueprints.sharing import sharing_bp
+
+    app.register_blueprint(sharing_bp)
+
+    from webapp.blueprints.export import export_bp
+
+    app.register_blueprint(export_bp)
+
+    from webapp.blueprints.reminders import reminders_bp
+
+    app.register_blueprint(reminders_bp)
+
+    from webapp.blueprints.readiness import readiness_bp
+
+    app.register_blueprint(readiness_bp)
+
     @app.route("/health")
     def health_check():
         """Health check endpoint."""
-        return jsonify({"status": "healthy", "version": "0.2.0"})
+        return jsonify({"status": "healthy", "version": "0.3.0"})
 
     # Register CLI commands for maintenance tasks
     @app.cli.command("cleanup-conversations")

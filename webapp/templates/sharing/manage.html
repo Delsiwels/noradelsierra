@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Sharing - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Manage Accountant Access</h1>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4">Invite Accountant</h2>
+        <div id="invite-error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4"></div>
+        <div id="invite-success" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4"></div>
+        <form id="invite-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input id="invite-email" type="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <input id="invite-name" type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+            </div>
+            <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                Send Invite
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">Active Shares</h2>
+        <div id="shares-list" class="space-y-3">
+            <p class="text-gray-500 text-sm">Loading...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function loadShares() {
+    const res = await fetch('/api/sharing/invites');
+    const data = await res.json();
+    const list = document.getElementById('shares-list');
+    if (!data.shares || data.shares.length === 0) {
+        list.innerHTML = '<p class="text-gray-500 text-sm">No active shares</p>';
+        return;
+    }
+    list.innerHTML = data.shares.map(s => `
+        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <div>
+                <span class="font-medium text-sm">${s.accountant_name || s.accountant_email}</span>
+                <span class="text-gray-500 text-xs ml-2">${s.access_level}</span>
+            </div>
+            <button onclick="revokeShare('${s.id}')" class="text-red-600 text-sm hover:underline">Revoke</button>
+        </div>
+    `).join('');
+}
+
+async function revokeShare(id) {
+    await fetch('/api/sharing/invites/' + id, {method: 'DELETE'});
+    loadShares();
+}
+
+document.getElementById('invite-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const res = await fetch('/api/sharing/invite', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            email: document.getElementById('invite-email').value,
+            name: document.getElementById('invite-name').value,
+        })
+    });
+    const data = await res.json();
+    if (data.success) {
+        document.getElementById('invite-success').textContent = 'Accountant invited successfully';
+        document.getElementById('invite-success').classList.remove('hidden');
+        document.getElementById('invite-error').classList.add('hidden');
+        loadShares();
+    } else {
+        document.getElementById('invite-error').textContent = data.error;
+        document.getElementById('invite-error').classList.remove('hidden');
+        document.getElementById('invite-success').classList.add('hidden');
+    }
+});
+
+loadShares();
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Checklist History - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Checklist History</h1>
+    <a href="/readiness" class="text-primary text-sm hover:underline mb-4 inline-block">Back to current checklist</a>
+
+    <div id="history-list" class="space-y-4">
+        <p class="text-gray-500 text-sm">Loading...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function loadHistory() {
+    const res = await fetch('/api/readiness/history');
+    const data = await res.json();
+    const container = document.getElementById('history-list');
+    if (!data.history || data.history.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">No checklist history yet.</p>';
+        return;
+    }
+    container.innerHTML = data.history.map(h => {
+        const items = h.items || [];
+        const completed = items.filter(i => i.completed).length;
+        return `
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="font-medium">${h.checklist_type === 'eofy' ? 'EOFY' : 'Month-End'}</span>
+                    <span class="text-gray-500 text-sm ml-2">${h.period}</span>
+                </div>
+                <div class="text-sm">
+                    <span class="${h.completed_at ? 'text-green-600' : 'text-yellow-600'}">
+                        ${completed}/${items.length} items
+                    </span>
+                    ${h.completed_at ? '<span class="text-green-600 ml-2">Completed</span>' : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+loadHistory();
+</script>
+{% endblock %}

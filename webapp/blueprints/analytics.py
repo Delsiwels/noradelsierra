@@ -46,18 +46,15 @@ def get_current_user():
     if current_app.config.get("TESTING"):
         return None
 
-    try:
-        from flask_login import current_user
+    from flask_login import current_user as _current_user
 
-        if current_user.is_authenticated:
-            return current_user
-    except (ImportError, AttributeError):
-        pass
+    if _current_user.is_authenticated:
+        return _current_user
     return None
 
 
 def login_required(f):
-    """Require login decorator."""
+    """Require login decorator. Bypassed in testing mode."""
     from functools import wraps
 
     from flask import current_app
@@ -67,13 +64,10 @@ def login_required(f):
         if current_app.config.get("TESTING"):
             return f(*args, **kwargs)
 
-        try:
-            from flask_login import current_user
+        from flask_login import current_user as _current_user
 
-            if not current_user.is_authenticated:
-                return {"error": "Authentication required"}, 401
-        except (ImportError, AttributeError):
-            pass
+        if not _current_user.is_authenticated:
+            return {"error": "Authentication required"}, 401
 
         return f(*args, **kwargs)
 

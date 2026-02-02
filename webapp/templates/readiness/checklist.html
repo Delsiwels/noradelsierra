@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Readiness Checklist - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Readiness Checklist</h1>
+    <p id="checklist-subtitle" class="text-gray-500 mb-6"></p>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <span id="progress-text" class="text-sm text-gray-600"></span>
+            </div>
+            <div class="w-48 bg-gray-200 rounded-full h-2">
+                <div id="progress-bar" class="bg-accent rounded-full h-2" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="checklist-items" class="space-y-2">
+            <p class="text-gray-500 text-sm">Loading...</p>
+        </div>
+    </div>
+
+    <a href="/readiness/history" class="text-primary text-sm hover:underline">View past checklists</a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let checklistData = null;
+
+async function loadChecklist() {
+    const res = await fetch('/api/readiness/checklist');
+    const data = await res.json();
+    checklistData = data.checklist;
+    render();
+}
+
+function render() {
+    if (!checklistData) return;
+    const c = checklistData;
+    document.getElementById('checklist-subtitle').textContent =
+        (c.checklist_type === 'eofy' ? 'End of Financial Year' : 'Month-End') + ' - ' + c.period;
+    document.getElementById('progress-text').textContent = c.completed + ' of ' + c.total + ' complete';
+    document.getElementById('progress-bar').style.width = c.percentage + '%';
+    document.getElementById('checklist-items').innerHTML = c.items.map((item, i) => `
+        <label class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer ${item.completed ? 'bg-green-50' : ''}">
+            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItem(${i})"
+                   class="mt-1 h-4 w-4 text-accent rounded border-gray-300">
+            <div>
+                <span class="font-medium text-sm ${item.completed ? 'line-through text-gray-400' : ''}">${item.label}</span>
+                <p class="text-xs text-gray-500">${item.description}</p>
+            </div>
+        </label>
+    `).join('');
+}
+
+async function toggleItem(index) {
+    checklistData.items[index].completed = !checklistData.items[index].completed;
+    checklistData.completed = checklistData.items.filter(i => i.completed).length;
+    checklistData.percentage = Math.round((checklistData.completed / checklistData.total) * 1000) / 10;
+    render();
+    await fetch('/api/readiness/checklist', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            checklist_type: checklistData.checklist_type,
+            period: checklistData.period,
+            items: checklistData.items
+        })
+    });
+}
+
+loadChecklist();
+</script>
+{% endblock %}

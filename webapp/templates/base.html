@@ -41,14 +41,24 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
+                    {% if current_user and current_user.is_authenticated %}
+                    <span class="text-gray-600 text-sm">{{ current_user.name }}</span>
+                    <a href="/skills" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Skills</a>
+                    <button onclick="fetch('/api/auth/logout',{method:'POST'}).then(()=>window.location.href='/login')"
+                            class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Log out</button>
+                    {% else %}
                     <a href="/login" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Log in</a>
-                    <a href="/signup" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <a href="/register" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Get Started Free
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </nav>
+
+    <!-- BAS Reminder Banner -->
+    {% include "components/bas_reminder_banner.html" ignore missing %}
 
     <!-- Main Content -->
     <main>

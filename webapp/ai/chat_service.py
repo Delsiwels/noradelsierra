@@ -86,6 +86,19 @@ class ChatService:
             self._analytics_service = get_analytics_service()
         return self._analytics_service
 
+    @staticmethod
+    def _inject_bas_context(prompt: str, user_id: str) -> str:
+        """Inject BAS deadline context into system prompt if deadline is near."""
+        try:
+            from webapp.services.bas_deadlines import get_bas_context_for_prompt
+
+            context = get_bas_context_for_prompt(user_id)
+            if context:
+                return f"{prompt}\n\n{context}"
+        except Exception as e:
+            logger.debug(f"BAS context injection skipped: {e}")
+        return prompt
+
     def _check_token_limit(self, user_id: str | None, team_id: str | None) -> None:
         """Check if user has available tokens. Raises if limit exceeded."""
         if user_id is None and team_id is None:
@@ -258,6 +271,10 @@ class ChatService:
             skills=top_skills,
         )
 
+        # Inject BAS deadline context if applicable
+        if user_id:
+            enhanced_prompt = self._inject_bas_context(enhanced_prompt, user_id)
+
         # Build messages list
         messages = list(conversation_history) if conversation_history else []
         messages.append({"role": "user", "content": user_message})
@@ -368,6 +385,10 @@ class ChatService:
             skills=top_skills,
         )
 
+        # Inject BAS deadline context if applicable
+        if user_id:
+            enhanced_prompt = self._inject_bas_context(enhanced_prompt, user_id)
+
         # Build messages list
         messages = list(conversation_history) if conversation_history else []
         messages.append({"role": "user", "content": user_message})
@@ -382,7 +403,9 @@ class ChatService:
         model = ""
 
         try:
-            for chunk in self.ai_client.stream_chat(messages, enhanced_prompt, **kwargs):
+            for chunk in self.ai_client.stream_chat(
+                messages, enhanced_prompt, **kwargs
+            ):
                 accumulated_content += chunk.content
                 model = chunk.model
 
@@ -395,7 +418,9 @@ class ChatService:
                     # Log skill usage
                     if skill_names:
                         logger.info(f"Skills used for response: {skill_names}")
-                        self._log_skill_usage(matches, user_id, team_id, conversation_id)
+                        self._log_skill_usage(
+                            matches, user_id, team_id, conversation_id
+                        )
 
                     # Persist if requested
                     if persist and user_id:

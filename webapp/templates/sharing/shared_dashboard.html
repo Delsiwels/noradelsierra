@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Shared With Me - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Shared With Me</h1>
+
+    <div id="shared-teams" class="space-y-4">
+        <p class="text-gray-500">Loading...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function loadSharedTeams() {
+    const res = await fetch('/api/sharing/shared-with-me');
+    const data = await res.json();
+    const container = document.getElementById('shared-teams');
+    if (!data.shared_teams || data.shared_teams.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">No teams have been shared with you yet.</p>';
+        return;
+    }
+    container.innerHTML = data.shared_teams.map(st => `
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold">${st.team.name}</h2>
+            <p class="text-sm text-gray-500">Access level: ${st.access_level}</p>
+            <p class="text-sm text-gray-500">Shared: ${st.shared_at ? new Date(st.shared_at).toLocaleDateString() : 'N/A'}</p>
+            ${st.expires_at ? `<p class="text-sm text-yellow-600">Expires: ${new Date(st.expires_at).toLocaleDateString()}</p>` : ''}
+        </div>
+    `).join('');
+}
+loadSharedTeams();
+</script>
+{% endblock %}

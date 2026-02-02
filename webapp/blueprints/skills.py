@@ -70,54 +70,46 @@ SAFE_FILENAME_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*\.md$")
 
 
 def get_current_user():
-    """
-    Get current authenticated user.
+    """Get current authenticated user."""
+    from flask import current_app
 
-    Returns user object or None if not authenticated.
-    This is a placeholder - integrate with your auth system.
-    """
-    try:
-        from flask_login import current_user
+    if current_app.config.get("TESTING"):
+        return None
 
-        if current_user.is_authenticated:
-            return current_user
-    except ImportError:
-        pass
+    from flask_login import current_user as _current_user
+
+    if _current_user.is_authenticated:
+        return _current_user
     return None
 
 
 def get_user_team_id():
-    """
-    Get current user's primary team ID.
-
-    Returns team_id or None.
-    This is a placeholder - integrate with your auth system.
-    """
+    """Get current user's primary team ID."""
     user = get_current_user()
-    if user:
-        # Try to get primary team - adjust based on your User model
-        if hasattr(user, "get_primary_team"):
-            team = user.get_primary_team()
-            if team:
-                return team.id
-        elif hasattr(user, "team_id"):
-            return user.team_id
+    if user and hasattr(user, "team_id"):
+        return user.team_id
     return None
 
 
 def login_required(f):
-    """
-    Require login decorator.
+    """Require login decorator. Bypassed in testing mode."""
+    from functools import wraps
 
-    This is a placeholder - replace with your auth system's decorator.
-    """
-    try:
-        from flask_login import login_required as flask_login_required
+    from flask import current_app
 
-        return flask_login_required(f)
-    except ImportError:
-        # Fallback: no auth enforcement
-        return f
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_app.config.get("TESTING"):
+            return f(*args, **kwargs)
+
+        from flask_login import current_user as _current_user
+
+        if not _current_user.is_authenticated:
+            return {"error": "Authentication required"}, 401
+
+        return f(*args, **kwargs)
+
+    return decorated_function
 
 
 def validate_uuid(value: str) -> bool:

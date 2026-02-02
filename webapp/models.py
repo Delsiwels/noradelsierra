@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime, timedelta
 
+from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -16,6 +17,174 @@ def generate_uuid() -> str:
 def default_expires_at() -> datetime:
     """Generate default expiration date (30 days from now)."""
     return datetime.utcnow() + timedelta(days=30)
+
+
+class User(UserMixin, db.Model):  # type: ignore[name-defined]
+    """User model for authentication and role-based access."""
+
+    __tablename__ = "users"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    role = db.Column(
+        db.String(20), nullable=False, default="member"
+    )  # owner, admin, accountant, member
+    team_id = db.Column(
+        db.String(36), db.ForeignKey("teams.id"), nullable=True, index=True
+    )
+    is_active = db.Column(db.Boolean, default=True)
+    bas_frequency = db.Column(db.String(20), default="quarterly")  # quarterly, monthly
+    bas_reminders_enabled = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    team = db.relationship("Team", foreign_keys=[team_id], backref="members")
+
+    def to_dict(self) -> dict:
+        """Convert user to dictionary for API responses."""
+        return {
+            "id": self.id,
+            "email": self.email,
+            "name": self.name,
+            "role": self.role,
+            "team_id": self.team_id,
+            "is_active": self.is_active,
+            "bas_frequency": self.bas_frequency,
+            "bas_reminders_enabled": self.bas_reminders_enabled,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    @property
+    def is_admin(self) -> bool:
+        """Check if user has admin role."""
+        return self.role in ("owner", "admin")
+
+    def __repr__(self) -> str:
+        return f"<User {self.email} ({self.role})>"
+
+
+class Team(db.Model):  # type: ignore[name-defined]
+    """Team model for grouping users."""
+
+    __tablename__ = "teams"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    name = db.Column(db.String(255), nullable=False)
+    owner_id = db.Column(db.String(36), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self) -> dict:
+        """Convert team to dictionary."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "owner_id": self.owner_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self) -> str:
+        return f"<Team {self.name}>"
+
+
+class AccountantShare(db.Model):  # type: ignore[name-defined]
+    """Tracks read-only access grants to accountants for a team."""
+
+    __tablename__ = "accountant_shares"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    team_id = db.Column(
+        db.String(36), db.ForeignKey("teams.id"), nullable=False, index=True
+    )
+    accountant_user_id = db.Column(
+        db.String(36), db.ForeignKey("users.id"), nullable=False, index=True
+    )
+    shared_by_user_id = db.Column(
+        db.String(36), db.ForeignKey("users.id"), nullable=False
+    )
+    access_level = db.Column(db.String(20), default="read_only")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)
+
+    team = db.relationship("Team", backref="accountant_shares")
+    accountant = db.relationship("User", foreign_keys=[accountant_user_id])
+    shared_by = db.relationship("User", foreign_keys=[shared_by_user_id])
+
+    __table_args__ = (
+        db.UniqueConstraint("team_id", "accountant_user_id", name="uq_team_accountant"),
+    )
+
+    def is_expired(self) -> bool:
+        """Check if this share has expired."""
+        if self.expires_at is None:
+            return False
+        return datetime.utcnow() > self.expires_at  # type: ignore[no-any-return]
+
+    def to_dict(self) -> dict:
+        """Convert share to dictionary."""
+        return {
+            "id": self.id,
+            "team_id": self.team_id,
+            "accountant_user_id": self.accountant_user_id,
+            "shared_by_user_id": self.shared_by_user_id,
+            "access_level": self.access_level,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "is_expired": self.is_expired(),
+            "accountant_email": self.accountant.email if self.accountant else None,
+            "accountant_name": self.accountant.name if self.accountant else None,
+        }
+
+    def __repr__(self) -> str:
+        return f"<AccountantShare team={self.team_id} accountant={self.accountant_user_id}>"
+
+
+class ChecklistProgress(db.Model):  # type: ignore[name-defined]
+    """Tracks progress on month-end and EOFY checklists."""
+
+    __tablename__ = "checklist_progress"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    team_id = db.Column(
+        db.String(36), db.ForeignKey("teams.id"), nullable=False, index=True
+    )
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    checklist_type = db.Column(db.String(20), nullable=False)  # month_end, eofy
+    period = db.Column(db.String(7), nullable=False)  # YYYY-MM
+    items = db.Column(db.JSON, nullable=False, default=list)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    team = db.relationship("Team", backref="checklists")
+    user = db.relationship("User")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "team_id", "checklist_type", "period", name="uq_team_checklist_period"
+        ),
+    )
+
+    def to_dict(self) -> dict:
+        """Convert checklist progress to dictionary."""
+        return {
+            "id": self.id,
+            "team_id": self.team_id,
+            "user_id": self.user_id,
+            "checklist_type": self.checklist_type,
+            "period": self.period,
+            "items": self.items or [],
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def __repr__(self) -> str:
+        return f"<ChecklistProgress {self.checklist_type} {self.period}>"
 
 
 class CustomSkill(db.Model):  # type: ignore[name-defined]

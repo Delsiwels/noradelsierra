@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Register - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Already have an account? <a href="/login" class="font-medium text-primary hover:text-blue-700">Log in</a>
+            </p>
+        </div>
+        <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"></div>
+        <form id="register-form" class="mt-8 space-y-6" method="POST">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Full name</label>
+                    <input id="name" name="name" type="text" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+                    <input id="email" name="email" type="email" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input id="password" name="password" type="password" required minlength="8"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
+                </div>
+            </div>
+            <button type="submit"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                Create account
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const errorEl = document.getElementById('error-message');
+    errorEl.classList.add('hidden');
+
+    const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+        })
+    });
+    const data = await res.json();
+    if (data.success) {
+        window.location.href = '/';
+    } else {
+        errorEl.textContent = data.error || 'Registration failed';
+        errorEl.classList.remove('hidden');
+    }
+});
+</script>
+{% endblock %}

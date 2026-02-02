@@ -1,0 +1,38 @@
+{% if current_user and current_user.is_authenticated and current_user.bas_reminders_enabled %}
+<div id="bas-reminder-banner" class="hidden">
+    <div class="bg-yellow-50 border-b border-yellow-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-yellow-800 font-medium text-sm" id="bas-reminder-text"></span>
+            </div>
+            <button onclick="document.getElementById('bas-reminder-banner').classList.add('hidden')"
+                    class="text-yellow-600 hover:text-yellow-800 text-sm">Dismiss</button>
+        </div>
+    </div>
+</div>
+<script>
+(async function() {
+    try {
+        const res = await fetch('/api/reminders/bas');
+        const data = await res.json();
+        if (data.reminders && data.reminders.length > 0) {
+            const next = data.reminders[0];
+            const banner = document.getElementById('bas-reminder-banner');
+            const text = document.getElementById('bas-reminder-text');
+            if (next.status === 'overdue') {
+                text.textContent = 'BAS OVERDUE: Your BAS was due ' + next.due_date_str + '. Lodge urgently.';
+                banner.querySelector('div').className = 'bg-red-50 border-b border-red-200';
+                text.className = 'text-red-800 font-medium text-sm';
+            } else if (next.status === 'due_soon') {
+                text.textContent = 'BAS due in ' + next.days_remaining + ' days (' + next.due_date_str + ')';
+            } else if (next.status === 'upcoming') {
+                text.textContent = 'Next BAS due: ' + next.due_date_str + ' (' + next.days_remaining + ' days)';
+            } else {
+                return;
+            }
+            banner.classList.remove('hidden');
+        }
+    } catch(e) {}
+})();
+</script>
+{% endif %}

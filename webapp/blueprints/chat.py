@@ -43,71 +43,42 @@ def rate_limit(limit_string):
 
 
 def get_current_user():
-    """
-    Get current authenticated user.
-
-    Returns user object or None if not authenticated.
-    This is a placeholder - integrate with your auth system.
-    """
+    """Get current authenticated user."""
     from flask import current_app
 
-    # Skip auth check in testing mode
     if current_app.config.get("TESTING"):
         return None
 
-    try:
-        from flask_login import current_user
+    from flask_login import current_user as _current_user
 
-        if current_user.is_authenticated:
-            return current_user
-    except (ImportError, AttributeError):
-        pass
+    if _current_user.is_authenticated:
+        return _current_user
     return None
 
 
 def get_user_team_id():
-    """
-    Get current user's primary team ID.
-
-    Returns team_id or None.
-    This is a placeholder - integrate with your auth system.
-    """
+    """Get current user's primary team ID."""
     user = get_current_user()
-    if user:
-        if hasattr(user, "get_primary_team"):
-            team = user.get_primary_team()
-            if team:
-                return team.id
-        elif hasattr(user, "team_id"):
-            return user.team_id
+    if user and hasattr(user, "team_id"):
+        return user.team_id
     return None
 
 
 def login_required(f):
-    """
-    Require login decorator.
-
-    This is a placeholder - replace with your auth system's decorator.
-    In testing mode, auth is bypassed.
-    """
+    """Require login decorator. Bypassed in testing mode."""
     from functools import wraps
 
     from flask import current_app
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Skip auth check in testing mode
         if current_app.config.get("TESTING"):
             return f(*args, **kwargs)
 
-        try:
-            from flask_login import current_user
+        from flask_login import current_user as _current_user
 
-            if not current_user.is_authenticated:
-                return {"error": "Authentication required"}, 401
-        except (ImportError, AttributeError):
-            # If flask-login is not properly configured, allow request
-            pass
+        if not _current_user.is_authenticated:
+            return {"error": "Authentication required"}, 401
 
         return f(*args, **kwargs)
 
@@ -246,7 +217,10 @@ def api_chat():
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         # Check for token limit exceeded
-        if "TokenLimitExceededError" in type(e).__name__ or "token limit" in str(e).lower():
+        if (
+            "TokenLimitExceededError" in type(e).__name__
+            or "token limit" in str(e).lower()
+        ):
             return jsonify({"error": str(e)}), 429
         logger.exception(f"Unexpected chat error: {e}")
         return jsonify({"error": "An error occurred processing your request"}), 500
@@ -359,7 +333,10 @@ def api_chat_stream():
         logger.error(f"Chat stream error: {e}")
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        if "TokenLimitExceededError" in type(e).__name__ or "token limit" in str(e).lower():
+        if (
+            "TokenLimitExceededError" in type(e).__name__
+            or "token limit" in str(e).lower()
+        ):
             return jsonify({"error": str(e)}), 429
         logger.exception(f"Unexpected chat stream error: {e}")
         return jsonify({"error": "An error occurred processing your request"}), 500

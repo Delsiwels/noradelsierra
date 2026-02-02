@@ -59,6 +59,13 @@ class Config:
         os.environ.get("CONVERSATION_RETENTION_DAYS", "30")
     )
 
+    # Session config
+    PERMANENT_SESSION_LIFETIME = int(
+        os.environ.get("PERMANENT_SESSION_LIFETIME", "86400")
+    )  # 24 hours default
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+
     # Default system prompt
     DEFAULT_SYSTEM_PROMPT = os.environ.get(
         "DEFAULT_SYSTEM_PROMPT",
