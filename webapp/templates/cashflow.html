@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Cash Flow Analysis - BAS Reviewer{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Cash Flow Analysis</h1>
+                <p class="mt-1 text-gray-500">Analyze your transactions and generate a Statement of Cash Flows</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex space-x-3">
+                <button onclick="loadSampleData()" class="border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Load Sample Data
+                </button>
+                <button onclick="analyzeTransactions()" id="analyzeBtn" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Analyze Cash Flow
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Summary Cards -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="summaryCards">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <p class="text-sm font-medium text-gray-500">Operating Activities</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="operatingNet">$0.00</p>
+            <p class="text-xs text-gray-400 mt-1">Net cash from operations</p>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <p class="text-sm font-medium text-gray-500">Investing Activities</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="investingNet">$0.00</p>
+            <p class="text-xs text-gray-400 mt-1">Net cash from investing</p>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <p class="text-sm font-medium text-gray-500">Financing Activities</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="financingNet">$0.00</p>
+            <p class="text-xs text-gray-400 mt-1">Net cash from financing</p>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-primary/30">
+            <p class="text-sm font-medium text-primary">Net Cash Change</p>
+            <p class="text-2xl font-bold text-primary mt-1" id="netCashChange">$0.00</p>
+            <p class="text-xs text-gray-400 mt-1">Total change in cash position</p>
+        </div>
+    </div>
+</section>
+
+<!-- Input and Results -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Transaction Input -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Transaction Data</h2>
+                <p class="text-sm text-gray-500 mt-1">Paste your transactions as JSON or use the sample data</p>
+            </div>
+            <div class="p-6">
+                <div class="mb-4 grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Opening Balance</label>
+                        <input type="number" id="openingBalance" value="0" step="0.01"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Period Label</label>
+                        <input type="text" id="periodLabel" placeholder="e.g. Q1 2026"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Transactions (JSON)</label>
+                <textarea id="transactionInput" rows="16"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-primary focus:border-primary"
+                    placeholder='[{"date":"2026-01-15","description":"Sales revenue","amount":5000},{"date":"2026-01-20","description":"Wages","amount":-2000}]'></textarea>
+                <p class="text-xs text-gray-400 mt-2">Each transaction needs: date, description, amount (positive=inflow, negative=outflow). Optional: account.</p>
+            </div>
+        </div>
+
+        <!-- Cash Flow Statement -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Statement of Cash Flows</h2>
+                <p class="text-sm text-gray-500 mt-1" id="statementPeriod">Analyze transactions to generate statement</p>
+            </div>
+            <div class="p-6" id="statementContent">
+                <!-- Empty state -->
+                <div id="emptyState" class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="mt-4 text-gray-500">No data yet. Add transactions and click "Analyze Cash Flow".</p>
+                </div>
+
+                <!-- Statement (hidden initially) -->
+                <div id="statementBody" class="hidden space-y-6">
+                    <!-- Opening Balance -->
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                        <span class="text-sm font-medium text-gray-700">Opening Cash Balance</span>
+                        <span class="text-sm font-semibold text-gray-900" id="stmtOpening">$0.00</span>
+                    </div>
+
+                    <!-- Operating Activities -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-2">Cash Flows from Operating Activities</h3>
+                        <div id="operatingItems" class="space-y-1 text-sm"></div>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+                            <span class="font-medium text-gray-700">Net Operating Cash Flow</span>
+                            <span class="font-semibold" id="stmtOperatingNet">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Investing Activities -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-2">Cash Flows from Investing Activities</h3>
+                        <div id="investingItems" class="space-y-1 text-sm"></div>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+                            <span class="font-medium text-gray-700">Net Investing Cash Flow</span>
+                            <span class="font-semibold" id="stmtInvestingNet">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Financing Activities -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-2">Cash Flows from Financing Activities</h3>
+                        <div id="financingItems" class="space-y-1 text-sm"></div>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+                            <span class="font-medium text-gray-700">Net Financing Cash Flow</span>
+                            <span class="font-semibold" id="stmtFinancingNet">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="pt-3 border-t-2 border-gray-300">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-medium text-gray-700">Net Change in Cash</span>
+                            <span class="font-bold text-gray-900" id="stmtNetChange">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-primary">Closing Cash Balance</span>
+                            <span class="font-bold text-primary text-lg" id="stmtClosing">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Count -->
+                    <p class="text-xs text-gray-400 pt-2" id="txnCount"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function formatCurrency(amount) {
+    const formatted = Math.abs(amount).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+
+function colorClass(amount) {
+    if (amount > 0) return 'text-green-600';
+    if (amount < 0) return 'text-red-600';
+    return 'text-gray-600';
+}
+
+function renderLineItems(containerId, inflows, outflows) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+
+    if (inflows.length === 0 && outflows.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 italic">No transactions</p>';
+        return;
+    }
+
+    // Group by subcategory
+    const grouped = {};
+    [...inflows, ...outflows].forEach(item => {
+        const key = item.subcategory || 'other';
+        if (!grouped[key]) grouped[key] = 0;
+        grouped[key] += item.amount;
+    });
+
+    Object.entries(grouped).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).forEach(([label, amount]) => {
+        const div = document.createElement('div');
+        div.className = 'flex justify-between items-center py-0.5';
+        div.innerHTML = `
+            <span class="text-gray-600 capitalize">${label}</span>
+            <span class="${colorClass(amount)}">${formatCurrency(amount)}</span>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function updateDashboard(data) {
+    const stmt = data.statement;
+
+    // Summary cards
+    document.getElementById('operatingNet').textContent = formatCurrency(stmt.operating.net);
+    document.getElementById('operatingNet').className = 'text-2xl font-bold mt-1 ' + colorClass(stmt.operating.net);
+
+    document.getElementById('investingNet').textContent = formatCurrency(stmt.investing.net);
+    document.getElementById('investingNet').className = 'text-2xl font-bold mt-1 ' + colorClass(stmt.investing.net);
+
+    document.getElementById('financingNet').textContent = formatCurrency(stmt.financing.net);
+    document.getElementById('financingNet').className = 'text-2xl font-bold mt-1 ' + colorClass(stmt.financing.net);
+
+    document.getElementById('netCashChange').textContent = formatCurrency(stmt.net_cash_change);
+    document.getElementById('netCashChange').className = 'text-2xl font-bold mt-1 ' + colorClass(stmt.net_cash_change);
+
+    // Statement
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('statementBody').classList.remove('hidden');
+
+    if (data.period_label) {
+        document.getElementById('statementPeriod').textContent = 'Period: ' + data.period_label;
+    }
+
+    document.getElementById('stmtOpening').textContent = formatCurrency(data.opening_balance);
+    document.getElementById('stmtClosing').textContent = formatCurrency(data.closing_balance);
+    document.getElementById('stmtNetChange').textContent = formatCurrency(stmt.net_cash_change);
+
+    document.getElementById('stmtOperatingNet').textContent = formatCurrency(stmt.operating.net);
+    document.getElementById('stmtOperatingNet').className = 'font-semibold ' + colorClass(stmt.operating.net);
+
+    document.getElementById('stmtInvestingNet').textContent = formatCurrency(stmt.investing.net);
+    document.getElementById('stmtInvestingNet').className = 'font-semibold ' + colorClass(stmt.investing.net);
+
+    document.getElementById('stmtFinancingNet').textContent = formatCurrency(stmt.financing.net);
+    document.getElementById('stmtFinancingNet').className = 'font-semibold ' + colorClass(stmt.financing.net);
+
+    // Line items
+    renderLineItems('operatingItems', stmt.operating.inflows, stmt.operating.outflows);
+    renderLineItems('investingItems', stmt.investing.inflows, stmt.investing.outflows);
+    renderLineItems('financingItems', stmt.financing.inflows, stmt.financing.outflows);
+
+    document.getElementById('txnCount').textContent = stmt.transaction_count + ' transactions analyzed';
+}
+
+async function analyzeTransactions() {
+    const btn = document.getElementById('analyzeBtn');
+    const input = document.getElementById('transactionInput').value.trim();
+
+    if (!input) {
+        alert('Please enter transaction data or load sample data.');
+        return;
+    }
+
+    let transactions;
+    try {
+        transactions = JSON.parse(input);
+    } catch (e) {
+        alert('Invalid JSON. Please check your transaction data format.');
+        return;
+    }
+
+    const openingBalance = parseFloat(document.getElementById('openingBalance').value) || 0;
+    const periodLabel = document.getElementById('periodLabel').value.trim();
+
+    btn.disabled = true;
+    btn.textContent = 'Analyzing...';
+
+    try {
+        const response = await fetch('/api/cashflow/analyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                transactions: transactions,
+                opening_balance: openingBalance,
+                period_label: periodLabel,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || 'Analysis failed');
+            return;
+        }
+
+        updateDashboard(data);
+    } catch (err) {
+        alert('Network error. Please try again.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Analyze Cash Flow';
+    }
+}
+
+function loadSampleData() {
+    const sampleTransactions = [
+        {"date": "2026-01-05", "description": "Sales revenue", "amount": 45000},
+        {"date": "2026-01-07", "description": "Interest received", "amount": 250},
+        {"date": "2026-01-10", "description": "GST collected", "amount": 4500},
+        {"date": "2026-01-12", "description": "Wages", "amount": -18000},
+        {"date": "2026-01-12", "description": "Superannuation", "amount": -1980},
+        {"date": "2026-01-15", "description": "Rent", "amount": -3500},
+        {"date": "2026-01-15", "description": "Utilities", "amount": -850},
+        {"date": "2026-01-18", "description": "Insurance", "amount": -1200},
+        {"date": "2026-01-20", "description": "GST paid", "amount": -2100},
+        {"date": "2026-01-22", "description": "PAYG withholding", "amount": -4200},
+        {"date": "2026-01-25", "description": "Office expenses", "amount": -650},
+        {"date": "2026-01-28", "description": "Professional fees", "amount": -1500},
+        {"date": "2026-01-30", "description": "Advertising", "amount": -2000},
+        {"date": "2026-02-01", "description": "Equipment purchase", "amount": -12000},
+        {"date": "2026-02-05", "description": "Computer equipment", "amount": -3500},
+        {"date": "2026-02-10", "description": "Loan received", "amount": 25000},
+        {"date": "2026-02-15", "description": "Loan repayment", "amount": -5000},
+        {"date": "2026-02-20", "description": "Owner drawings", "amount": -8000}
+    ];
+
+    document.getElementById('transactionInput').value = JSON.stringify(sampleTransactions, null, 2);
+    document.getElementById('openingBalance').value = 15000;
+    document.getElementById('periodLabel').value = 'Q1 2026';
+}
+</script>
+{% endblock %}

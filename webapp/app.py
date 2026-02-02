@@ -12,6 +12,7 @@ from webapp.ai import init_ai_client, init_chat_service
 from webapp.ai.token_tracker import init_token_tracker
 from webapp.blueprints.analytics import analytics_bp
 from webapp.blueprints.auth import auth_bp
+from webapp.blueprints.cashflow import cashflow_bp
 from webapp.blueprints.chat import chat_bp
 from webapp.blueprints.pages import pages_bp
 from webapp.blueprints.skills import skills_bp
@@ -108,6 +109,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(chat_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(usage_bp)
+    app.register_blueprint(cashflow_bp)
 
     # Import and register Phase 2-5 blueprints
     from webapp.blueprints.sharing import sharing_bp
