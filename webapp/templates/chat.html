@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="height: calc(100vh - 200px);">
+        <!-- Chat Header -->
+        <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div>
+                <h1 class="text-lg font-semibold text-gray-900">AI Chat</h1>
+                <p class="text-gray-500 text-sm">Ask about BAS, GST, compliance, and more</p>
+            </div>
+            <button onclick="startNewConversation()" class="text-sm text-primary hover:text-blue-700 font-medium">New conversation</button>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="messages" class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <div class="text-center text-gray-400 text-sm py-8">
+                Start a conversation by typing a message below.
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="border-t border-gray-200 px-6 py-4">
+            <form id="chat-form" class="flex gap-3">
+                <input type="text" id="chat-input" placeholder="Ask about BAS, GST, compliance..."
+                       class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                       autocomplete="off">
+                <button type="submit" id="send-btn"
+                        class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let conversationId = null;
+
+function appendMessage(role, content) {
+    const container = document.getElementById('messages');
+    // Remove empty state if present
+    const empty = container.querySelector('.text-center');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = role === 'user'
+        ? 'flex justify-end'
+        : 'flex justify-start';
+
+    const bubble = document.createElement('div');
+    bubble.className = role === 'user'
+        ? 'bg-primary text-white rounded-lg px-4 py-2 max-w-[80%] text-sm'
+        : 'bg-gray-100 text-gray-900 rounded-lg px-4 py-2 max-w-[80%] text-sm';
+    bubble.textContent = content;
+
+    div.appendChild(bubble);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function startNewConversation() {
+    conversationId = null;
+    const container = document.getElementById('messages');
+    container.innerHTML = '<div class="text-center text-gray-400 text-sm py-8">Start a conversation by typing a message below.</div>';
+}
+
+document.getElementById('chat-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('send-btn');
+    const message = input.value.trim();
+    if (!message) return;
+
+    appendMessage('user', message);
+    input.value = '';
+    btn.disabled = true;
+
+    try {
+        const body = { message: message };
+        if (conversationId) body.conversation_id = conversationId;
+
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        if (data.conversation_id) conversationId = data.conversation_id;
+
+        if (data.response) {
+            appendMessage('assistant', data.response);
+        } else if (data.error) {
+            appendMessage('assistant', 'Error: ' + data.error);
+        }
+    } catch (err) {
+        appendMessage('assistant', 'Failed to send message. Please try again.');
+    } finally {
+        btn.disabled = false;
+        input.focus();
+    }
+});
+</script>
+{% endblock %}

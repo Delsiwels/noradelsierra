@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Welcome Header -->
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900">Welcome back, {{ current_user.name }}</h1>
+        <p class="text-gray-600 mt-1">Here's your BAS Reviewer dashboard.</p>
+    </div>
+
+    <!-- Quick Actions Grid -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <!-- Chat -->
+        <a href="/chat" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-primary hover:shadow-md transition-all group">
+            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary">AI Chat</h3>
+            <p class="text-gray-600 text-sm mt-1">Ask questions about BAS, GST, compliance, and get AI-powered answers.</p>
+        </a>
+
+        <!-- Readiness Checklists -->
+        <a href="/readiness" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-accent hover:shadow-md transition-all group">
+            <div class="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-accent">Readiness Checklists</h3>
+            <p class="text-gray-600 text-sm mt-1">Month-end close and EOFY preparation checklists with progress tracking.</p>
+        </a>
+
+        <!-- BAS Reminders -->
+        <a href="#" onclick="event.preventDefault(); document.getElementById('reminders-section').scrollIntoView({behavior:'smooth'})" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-secondary hover:shadow-md transition-all group">
+            <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-secondary">BAS Deadlines</h3>
+            <p class="text-gray-600 text-sm mt-1">Upcoming ATO lodgement deadlines and reminders for your BAS.</p>
+        </a>
+
+        <!-- Skills -->
+        <a href="/skills" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-primary hover:shadow-md transition-all group">
+            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary">Skills</h3>
+            <p class="text-gray-600 text-sm mt-1">Browse and manage AI skills for BAS review, GST, and compliance.</p>
+        </a>
+
+        <!-- Sharing (owner/admin) -->
+        {% if current_user.role in ('owner', 'admin') %}
+        <a href="/sharing/manage" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-primary hover:shadow-md transition-all group">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-purple-600">Accountant Sharing</h3>
+            <p class="text-gray-600 text-sm mt-1">Invite your accountant and manage shared access to your data.</p>
+        </a>
+        {% endif %}
+
+        <!-- Shared Teams (accountant) -->
+        {% if current_user.role == 'accountant' %}
+        <a href="/sharing/dashboard" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-primary hover:shadow-md transition-all group">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-purple-600">Shared Teams</h3>
+            <p class="text-gray-600 text-sm mt-1">View and manage teams that have shared access with you.</p>
+        </a>
+        {% endif %}
+
+        <!-- PDF Export -->
+        <a href="#" onclick="event.preventDefault(); document.getElementById('export-section').scrollIntoView({behavior:'smooth'})" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-primary hover:shadow-md transition-all group">
+            <div class="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-red-500">PDF Export</h3>
+            <p class="text-gray-600 text-sm mt-1">Export conversations and compliance summaries as professional PDFs.</p>
+        </a>
+    </div>
+
+    <!-- BAS Reminders Section -->
+    <div id="reminders-section" class="mb-10">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">BAS Deadlines</h2>
+        <div id="reminders-content" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <p class="text-gray-500 text-sm">Loading deadlines...</p>
+        </div>
+    </div>
+
+    <!-- PDF Export Section -->
+    <div id="export-section" class="mb-10">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Export Compliance Records</h2>
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <p class="text-gray-600 text-sm mb-4">Download a PDF summary of your conversations and compliance data for a date range.</p>
+            <form id="export-form" class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
+                    <input type="date" id="export-from" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+                    <input type="date" id="export-to" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <button type="submit" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Download PDF
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Load BAS reminders
+fetch('/api/reminders/bas')
+    .then(r => r.json())
+    .then(data => {
+        const el = document.getElementById('reminders-content');
+        if (!data.success || !data.deadlines || data.deadlines.length === 0) {
+            el.innerHTML = '<p class="text-gray-500 text-sm">No upcoming deadlines.</p>';
+            return;
+        }
+        let html = '<div class="space-y-3">';
+        data.deadlines.forEach(d => {
+            let color = 'bg-gray-100 text-gray-700';
+            let badge = '';
+            if (d.status === 'overdue') {
+                color = 'bg-red-50 border-red-200';
+                badge = '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">Overdue</span>';
+            } else if (d.status === 'due_soon') {
+                color = 'bg-yellow-50 border-yellow-200';
+                badge = '<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">Due Soon</span>';
+            } else if (d.status === 'upcoming') {
+                color = 'bg-blue-50 border-blue-200';
+                badge = '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Upcoming</span>';
+            }
+            const label = d.quarter || d.period || '';
+            const days = d.days_remaining;
+            const daysText = days < 0 ? `${Math.abs(days)} days overdue` : days === 0 ? 'Due today' : `${days} days remaining`;
+            html += `<div class="flex items-center justify-between p-3 rounded-lg border ${color}">
+                <div>
+                    <span class="font-medium text-gray-900">${label}</span>
+                    <span class="text-gray-500 text-sm ml-2">Due ${d.due_date_str}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-600">${daysText}</span>
+                    ${badge}
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        el.innerHTML = html;
+    })
+    .catch(() => {
+        document.getElementById('reminders-content').innerHTML = '<p class="text-gray-500 text-sm">Could not load deadlines.</p>';
+    });
+
+// PDF Export form
+document.getElementById('export-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const from = document.getElementById('export-from').value;
+    const to = document.getElementById('export-to').value;
+    let url = '/api/export/compliance/pdf?';
+    if (from) url += 'date_from=' + from + '&';
+    if (to) url += 'date_to=' + to;
+    window.location.href = url;
+});
+</script>
+{% endblock %}

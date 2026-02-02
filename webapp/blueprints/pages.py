@@ -1,14 +1,31 @@
 """Public pages blueprint."""
 
-from flask import Blueprint, render_template
+from flask import Blueprint, redirect, render_template, url_for
+from flask_login import current_user, login_required
 
 pages_bp = Blueprint("pages", __name__)
 
 
 @pages_bp.route("/")
 def home():
-    """Home page."""
+    """Home page — redirects authenticated users to dashboard."""
+    if current_user.is_authenticated:
+        return redirect(url_for("pages.dashboard"))
     return render_template("home.html")
+
+
+@pages_bp.route("/dashboard")
+@login_required
+def dashboard():
+    """Authenticated user dashboard."""
+    return render_template("dashboard.html")
+
+
+@pages_bp.route("/chat")
+@login_required
+def chat_page():
+    """Chat interface page."""
+    return render_template("chat.html")
 
 
 @pages_bp.route("/pricing")

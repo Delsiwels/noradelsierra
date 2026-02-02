@@ -31,19 +31,30 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/" class="flex items-center">
+                    <a href="{% if current_user and current_user.is_authenticated %}/dashboard{% else %}/{% endif %}" class="flex items-center">
                         <span class="text-2xl font-bold text-primary">BAS Reviewer</span>
                     </a>
                     <div class="hidden md:flex ml-10 space-x-8">
+                        {% if current_user and current_user.is_authenticated %}
+                        <a href="/dashboard" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Dashboard</a>
+                        <a href="/chat" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Chat</a>
+                        <a href="/readiness" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Checklists</a>
+                        <a href="/skills" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Skills</a>
+                        {% if current_user.role in ('owner', 'admin') %}
+                        <a href="/sharing/manage" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Sharing</a>
+                        {% elif current_user.role == 'accountant' %}
+                        <a href="/sharing/dashboard" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Shared Teams</a>
+                        {% endif %}
+                        {% else %}
                         <a href="/features" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Features</a>
                         <a href="/pricing" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Pricing</a>
                         <a href="/docs" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Docs</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     {% if current_user and current_user.is_authenticated %}
                     <span class="text-gray-600 text-sm">{{ current_user.name }}</span>
-                    <a href="/skills" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Skills</a>
                     <button onclick="fetch('/api/auth/logout',{method:'POST'}).then(()=>window.location.href='/login')"
                             class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Log out</button>
                     {% else %}
