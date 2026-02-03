@@ -3,6 +3,75 @@
 {% block title %}Readiness Checklist - BAS Reviewer{% endblock %}
 
 {% block content %}
+<style>
+    .comment-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #9ca3af;
+        transition: color 0.15s;
+    }
+    .comment-btn:hover { color: #6b7280; }
+    .comment-btn.has-comments { color: #2563eb; }
+
+    .comment-panel {
+        display: none;
+        position: fixed;
+        top: 0; right: 0;
+        width: 380px; height: 100vh;
+        background: #fff;
+        box-shadow: -2px 0 12px rgba(0,0,0,0.12);
+        z-index: 50;
+        flex-direction: column;
+    }
+    .comment-panel.open { display: flex; }
+    .comment-panel-header {
+        padding: 16px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .comment-panel-body {
+        flex: 1; overflow-y: auto; padding: 16px;
+    }
+    .comment-item {
+        border-bottom: 1px solid #f3f4f6;
+        padding: 10px 0;
+    }
+    .comment-item:last-child { border-bottom: none; }
+    .comment-author { font-weight: 600; font-size: 13px; color: #374151; }
+    .comment-date { font-size: 11px; color: #9ca3af; margin-left: 8px; }
+    .comment-text { font-size: 13px; color: #4b5563; margin-top: 4px; }
+    .comment-assignee { font-size: 11px; color: #2563eb; margin-top: 2px; }
+    .comment-form {
+        padding: 16px;
+        border-top: 1px solid #e5e7eb;
+    }
+    .comment-form textarea {
+        width: 100%; border: 1px solid #d1d5db; border-radius: 6px;
+        padding: 8px; font-size: 13px; resize: vertical; min-height: 60px;
+    }
+    .assign-select {
+        width: 100%; border: 1px solid #d1d5db; border-radius: 6px;
+        padding: 6px 8px; font-size: 13px; margin-top: 8px; color: #374151;
+    }
+    .comment-form button[type="submit"] {
+        margin-top: 8px; width: 100%;
+        background: #2563eb; color: #fff; border: none; border-radius: 6px;
+        padding: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .comment-form button[type="submit"]:hover { background: #1d4ed8; }
+    .org-badge {
+        display: inline-block;
+        background: #eff6ff; color: #2563eb;
+        font-size: 12px; font-weight: 500;
+        padding: 2px 10px; border-radius: 999px;
+        margin-left: 8px;
+    }
+</style>
+
 <div class="max-w-4xl mx-auto px-4 py-8">
     <h1 class="text-2xl font-bold text-gray-900 mb-2">Readiness Checklist</h1>
     <p id="checklist-subtitle" class="text-gray-500 mb-6"></p>
@@ -23,36 +92,125 @@
 
     <a href="/readiness/history" class="text-primary text-sm hover:underline">View past checklists</a>
 </div>
+
+<!-- Comment side panel -->
+<div id="comment-panel" class="comment-panel">
+    <div class="comment-panel-header">
+        <span id="comment-panel-title" class="font-semibold text-sm text-gray-900">Notes</span>
+        <button onclick="closeCommentPanel()" class="text-gray-400 hover:text-gray-600" style="background:none;border:none;cursor:pointer;font-size:18px;">&times;</button>
+    </div>
+    <div id="comment-panel-body" class="comment-panel-body">
+        <p class="text-gray-400 text-sm">No notes yet.</p>
+    </div>
+    <form id="comment-form" class="comment-form" onsubmit="submitComment(event)">
+        <textarea id="comment-content" placeholder="Add a note..." maxlength="2000"></textarea>
+        <select id="comment-assign" class="assign-select">
+            <option value="">Assign to...</option>
+        </select>
+        <button type="submit">Add Note</button>
+    </form>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
 let checklistData = null;
+let commentsByItem = {};
+let teamMembers = [];
+let currentCommentItemKey = null;
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+async function loadTeamMembers() {
+    try {
+        const res = await fetch('/api/readiness/team-members');
+        const data = await res.json();
+        teamMembers = data.members || [];
+        const sel = document.getElementById('comment-assign');
+        sel.innerHTML = '<option value="">Assign to...</option>';
+        teamMembers.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.user_id;
+            opt.textContent = m.full_name;
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('Failed to load team members', e);
+    }
+}
+
+async function loadComments() {
+    const pid = checklistData && checklistData.checklist_progress_id;
+    if (!pid) { commentsByItem = {}; return; }
+    try {
+        const res = await fetch('/api/readiness/comments?checklist_progress_id=' + encodeURIComponent(pid));
+        const data = await res.json();
+        commentsByItem = data.comments || {};
+    } catch (e) {
+        console.error('Failed to load comments', e);
+        commentsByItem = {};
+    }
+}
 
 async function loadChecklist() {
     const res = await fetch('/api/readiness/checklist');
     const data = await res.json();
     checklistData = data.checklist;
+    await loadComments();
     render();
 }
 
 function render() {
     if (!checklistData) return;
     const c = checklistData;
-    document.getElementById('checklist-subtitle').textContent =
-        (c.checklist_type === 'eofy' ? 'End of Financial Year' : 'Month-End') + ' - ' + c.period;
+
+    // Subtitle with optional org badge
+    let subtitle = (c.checklist_type === 'eofy' ? 'End of Financial Year' : 'Month-End') + ' \u2014 ' + c.period;
+    const subtitleEl = document.getElementById('checklist-subtitle');
+    subtitleEl.textContent = subtitle;
+    if (c.tenant_name) {
+        const badge = document.createElement('span');
+        badge.className = 'org-badge';
+        badge.textContent = c.tenant_name;
+        subtitleEl.appendChild(badge);
+    }
+
     document.getElementById('progress-text').textContent = c.completed + ' of ' + c.total + ' complete';
     document.getElementById('progress-bar').style.width = c.percentage + '%';
-    document.getElementById('checklist-items').innerHTML = c.items.map((item, i) => `
-        <label class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer ${item.completed ? 'bg-green-50' : ''}">
-            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItem(${i})"
-                   class="mt-1 h-4 w-4 text-accent rounded border-gray-300">
-            <div>
-                <span class="font-medium text-sm ${item.completed ? 'line-through text-gray-400' : ''}">${item.label}</span>
-                <p class="text-xs text-gray-500">${item.description}</p>
-            </div>
-        </label>
-    `).join('');
+
+    const container = document.getElementById('checklist-items');
+    container.innerHTML = '';
+    c.items.forEach((item, i) => {
+        const hasComments = commentsByItem[item.key] && commentsByItem[item.key].length > 0;
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-3 rounded-lg hover:bg-gray-50' + (item.completed ? ' bg-green-50' : '');
+
+        const label = document.createElement('label');
+        label.className = 'flex items-start space-x-3 cursor-pointer flex-1';
+        label.innerHTML =
+            '<input type="checkbox" ' + (item.completed ? 'checked' : '') +
+            ' class="mt-1 h-4 w-4 text-accent rounded border-gray-300">' +
+            '<div><span class="font-medium text-sm ' + (item.completed ? 'line-through text-gray-400' : '') + '">' +
+            escapeHtml(item.label) + '</span>' +
+            '<p class="text-xs text-gray-500">' + escapeHtml(item.description) + '</p></div>';
+        label.querySelector('input').addEventListener('change', () => toggleItem(i));
+
+        const commentBtn = document.createElement('button');
+        commentBtn.type = 'button';
+        commentBtn.className = 'comment-btn' + (hasComments ? ' has-comments' : '');
+        const commentCount = hasComments ? commentsByItem[item.key].length : 0;
+        commentBtn.innerHTML = '\uD83D\uDCAC' + (commentCount > 0 ? ' <span style="font-size:11px">' + commentCount + '</span>' : '');
+        commentBtn.title = 'Notes';
+        commentBtn.addEventListener('click', () => openCommentPanel(item.key, item.label));
+
+        row.appendChild(label);
+        row.appendChild(commentBtn);
+        container.appendChild(row);
+    });
 }
 
 async function toggleItem(index) {
@@ -60,7 +218,7 @@ async function toggleItem(index) {
     checklistData.completed = checklistData.items.filter(i => i.completed).length;
     checklistData.percentage = Math.round((checklistData.completed / checklistData.total) * 1000) / 10;
     render();
-    await fetch('/api/readiness/checklist', {
+    const res = await fetch('/api/readiness/checklist', {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -69,8 +227,101 @@ async function toggleItem(index) {
             items: checklistData.items
         })
     });
+    const data = await res.json();
+    if (data.success && data.progress && data.progress.id) {
+        checklistData.checklist_progress_id = data.progress.id;
+    }
 }
 
+function openCommentPanel(itemKey, itemLabel) {
+    currentCommentItemKey = itemKey;
+    document.getElementById('comment-panel-title').textContent = 'Notes: ' + (itemLabel || itemKey);
+    const body = document.getElementById('comment-panel-body');
+    const comments = commentsByItem[itemKey] || [];
+    if (comments.length === 0) {
+        body.innerHTML = '<p class="text-gray-400 text-sm">No notes yet.</p>';
+    } else {
+        body.innerHTML = '';
+        comments.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'comment-item';
+
+            const header = document.createElement('div');
+            const authorSpan = document.createElement('span');
+            authorSpan.className = 'comment-author';
+            authorSpan.textContent = c.author_name || 'Unknown';
+            header.appendChild(authorSpan);
+            if (c.created_at) {
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'comment-date';
+                dateSpan.textContent = new Date(c.created_at).toLocaleDateString();
+                header.appendChild(dateSpan);
+            }
+            div.appendChild(header);
+
+            const text = document.createElement('div');
+            text.className = 'comment-text';
+            text.textContent = c.content;
+            div.appendChild(text);
+
+            if (c.assignee_name) {
+                const assignee = document.createElement('div');
+                assignee.className = 'comment-assignee';
+                assignee.textContent = 'Assigned to ' + c.assignee_name;
+                div.appendChild(assignee);
+            }
+
+            body.appendChild(div);
+        });
+    }
+    document.getElementById('comment-content').value = '';
+    document.getElementById('comment-assign').value = '';
+    document.getElementById('comment-panel').classList.add('open');
+}
+
+function closeCommentPanel() {
+    document.getElementById('comment-panel').classList.remove('open');
+    currentCommentItemKey = null;
+}
+
+async function submitComment(e) {
+    e.preventDefault();
+    const content = document.getElementById('comment-content').value.trim();
+    if (!content) return;
+    if (!checklistData || !checklistData.checklist_progress_id) {
+        alert('Save checklist progress first by toggling an item.');
+        return;
+    }
+    const assignedTo = document.getElementById('comment-assign').value || null;
+    try {
+        const res = await fetch('/api/readiness/comments', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                checklist_progress_id: checklistData.checklist_progress_id,
+                item_key: currentCommentItemKey,
+                content: content,
+                assigned_to: assignedTo
+            })
+        });
+        const data = await res.json();
+        if (data.success && data.comment) {
+            if (!commentsByItem[currentCommentItemKey]) {
+                commentsByItem[currentCommentItemKey] = [];
+            }
+            commentsByItem[currentCommentItemKey].push(data.comment);
+            openCommentPanel(currentCommentItemKey,
+                document.getElementById('comment-panel-title').textContent.replace('Notes: ', ''));
+            render();
+        } else {
+            alert(data.error || 'Failed to save note');
+        }
+    } catch (err) {
+        console.error('Failed to submit comment', err);
+    }
+}
+
+loadTeamMembers();
 loadChecklist();
 </script>
 {% endblock %}

@@ -84,9 +84,41 @@ def create_app(config_class: type = Config) -> Flask:
         seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400)
     )
 
-    # Create tables in development mode
+    # Create tables and run lightweight migrations
     with app.app_context():
         db.create_all()
+
+        # Migration: add tenant_id / tenant_name to checklist_progress
+        from sqlalchemy import inspect as sa_inspect
+        from sqlalchemy import text
+
+        insp = sa_inspect(db.engine)
+        if insp.has_table("checklist_progress"):
+            existing_cols = {c["name"] for c in insp.get_columns("checklist_progress")}
+            if "tenant_id" not in existing_cols:
+                try:
+                    db.session.execute(
+                        text(
+                            "ALTER TABLE checklist_progress "
+                            "ADD COLUMN tenant_id VARCHAR(255)"
+                        )
+                    )
+                    db.session.commit()
+                    logger.info("Added tenant_id column to checklist_progress")
+                except Exception:
+                    db.session.rollback()
+            if "tenant_name" not in existing_cols:
+                try:
+                    db.session.execute(
+                        text(
+                            "ALTER TABLE checklist_progress "
+                            "ADD COLUMN tenant_name VARCHAR(255)"
+                        )
+                    )
+                    db.session.commit()
+                    logger.info("Added tenant_name column to checklist_progress")
+                except Exception:
+                    db.session.rollback()
 
     # Initialize R2 skill loader
     init_r2_loader(app)

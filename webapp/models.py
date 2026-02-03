@@ -151,6 +151,8 @@ class ChecklistProgress(db.Model):  # type: ignore[name-defined]
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     checklist_type = db.Column(db.String(20), nullable=False)  # month_end, eofy
     period = db.Column(db.String(7), nullable=False)  # YYYY-MM
+    tenant_id = db.Column(db.String(255), nullable=True)  # Xero org ID
+    tenant_name = db.Column(db.String(255), nullable=True)  # Cached org display name
     items = db.Column(db.JSON, nullable=False, default=list)
     completed_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -163,7 +165,11 @@ class ChecklistProgress(db.Model):  # type: ignore[name-defined]
 
     __table_args__ = (
         db.UniqueConstraint(
-            "team_id", "checklist_type", "period", name="uq_team_checklist_period"
+            "team_id",
+            "tenant_id",
+            "checklist_type",
+            "period",
+            name="uq_team_tenant_checklist_period",
         ),
     )
 
@@ -175,6 +181,8 @@ class ChecklistProgress(db.Model):  # type: ignore[name-defined]
             "user_id": self.user_id,
             "checklist_type": self.checklist_type,
             "period": self.period,
+            "tenant_id": self.tenant_id,
+            "tenant_name": self.tenant_name,
             "items": self.items or [],
             "completed_at": self.completed_at.isoformat()
             if self.completed_at
@@ -185,6 +193,48 @@ class ChecklistProgress(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f"<ChecklistProgress {self.checklist_type} {self.period}>"
+
+
+class ChecklistComment(db.Model):  # type: ignore[name-defined]
+    """Notes and teammate assignments on individual checklist items."""
+
+    __tablename__ = "checklist_comments"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    checklist_progress_id = db.Column(
+        db.String(36),
+        db.ForeignKey("checklist_progress.id"),
+        nullable=False,
+        index=True,
+    )
+    item_key = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    assigned_to = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    checklist_progress = db.relationship("ChecklistProgress", backref="comments")
+    author = db.relationship("User", foreign_keys=[user_id])
+    assignee = db.relationship("User", foreign_keys=[assigned_to])
+
+    def to_dict(self) -> dict:
+        """Convert comment to dictionary."""
+        return {
+            "id": self.id,
+            "checklist_progress_id": self.checklist_progress_id,
+            "item_key": self.item_key,
+            "user_id": self.user_id,
+            "content": self.content,
+            "assigned_to": self.assigned_to,
+            "author_name": self.author.name if self.author else None,
+            "author_email": self.author.email if self.author else None,
+            "assignee_name": self.assignee.name if self.assignee else None,
+            "assignee_email": self.assignee.email if self.assignee else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self) -> str:
+        return f"<ChecklistComment {self.item_key} by {self.user_id[:8]}>"
 
 
 class CustomSkill(db.Model):  # type: ignore[name-defined]
