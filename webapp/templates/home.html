@@ -1,114 +1,1002 @@
 {% extends "base.html" %}
 
-{% block title %}BAS Reviewer - AI-Powered BAS Review for Australian Accountants{% endblock %}
+{% block title %}FinQL - AI-Powered BAS Review for Australian Businesses{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ============================================================
+   Homepage styles — all prefixed with hp- to avoid collisions
+   ============================================================ */
+
+/* Hero */
+.hp-hero {
+    background: #fff;
+    padding: 5rem 1rem 3rem;
+    text-align: center;
+}
+.hp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #ecfdf5;
+    color: #065f46;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.375rem 1rem;
+    border-radius: 9999px;
+    margin-bottom: 1.5rem;
+}
+.hp-badge-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: hp-pulse 2s ease-in-out infinite;
+}
+@keyframes hp-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+.hp-headline {
+    font-size: clamp(2.5rem, 5vw, 3.75rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #111827;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.02em;
+}
+.hp-headline-accent {
+    background: linear-gradient(135deg, #0066CC, #00A67D);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.hp-subtitle {
+    font-size: 1.125rem;
+    color: #6b7280;
+    max-width: 560px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+}
+.hp-ctas {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.hp-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #0066CC;
+    color: #fff;
+    padding: 0.75rem 1.75rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.hp-btn-primary:hover { background: #0052a3; }
+.hp-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    color: #374151;
+    padding: 0.75rem 1.75rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    border: 1px solid #d1d5db;
+    transition: border-color 0.2s, background 0.2s;
+}
+.hp-btn-secondary:hover { border-color: #9ca3af; background: #f9fafb; }
+
+/* Stats Bar */
+.hp-stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem 1rem;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    flex-wrap: wrap;
+}
+.hp-stat {
+    text-align: center;
+    position: relative;
+}
+.hp-stat + .hp-stat::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 15%;
+    height: 70%;
+    width: 1px;
+    background: #e5e7eb;
+}
+.hp-stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+}
+.hp-stat-label {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+.hp-live-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: hp-pulse 2s ease-in-out infinite;
+}
+
+/* Split Layout */
+.hp-split {
+    display: grid;
+    grid-template-columns: 1fr 480px;
+    gap: 3rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+    align-items: start;
+}
+.hp-left { min-width: 0; }
+.hp-right {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+}
+
+/* Section headers */
+.hp-section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+/* Feature Cards — Tier 1 (full) */
+.hp-cards-t1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+.hp-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.hp-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+.hp-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.hp-icon-teal { background: #ecfdf5; color: #00A67D; }
+.hp-icon-coral { background: #fef2f2; color: #E04E39; }
+.hp-card-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+.hp-card-desc {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* Feature Cards — Tier 2 (compact) */
+.hp-cards-t2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+}
+.hp-card-sm {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.625rem;
+    padding: 1rem 1.25rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.hp-card-sm:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transform: translateY(-1px);
+}
+.hp-card-sm .hp-card-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+}
+.hp-card-sm .hp-card-title { font-size: 0.9375rem; }
+.hp-card-sm .hp-card-desc { font-size: 0.8125rem; }
+
+/* Feature Cards — Tier 3 (pills) */
+.hp-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+.hp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 9999px;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    color: #374151;
+    font-weight: 500;
+    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+}
+.hp-pill:hover { border-color: #0066CC; color: #0066CC; background: #eff6ff; }
+.hp-pill-free {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #ecfdf5;
+    color: #065f46;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+}
+
+/* Demo Panel */
+.hp-demo-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+.hp-demo-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+}
+.hp-demo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+}
+.hp-demo-status {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+}
+.hp-demo-body {
+    padding: 1.25rem;
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Chat bubbles */
+.hp-bubble {
+    max-width: 85%;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.4s, transform 0.4s;
+}
+.hp-bubble.hp-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.hp-bubble-user {
+    background: #0066CC;
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.hp-bubble-agent {
+    background: #f3f4f6;
+    color: #374151;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+/* Thinking dots */
+.hp-thinking {
+    display: flex;
+    gap: 4px;
+    padding: 0.5rem 0.875rem;
+    align-self: flex-start;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.hp-thinking.hp-visible { opacity: 1; }
+.hp-thinking span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9ca3af;
+    animation: hp-dot-bounce 1.2s ease-in-out infinite;
+}
+.hp-thinking span:nth-child(2) { animation-delay: 0.15s; }
+.hp-thinking span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes hp-dot-bounce {
+    0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+/* Result cards */
+.hp-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.35s, transform 0.35s;
+}
+.hp-result.hp-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+.hp-result-error { border-left: 3px solid #ef4444; }
+.hp-result-warning { border-left: 3px solid #f59e0b; }
+.hp-result-ok { border-left: 3px solid #10b981; }
+.hp-result-tag {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.hp-tag-error { background: #fef2f2; color: #dc2626; }
+.hp-tag-warning { background: #fffbeb; color: #d97706; }
+.hp-tag-ok { background: #ecfdf5; color: #059669; }
+
+/* Summary stats row */
+.hp-summary {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    margin-top: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+.hp-summary.hp-visible { opacity: 1; }
+.hp-summary-item {
+    flex: 1;
+    text-align: center;
+}
+.hp-summary-val {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #111827;
+}
+.hp-summary-lbl {
+    font-size: 0.6875rem;
+    color: #6b7280;
+}
+
+/* Panel toggle link */
+.hp-panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0066CC;
+    text-decoration: none;
+    cursor: pointer;
+    padding: 0.625rem 0;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+}
+.hp-panel-toggle:hover { color: #0052a3; }
+
+/* ATO Lookup state */
+.hp-ato-panel { display: none; flex-direction: column; height: 100%; }
+.hp-ato-panel.hp-active { display: flex; }
+.hp-demo-state { display: flex; flex-direction: column; }
+.hp-demo-state.hp-hidden { display: none; }
+
+.hp-ato-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 340px;
+    max-height: 400px;
+}
+.hp-ato-input-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+}
+.hp-ato-input {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.hp-ato-input:focus { border-color: #0066CC; }
+.hp-ato-send {
+    background: #0066CC;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.hp-ato-send:hover { background: #0052a3; }
+.hp-ato-send:disabled { background: #93c5fd; cursor: not-allowed; }
+
+/* Below-panel CTA */
+.hp-panel-cta {
+    text-align: center;
+    margin-top: 1.25rem;
+}
+.hp-panel-cta-sub {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .hp-split {
+        grid-template-columns: 1fr;
+    }
+    .hp-right {
+        position: static;
+        max-width: 540px;
+        margin: 0 auto;
+    }
+}
+@media (max-width: 768px) {
+    .hp-hero { padding: 3rem 1rem 2rem; }
+    .hp-headline { font-size: clamp(2rem, 6vw, 2.75rem); }
+    .hp-ctas { flex-direction: column; align-items: center; }
+    .hp-stats { gap: 1.25rem; }
+    .hp-stat + .hp-stat::before { display: none; }
+    .hp-cards-t2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+    .hp-stats { flex-direction: column; gap: 1rem; }
+    .hp-stat-value { font-size: 1.25rem; }
+    .hp-pills { gap: 0.375rem; }
+    .hp-pill { font-size: 0.75rem; padding: 0.25rem 0.625rem; }
+    .hp-summary { flex-direction: column; gap: 0.5rem; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="gradient-bg text-white py-20">
-    <div class="max-w-4xl mx-auto text-center px-4">
-        <h1 class="text-4xl md:text-6xl font-bold mb-6">
-            Review BAS in Minutes,<br>Not Hours
+<section class="hp-hero">
+    <div class="max-w-3xl mx-auto">
+        <div class="hp-badge">
+            <span class="hp-badge-dot"></span>
+            AI-Powered BAS Review for Australian Businesses
+        </div>
+        <h1 class="hp-headline">
+            Find Every GST Error.<br>
+            <span class="hp-headline-accent">Before the ATO Does.</span>
         </h1>
-        <p class="text-xl text-blue-100 max-w-2xl mx-auto mb-8">
-            AI-powered BAS review tool built for Australian accountants and bookkeepers.
-            Catch errors, ensure compliance, and save time on every lodgement.
+        <p class="hp-subtitle">
+            FinQL connects to your Xero data, reviews every transaction for GST coding
+            errors, and gives you a complete compliance report in minutes.
         </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/signup" class="bg-white text-primary hover:bg-gray-100 py-3 px-8 rounded-lg font-medium transition-colors">
+        <div class="hp-ctas">
+            <a href="/register" class="hp-btn-primary">
                 Get Started Free
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </a>
-            <a href="/demo" class="border-2 border-white text-white hover:bg-white/10 py-3 px-8 rounded-lg font-medium transition-colors">
-                Watch Demo
+            <a href="#demo-panel" class="hp-btn-secondary" id="hp-see-how">
+                See How It Works
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
             </a>
         </div>
-        <p class="text-blue-200 text-sm mt-4">Free forever. No credit card required.</p>
     </div>
 </section>
 
-<!-- Features Section -->
-<section class="py-20">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">Why Accountants Love BAS Reviewer</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto">
-                Built by registered BAS Agents who understand the real challenges of compliance work.
-            </p>
-        </div>
-
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-                <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">AI Error Detection</h3>
-                <p class="text-gray-600">
-                    Automatically identifies GST coding errors, missing transactions, and compliance issues before lodgement.
-                </p>
-            </div>
-
-            <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-                <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                    <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">Lightning Fast</h3>
-                <p class="text-gray-600">
-                    Review a full quarter's BAS in under 5 minutes. What used to take hours now takes moments.
-                </p>
-            </div>
-
-            <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-                <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-4">
-                    <svg class="w-6 h-6 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">Bank-Level Security</h3>
-                <p class="text-gray-600">
-                    Your client data is encrypted, never stored permanently, and fully compliant with Australian privacy law.
-                </p>
-            </div>
-        </div>
+<!-- Stats Bar -->
+<section class="hp-stats">
+    <div class="hp-stat">
+        <div class="hp-stat-value"><span class="hp-live-dot"></span> 1,247,000+</div>
+        <div class="hp-stat-label">Transactions Reviewed</div>
+    </div>
+    <div class="hp-stat">
+        <div class="hp-stat-value">$2.4M+</div>
+        <div class="hp-stat-label">GST Errors Caught</div>
+    </div>
+    <div class="hp-stat">
+        <div class="hp-stat-value">99.8%</div>
+        <div class="hp-stat-label">Accuracy Rate</div>
+    </div>
+    <div class="hp-stat">
+        <div class="hp-stat-value">2,500+</div>
+        <div class="hp-stat-label">Australian Businesses</div>
     </div>
 </section>
 
-<!-- Xero Integration -->
-<section class="py-20 bg-gray-100">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-900 mb-4">Seamless Xero Integration</h2>
-        <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Connect your Xero account in seconds. We pull the data we need, run our analysis, and give you actionable insights.
-        </p>
-        <div class="flex justify-center items-center space-x-8">
-            <div class="bg-white rounded-lg p-6 shadow-sm">
-                <span class="text-2xl font-bold text-[#13B5EA]">xero</span>
+<!-- Split Layout -->
+<div class="hp-split">
+    <!-- Left: Feature Cards -->
+    <div class="hp-left">
+        <!-- Tier 1: Core Platform -->
+        <div class="hp-section-label">Core Platform</div>
+        <div class="hp-cards-t1">
+            <div class="hp-card">
+                <div class="hp-card-icon hp-icon-teal">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">AI-Powered BAS Review</div>
+                    <div class="hp-card-desc">Review transactions line by line, flag GST coding issues, and push corrections directly back to Xero.</div>
+                </div>
             </div>
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-            </svg>
-            <div class="bg-white rounded-lg p-6 shadow-sm">
-                <span class="text-2xl font-bold text-primary">BAS Reviewer</span>
+            <div class="hp-card">
+                <div class="hp-card-icon hp-icon-coral">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16h6M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">Ask Fin AI Assistant</div>
+                    <div class="hp-card-desc">Natural language assistant for accounting tasks. Ask about GST rules, BAS labels, or get help coding tricky transactions.</div>
+                </div>
+            </div>
+            <div class="hp-card">
+                <div class="hp-card-icon hp-icon-teal">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6m6 0h6m-6 0V9a2 2 0 012-2h2a2 2 0 012 2v10m6 0v-4a2 2 0 00-2-2h-2a2 2 0 00-2 2v4"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">Financial Health Dashboard</div>
+                    <div class="hp-card-desc">Auto-calculated ratios, quarterly trends, and ATO industry benchmarks so you can spot issues before they become problems.</div>
+                </div>
             </div>
         </div>
-    </div>
-</section>
 
-<!-- CTA Section -->
-<section class="py-20">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <!-- Tier 2: Compliance & Analysis -->
+        <div class="hp-section-label">Compliance &amp; Analysis</div>
+        <div class="hp-cards-t2">
+            <div class="hp-card-sm">
+                <div class="hp-card-icon hp-icon-coral">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">Cash Flow Forecast</div>
+                    <div class="hp-card-desc">13-week rolling forecast based on live Xero data.</div>
+                </div>
+            </div>
+            <div class="hp-card-sm">
+                <div class="hp-card-icon hp-icon-teal">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">Lodgement Readiness</div>
+                    <div class="hp-card-desc">Pre-lodgement checklist to catch issues before you submit.</div>
+                </div>
+            </div>
+            <div class="hp-card-sm">
+                <div class="hp-card-icon hp-icon-coral">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 9V7a5 5 0 00-10 0v2M5 12h14l1 9H4l1-9z"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">Super Guarantee Reconciliation</div>
+                    <div class="hp-card-desc">Match super payments to SG obligations automatically.</div>
+                </div>
+            </div>
+            <div class="hp-card-sm">
+                <div class="hp-card-icon hp-icon-teal">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">BAS Reconciliation Report</div>
+                    <div class="hp-card-desc">Full reconciliation of BAS labels against GL balances.</div>
+                </div>
+            </div>
+            <div class="hp-card-sm">
+                <div class="hp-card-icon hp-icon-coral">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <div>
+                    <div class="hp-card-title">GST Classification Audit</div>
+                    <div class="hp-card-desc">Audit every tax code against ATO classification rules.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tier 3: Tools & Utilities -->
+        <div class="hp-section-label">Tools &amp; Utilities</div>
+        <div class="hp-pills">
+            <a href="/chat" class="hp-pill">Document Chat</a>
+            <a href="#" class="hp-pill" id="hp-ato-pill">ATO Lookup <span class="hp-pill-free">FREE</span></a>
+            <a href="/chat" class="hp-pill">Bank Statement Parser</a>
+            <a href="/chat" class="hp-pill">Invoice Upload</a>
+            <a href="/chat" class="hp-pill">Bank Reconciliation</a>
+            <a href="/chat" class="hp-pill">MYOB/QB Migration</a>
+            <a href="/chat" class="hp-pill">Fair Work Lookup <span class="hp-pill-free">FREE</span></a>
+            <a href="/chat" class="hp-pill">Xero Central</a>
+        </div>
+    </div>
+
+    <!-- Right: Sticky Demo Panel -->
+    <div class="hp-right" id="demo-panel">
+        <div class="hp-demo-panel">
+            <div class="hp-demo-header">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.3 24.3 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-1.47 4.41a2.25 2.25 0 01-2.133 1.59H8.603a2.25 2.25 0 01-2.134-1.59L5 14.5m14 0H5"/></svg>
+                FinQL Agent
+                <span class="hp-demo-dot"></span>
+                <span class="hp-demo-status" id="hp-status-text">Ready</span>
+            </div>
+
+            <div class="hp-demo-body">
+                <!-- State 1: Animated Demo -->
+                <div class="hp-demo-state" id="hp-demo-state1">
+                    <div class="hp-bubble hp-bubble-user" id="hp-msg-user">
+                        Review Q2 BAS for Demo Company AU
+                    </div>
+                    <div class="hp-thinking" id="hp-thinking">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <div class="hp-bubble hp-bubble-agent" id="hp-msg-agent">
+                        Analysed <strong>1,247 transactions</strong> for Q2 2025. Here are the findings:
+                    </div>
+                    <div class="hp-result hp-result-error" id="hp-r1">
+                        <span class="hp-result-tag hp-tag-error">Error</span>
+                        <span>Entertainment expense claimed GST credit of <strong>$180.00</strong></span>
+                    </div>
+                    <div class="hp-result hp-result-error" id="hp-r2">
+                        <span class="hp-result-tag hp-tag-error">Error</span>
+                        <span>Bank fees coded to GST &mdash; overclaimed <strong>$45.50</strong></span>
+                    </div>
+                    <div class="hp-result hp-result-warning" id="hp-r3">
+                        <span class="hp-result-tag hp-tag-warning">Warn</span>
+                        <span>Supplier invoice missing ABN &mdash; withholding may apply</span>
+                    </div>
+                    <div class="hp-result hp-result-ok" id="hp-r4">
+                        <span class="hp-result-tag hp-tag-ok">OK</span>
+                        <span>1,244 transactions correctly coded</span>
+                    </div>
+                    <div class="hp-summary" id="hp-summary">
+                        <div class="hp-summary-item">
+                            <div class="hp-summary-val" style="color:#dc2626">$225.50</div>
+                            <div class="hp-summary-lbl">GST Overclaimed</div>
+                        </div>
+                        <div class="hp-summary-item">
+                            <div class="hp-summary-val">~2 hrs</div>
+                            <div class="hp-summary-lbl">Time Saved</div>
+                        </div>
+                        <div class="hp-summary-item">
+                            <div class="hp-summary-val" style="color:#059669">99.8%</div>
+                            <div class="hp-summary-lbl">Accuracy</div>
+                        </div>
+                    </div>
+                    <button class="hp-panel-toggle" id="hp-try-it">
+                        Try ATO Lookup Yourself
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+                <!-- State 2: ATO Lookup Chat -->
+                <div class="hp-ato-panel" id="hp-demo-state2">
+                    <button class="hp-panel-toggle" id="hp-back-demo" style="margin-bottom:0.5rem">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Back to Demo
+                    </button>
+                    <div class="hp-ato-messages" id="hp-ato-messages">
+                        <div class="hp-bubble hp-bubble-agent hp-visible">
+                            Welcome to the ATO Lookup. Ask me anything about Australian tax rules, GST, BAS obligations, or super guarantee. No login required.
+                        </div>
+                    </div>
+                    <div class="hp-ato-input-row">
+                        <input type="text" class="hp-ato-input" id="hp-ato-input" placeholder="e.g. Is there GST on bank fees?" maxlength="500" autocomplete="off">
+                        <button class="hp-ato-send" id="hp-ato-send">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Below-panel CTA -->
+        <div class="hp-panel-cta">
+            <a href="/register" class="hp-btn-primary" style="width:100%;justify-content:center">
+                Try It With Your Xero Data
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+            <div class="hp-panel-cta-sub">Free to start. No credit card required.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom CTA Section -->
+<section class="py-20 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 text-center">
         <h2 class="text-3xl font-bold text-gray-900 mb-4">Ready to Save Hours on Every BAS?</h2>
         <p class="text-gray-600 mb-8">
-            Join hundreds of Australian accountants already using BAS Reviewer.
+            Join thousands of Australian accountants and bookkeepers already using FinQL.
         </p>
-        <a href="/signup" class="inline-block bg-primary hover:bg-blue-700 text-white py-3 px-8 rounded-lg font-medium transition-colors">
+        <a href="/register" class="hp-btn-primary">
             Get Started Free
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
         <p class="text-gray-500 text-sm mt-4">
-            <a href="/pricing" class="underline hover:text-primary">See pricing</a> · No credit card required
+            <a href="/pricing" class="underline hover:text-blue-600">See pricing</a> &middot; No credit card required
         </p>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    'use strict';
+
+    /* =========================================================
+       Demo Animation — IntersectionObserver triggers staggered
+       fade-in of demo elements + status text cycling
+       ========================================================= */
+    var demoAnimated = false;
+
+    function initDemoAnimation() {
+        var panel = document.getElementById('demo-panel');
+        if (!panel) return;
+
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting && !demoAnimated) {
+                    demoAnimated = true;
+                    runDemoSequence();
+                    observer.unobserve(panel);
+                }
+            });
+        }, { threshold: 0.3 });
+
+        observer.observe(panel);
+    }
+
+    function runDemoSequence() {
+        var statusEl = document.getElementById('hp-status-text');
+        var steps = [
+            { id: 'hp-msg-user',  delay: 0,    status: 'Connecting to Xero...' },
+            { id: 'hp-thinking',  delay: 600,   status: 'Scanning 1,247 transactions...' },
+            { id: 'hp-msg-agent', delay: 2000,  status: 'Analysis complete', hideThinking: true },
+            { id: 'hp-r1',        delay: 2600  },
+            { id: 'hp-r2',        delay: 2900  },
+            { id: 'hp-r3',        delay: 3200  },
+            { id: 'hp-r4',        delay: 3500  },
+            { id: 'hp-summary',   delay: 4000  },
+        ];
+
+        steps.forEach(function(step) {
+            setTimeout(function() {
+                var el = document.getElementById(step.id);
+                if (el) el.classList.add('hp-visible');
+                if (step.status && statusEl) statusEl.textContent = step.status;
+                if (step.hideThinking) {
+                    var thinking = document.getElementById('hp-thinking');
+                    if (thinking) thinking.classList.remove('hp-visible');
+                }
+            }, step.delay);
+        });
+    }
+
+    /* =========================================================
+       Panel Toggle — switch between Demo and ATO Lookup
+       ========================================================= */
+    function initDemoPanelToggle() {
+        var tryBtn   = document.getElementById('hp-try-it');
+        var backBtn  = document.getElementById('hp-back-demo');
+        var state1   = document.getElementById('hp-demo-state1');
+        var state2   = document.getElementById('hp-demo-state2');
+        var statusEl = document.getElementById('hp-status-text');
+        var headerEl = document.querySelector('.hp-demo-header');
+        var atoPill  = document.getElementById('hp-ato-pill');
+
+        function showATO() {
+            if (state1) state1.classList.add('hp-hidden');
+            if (state2) state2.classList.add('hp-active');
+            if (statusEl) statusEl.textContent = 'ATO Lookup';
+            /* Update header text */
+            if (headerEl) {
+                var textNodes = headerEl.childNodes;
+                for (var i = 0; i < textNodes.length; i++) {
+                    if (textNodes[i].nodeType === 3 && textNodes[i].textContent.trim()) {
+                        textNodes[i].textContent = '\n                ATO Lookup\n                ';
+                        break;
+                    }
+                }
+            }
+            var input = document.getElementById('hp-ato-input');
+            if (input) input.focus();
+        }
+
+        function showDemo() {
+            if (state1) state1.classList.remove('hp-hidden');
+            if (state2) state2.classList.remove('hp-active');
+            if (statusEl) statusEl.textContent = 'Analysis complete';
+            if (headerEl) {
+                var textNodes = headerEl.childNodes;
+                for (var i = 0; i < textNodes.length; i++) {
+                    if (textNodes[i].nodeType === 3 && textNodes[i].textContent.trim()) {
+                        textNodes[i].textContent = '\n                FinQL Agent\n                ';
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (tryBtn)  tryBtn.addEventListener('click', showATO);
+        if (backBtn) backBtn.addEventListener('click', showDemo);
+        if (atoPill) atoPill.addEventListener('click', function(e) {
+            e.preventDefault();
+            showATO();
+            document.getElementById('demo-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+
+    /* =========================================================
+       ATO Lookup Chat — client-side Q&A with predefined answers
+       for common ATO questions (no auth required)
+       ========================================================= */
+    var atoResponses = {
+        'gst on bank fees': 'Bank fees are generally <strong>input-taxed financial supplies</strong> under Division 40 of the GST Act. Most bank fees do <strong>not</strong> include GST, so you should code them as GST-free (BAS Excluded or Input Taxed). Claiming GST credits on bank fees is a common BAS error.',
+        'gst on insurance': 'Most general insurance premiums (business, contents, vehicle) <strong>include GST</strong> and you can claim the input tax credit. However, <strong>life insurance and income protection insurance</strong> are input-taxed and do not include GST. Always check the tax invoice.',
+        'bas due dates': '<strong>Quarterly BAS due dates for 2024-25:</strong><br>Q1 (Jul-Sep): 28 October<br>Q2 (Oct-Dec): 28 February<br>Q3 (Jan-Mar): 28 April<br>Q4 (Apr-Jun): 28 August<br><br>Monthly lodgers: due on the 21st of the following month.',
+        'super guarantee rate': 'The <strong>super guarantee (SG) rate</strong> is <strong>11.5%</strong> of ordinary time earnings from 1 July 2024. It increases to <strong>12%</strong> from 1 July 2025. SG must be paid at least quarterly by the 28th day after each quarter ends.',
+        'abn withholding': 'If a supplier does not quote an ABN on their invoice and the payment is $75 or more (excluding GST), you must <strong>withhold 47%</strong> from the payment and report it to the ATO. This is required under section 12-190 of Schedule 1 to the TAA.',
+        'gst registration threshold': 'You must register for GST if your business has a <strong>GST turnover of $75,000 or more</strong> per year ($150,000 for non-profit organisations). You can voluntarily register if your turnover is below the threshold. Taxi/ride-sharing drivers must register regardless of turnover.',
+        'entertainment gst': 'Entertainment expenses are generally <strong>not eligible for GST input tax credits</strong> under Division 69 of the GST Act, even if GST was charged. This includes meals, drinks, and recreational activities provided to employees or associates. A common BAS error is claiming GST on entertainment.',
+    };
+
+    function findATOResponse(question) {
+        var q = question.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+        var bestMatch = null;
+        var bestScore = 0;
+
+        Object.keys(atoResponses).forEach(function(key) {
+            var words = key.split(' ');
+            var score = 0;
+            words.forEach(function(word) {
+                if (q.indexOf(word) !== -1) score++;
+            });
+            var ratio = score / words.length;
+            if (ratio > bestScore && ratio >= 0.5) {
+                bestScore = ratio;
+                bestMatch = key;
+            }
+        });
+
+        if (bestMatch) return atoResponses[bestMatch];
+        return 'That\'s a great question. For detailed ATO guidance on this topic, I\'d recommend checking the <strong><a href="https://www.ato.gov.au" target="_blank" rel="noopener" style="color:#0066CC;text-decoration:underline">ATO website</a></strong> or signing up for FinQL to get AI-powered answers with source references. You can also try asking about: GST on bank fees, BAS due dates, super guarantee rate, ABN withholding, or entertainment GST.';
+    }
+
+    function initATOLookup() {
+        var input    = document.getElementById('hp-ato-input');
+        var sendBtn  = document.getElementById('hp-ato-send');
+        var messages = document.getElementById('hp-ato-messages');
+        if (!input || !sendBtn || !messages) return;
+
+        function addBubble(text, isUser) {
+            var div = document.createElement('div');
+            div.className = 'hp-bubble ' + (isUser ? 'hp-bubble-user' : 'hp-bubble-agent') + ' hp-visible';
+            if (isUser) {
+                div.textContent = text;
+            } else {
+                div.innerHTML = text;
+            }
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function handleSend() {
+            var text = input.value.trim();
+            if (!text) return;
+
+            addBubble(text, true);
+            input.value = '';
+            sendBtn.disabled = true;
+
+            /* Simulated thinking delay */
+            var thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'hp-thinking hp-visible';
+            thinkingDiv.innerHTML = '<span></span><span></span><span></span>';
+            messages.appendChild(thinkingDiv);
+            messages.scrollTop = messages.scrollHeight;
+
+            setTimeout(function() {
+                messages.removeChild(thinkingDiv);
+                var response = findATOResponse(text);
+                addBubble(response, false);
+                sendBtn.disabled = false;
+                input.focus();
+            }, 800 + Math.random() * 600);
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleSend();
+        });
+    }
+
+    /* =========================================================
+       "See How It Works" smooth scroll
+       ========================================================= */
+    function initSmoothScroll() {
+        var seeHow = document.getElementById('hp-see-how');
+        if (!seeHow) return;
+        seeHow.addEventListener('click', function(e) {
+            e.preventDefault();
+            var target = document.getElementById('demo-panel');
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+
+    /* =========================================================
+       Init
+       ========================================================= */
+    document.addEventListener('DOMContentLoaded', function() {
+        initDemoAnimation();
+        initDemoPanelToggle();
+        initATOLookup();
+        initSmoothScroll();
+    });
+})();
+</script>
 {% endblock %}
