@@ -21,6 +21,14 @@ QUARTERLY_DEADLINES = {
     ),  # Q4: Apr-Jun -> 28 Jul (note: if lodging electronically, may get extra time)
 }
 
+# Agent-lodged quarterly BAS due dates (extended deadlines for tax agents)
+QUARTERLY_DEADLINES_AGENT = {
+    9: (11, 25),  # Q1: Jul-Sep -> 25 Nov
+    12: (2, 28),  # Q2: Oct-Dec -> 28 Feb (same as self-lodge)
+    3: (5, 26),  # Q3: Jan-Mar -> 26 May
+    6: (8, 25),  # Q4: Apr-Jun -> 25 Aug
+}
+
 # Month names for display
 QUARTER_LABELS = {
     9: "Q1 (Jul-Sep)",
@@ -30,17 +38,23 @@ QUARTER_LABELS = {
 }
 
 
-def _get_quarterly_deadlines_for_year(fy_start_year: int) -> list[dict]:
+def _get_quarterly_deadlines_for_year(
+    fy_start_year: int, lodge_method: str = "self"
+) -> list[dict]:
     """
     Get all quarterly BAS deadlines for a financial year.
 
     Args:
         fy_start_year: The calendar year the FY starts in (e.g., 2025 for FY 2025-26)
+        lodge_method: "self" for self-lodger dates, "agent" for tax agent dates
     """
+    table = (
+        QUARTERLY_DEADLINES_AGENT if lodge_method == "agent" else QUARTERLY_DEADLINES
+    )
     deadlines = []
 
-    # Q1: Jul-Sep of fy_start_year, due 28 Oct
-    due_month, due_day = QUARTERLY_DEADLINES[9]
+    # Q1: Jul-Sep of fy_start_year
+    due_month, due_day = table[9]
     deadlines.append(
         {
             "quarter": "Q1 (Jul-Sep)",
@@ -50,8 +64,8 @@ def _get_quarterly_deadlines_for_year(fy_start_year: int) -> list[dict]:
         }
     )
 
-    # Q2: Oct-Dec of fy_start_year, due 28 Feb next year
-    due_month, due_day = QUARTERLY_DEADLINES[12]
+    # Q2: Oct-Dec of fy_start_year
+    due_month, due_day = table[12]
     deadlines.append(
         {
             "quarter": "Q2 (Oct-Dec)",
@@ -61,8 +75,8 @@ def _get_quarterly_deadlines_for_year(fy_start_year: int) -> list[dict]:
         }
     )
 
-    # Q3: Jan-Mar of fy_start_year+1, due 28 Apr
-    due_month, due_day = QUARTERLY_DEADLINES[3]
+    # Q3: Jan-Mar of fy_start_year+1
+    due_month, due_day = table[3]
     deadlines.append(
         {
             "quarter": "Q3 (Jan-Mar)",
@@ -72,8 +86,8 @@ def _get_quarterly_deadlines_for_year(fy_start_year: int) -> list[dict]:
         }
     )
 
-    # Q4: Apr-Jun of fy_start_year+1, due 28 Jul
-    due_month, due_day = QUARTERLY_DEADLINES[6]
+    # Q4: Apr-Jun of fy_start_year+1
+    due_month, due_day = table[6]
     deadlines.append(
         {
             "quarter": "Q4 (Apr-Jun)",
@@ -128,6 +142,7 @@ def get_upcoming_deadlines(
     frequency: str = "quarterly",
     days_ahead: int = 90,
     reference_date: date | None = None,
+    lodge_method: str = "self",
 ) -> list[dict]:
     """
     Get upcoming BAS deadlines.
@@ -136,6 +151,7 @@ def get_upcoming_deadlines(
         frequency: "quarterly" or "monthly"
         days_ahead: Number of days to look ahead
         reference_date: Reference date (defaults to today)
+        lodge_method: "self" for self-lodger dates, "agent" for tax agent dates
 
     Returns:
         List of deadline dicts with quarter/period, period_end, due_date, days_remaining
@@ -150,9 +166,9 @@ def get_upcoming_deadlines(
         # Get quarterly deadlines for prior, current, and next FY
         # to catch tail-end deadlines (e.g. Q4 due in Jul at start of new FY)
         fy_start = today.year if today.month >= 7 else today.year - 1
-        all_deadlines = _get_quarterly_deadlines_for_year(fy_start - 1)
-        all_deadlines += _get_quarterly_deadlines_for_year(fy_start)
-        all_deadlines += _get_quarterly_deadlines_for_year(fy_start + 1)
+        all_deadlines = _get_quarterly_deadlines_for_year(fy_start - 1, lodge_method)
+        all_deadlines += _get_quarterly_deadlines_for_year(fy_start, lodge_method)
+        all_deadlines += _get_quarterly_deadlines_for_year(fy_start + 1, lodge_method)
 
     upcoming = []
     for dl in all_deadlines:
@@ -190,6 +206,7 @@ def _get_status(days_remaining: int) -> str:
 def get_next_deadline(
     frequency: str = "quarterly",
     reference_date: date | None = None,
+    lodge_method: str = "self",
 ) -> dict | None:
     """
     Get the single next upcoming deadline.
@@ -198,7 +215,10 @@ def get_next_deadline(
         Deadline dict or None
     """
     upcoming = get_upcoming_deadlines(
-        frequency=frequency, days_ahead=120, reference_date=reference_date
+        frequency=frequency,
+        days_ahead=120,
+        reference_date=reference_date,
+        lodge_method=lodge_method,
     )
     # Find first non-overdue, or the most recent overdue
     for dl in upcoming:
@@ -210,13 +230,16 @@ def get_next_deadline(
 def get_deadline_status(
     frequency: str = "quarterly",
     reference_date: date | None = None,
+    lodge_method: str = "self",
 ) -> str:
     """
     Get overall deadline status.
 
     Returns: "overdue", "due_soon", "upcoming", or "clear"
     """
-    next_dl = get_next_deadline(frequency=frequency, reference_date=reference_date)
+    next_dl = get_next_deadline(
+        frequency=frequency, reference_date=reference_date, lodge_method=lodge_method
+    )
     if not next_dl:
         return "clear"
     return next_dl["status"]  # type: ignore[no-any-return]
@@ -243,8 +266,12 @@ def get_reminders_for_user(
         return []
 
     frequency = user.bas_frequency or "quarterly"
+    lodge_method = getattr(user, "bas_lodge_method", "self") or "self"
     return get_upcoming_deadlines(
-        frequency=frequency, days_ahead=90, reference_date=reference_date
+        frequency=frequency,
+        days_ahead=90,
+        reference_date=reference_date,
+        lodge_method=lodge_method,
     )
 
 
@@ -264,7 +291,10 @@ def get_bas_context_for_prompt(
         return None
 
     frequency = user.bas_frequency or "quarterly"
-    next_dl = get_next_deadline(frequency=frequency, reference_date=reference_date)
+    lodge_method = getattr(user, "bas_lodge_method", "self") or "self"
+    next_dl = get_next_deadline(
+        frequency=frequency, reference_date=reference_date, lodge_method=lodge_method
+    )
 
     if not next_dl:
         return None
@@ -282,3 +312,30 @@ def get_bas_context_for_prompt(
         )
 
     return None
+
+
+def get_deadlines_for_forecast(
+    frequency: str = "quarterly",
+    lodge_method: str = "self",
+    months_ahead: int = 12,
+    reference_date: date | None = None,
+) -> list[dict]:
+    """
+    Get BAS deadlines for a forecast window (default 12 months).
+
+    Args:
+        frequency: "quarterly" or "monthly"
+        lodge_method: "self" or "agent"
+        months_ahead: Number of months to look ahead
+        reference_date: Reference date (defaults to today)
+
+    Returns:
+        List of deadline dicts with quarter/period, period_end, due_date,
+        days_remaining, due_date_str
+    """
+    return get_upcoming_deadlines(
+        frequency=frequency,
+        days_ahead=months_ahead * 31,
+        reference_date=reference_date,
+        lodge_method=lodge_method,
+    )

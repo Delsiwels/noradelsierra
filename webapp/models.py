@@ -36,6 +36,7 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     )
     is_active = db.Column(db.Boolean, default=True)
     bas_frequency = db.Column(db.String(20), default="quarterly")  # quarterly, monthly
+    bas_lodge_method = db.Column(db.String(10), default="self")  # self, agent
     bas_reminders_enabled = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -51,6 +52,7 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
             "team_id": self.team_id,
             "is_active": self.is_active,
             "bas_frequency": self.bas_frequency,
+            "bas_lodge_method": self.bas_lodge_method,
             "bas_reminders_enabled": self.bas_reminders_enabled,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

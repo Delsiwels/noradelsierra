@@ -14,6 +14,7 @@ from webapp.blueprints.analytics import analytics_bp
 from webapp.blueprints.auth import auth_bp
 from webapp.blueprints.cashflow import cashflow_bp
 from webapp.blueprints.chat import chat_bp
+from webapp.blueprints.forecast import forecast_bp
 from webapp.blueprints.pages import pages_bp
 from webapp.blueprints.skills import skills_bp
 from webapp.blueprints.usage import usage_bp
@@ -120,6 +121,22 @@ def create_app(config_class: type = Config) -> Flask:
                 except Exception:
                     db.session.rollback()
 
+        # Migration: add bas_lodge_method to users
+        if insp.has_table("users"):
+            user_cols = {c["name"] for c in insp.get_columns("users")}
+            if "bas_lodge_method" not in user_cols:
+                try:
+                    db.session.execute(
+                        text(
+                            "ALTER TABLE users "
+                            "ADD COLUMN bas_lodge_method VARCHAR(10) DEFAULT 'self'"
+                        )
+                    )
+                    db.session.commit()
+                    logger.info("Added bas_lodge_method column to users")
+                except Exception:
+                    db.session.rollback()
+
     # Initialize R2 skill loader
     init_r2_loader(app)
 
@@ -142,6 +159,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(analytics_bp)
     app.register_blueprint(usage_bp)
     app.register_blueprint(cashflow_bp)
+    app.register_blueprint(forecast_bp)
 
     # Import and register Phase 2-5 blueprints
     from webapp.blueprints.sharing import sharing_bp
@@ -163,6 +181,10 @@ def create_app(config_class: type = Config) -> Flask:
     from webapp.blueprints.connections import connections_bp
 
     app.register_blueprint(connections_bp)
+
+    from webapp.blueprints.ask_fin import ask_fin_bp
+
+    app.register_blueprint(ask_fin_bp)
 
     @app.route("/health")
     def health_check():
