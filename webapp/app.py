@@ -128,6 +128,10 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.register_blueprint(readiness_bp)
 
+    from webapp.blueprints.connections import connections_bp
+
+    app.register_blueprint(connections_bp)
+
     @app.route("/health")
     def health_check():
         """Health check endpoint."""

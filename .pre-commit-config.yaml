@@ -35,4 +35,4 @@ repos:
       - id: mypy
         args: [--ignore-missing-imports, --no-strict-optional]
         files: ^webapp/
-        additional_dependencies: [types-requests]
+        additional_dependencies: [types-requests, types-PyYAML]

@@ -1,0 +1,336 @@
+{% if current_user and current_user.is_authenticated %}
+<style>
+    .xero-bar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+        transition: box-shadow 0.2s;
+    }
+    .xero-bar:hover {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .xero-bar-inner {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding: 0 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 36px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .xero-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .xero-bar-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .xero-bar-dot--healthy { background: #22c55e; }
+    .xero-bar-dot--expiring { background: #f59e0b; }
+    .xero-bar-dot--expired { background: #ef4444; }
+    .xero-bar-dot--disconnected { background: #9ca3af; }
+    .xero-bar-label {
+        font-size: 0.8125rem;
+        color: #374151;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
+    }
+    .xero-bar-chevron {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        transition: transform 0.2s;
+        flex-shrink: 0;
+        margin-left: 4px;
+    }
+    .xero-bar--expanded .xero-bar-chevron {
+        transform: rotate(180deg);
+    }
+    .xero-bar-actions {
+        display: none;
+        padding: 8px 1rem 10px;
+        max-width: 80rem;
+        margin: 0 auto;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .xero-bar--expanded .xero-bar-actions {
+        display: flex;
+    }
+    .xero-bar-msg {
+        font-size: 0.8125rem;
+        margin-right: auto;
+    }
+    .xero-bar-msg--warning { color: #b45309; }
+    .xero-bar-msg--error { color: #dc2626; }
+    .xero-bar-btn {
+        font-size: 0.8125rem;
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        color: #374151;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s, border-color 0.15s;
+    }
+    .xero-bar-btn:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+    }
+    .xero-bar-btn--primary {
+        background: #0066CC;
+        color: #fff;
+        border-color: #0066CC;
+    }
+    .xero-bar-btn--primary:hover {
+        background: #0052a3;
+        border-color: #0052a3;
+    }
+    /* Org dropdown */
+    .xero-org-wrap {
+        position: relative;
+    }
+    .xero-org-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: 220px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 50;
+        overflow: hidden;
+    }
+    .xero-org-dropdown.open {
+        display: block;
+    }
+    .xero-org-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        font-size: 0.8125rem;
+        color: #374151;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+    .xero-org-item:hover {
+        background: #f3f4f6;
+    }
+    .xero-org-item--active {
+        font-weight: 600;
+        color: #0066CC;
+    }
+    .xero-org-check {
+        width: 14px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .xero-org-divider {
+        border-top: 1px solid #e5e7eb;
+        margin: 2px 0;
+    }
+    .xero-org-connect {
+        color: #0066CC;
+    }
+    @media (max-width: 640px) {
+        .xero-bar-label { max-width: 160px; }
+        .xero-bar-inner { padding: 0 0.75rem; }
+        .xero-bar-actions { padding: 8px 0.75rem 10px; }
+    }
+</style>
+
+<div id="xero-bar" class="xero-bar hidden">
+    <div class="xero-bar-inner" id="xero-bar-toggle">
+        <div class="xero-bar-left">
+            <span class="xero-bar-dot xero-bar-dot--disconnected" id="xero-bar-dot"></span>
+            <span class="xero-bar-label" id="xero-bar-label">Not connected to Xero</span>
+        </div>
+        <span class="xero-bar-chevron" id="xero-bar-chevron">&#9662;</span>
+    </div>
+    <div class="xero-bar-actions" id="xero-bar-actions">
+        <span class="xero-bar-msg" id="xero-bar-msg"></span>
+        <a href="/xero/login" class="xero-bar-btn xero-bar-btn--primary" id="xero-bar-connect" style="display:none;text-decoration:none;">Connect</a>
+        <a href="/xero/login" class="xero-bar-btn" id="xero-bar-reconnect" style="display:none;text-decoration:none;">Reconnect</a>
+        <div class="xero-org-wrap" id="xero-org-wrap" style="display:none;">
+            <button class="xero-bar-btn" id="xero-org-toggle">Switch Org &#9662;</button>
+            <div class="xero-org-dropdown" id="xero-org-dropdown"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var bar = document.getElementById('xero-bar');
+    var dot = document.getElementById('xero-bar-dot');
+    var label = document.getElementById('xero-bar-label');
+    var toggle = document.getElementById('xero-bar-toggle');
+    var msg = document.getElementById('xero-bar-msg');
+    var connectBtn = document.getElementById('xero-bar-connect');
+    var reconnectBtn = document.getElementById('xero-bar-reconnect');
+    var orgWrap = document.getElementById('xero-org-wrap');
+    var orgToggle = document.getElementById('xero-org-toggle');
+    var orgDropdown = document.getElementById('xero-org-dropdown');
+    var expanded = sessionStorage.getItem('xero_bar_expanded') === '1';
+
+    function setExpanded(val) {
+        expanded = val;
+        if (expanded) {
+            bar.classList.add('xero-bar--expanded');
+        } else {
+            bar.classList.remove('xero-bar--expanded');
+            orgDropdown.classList.remove('open');
+        }
+        sessionStorage.setItem('xero_bar_expanded', val ? '1' : '0');
+    }
+
+    function setDot(status) {
+        dot.className = 'xero-bar-dot xero-bar-dot--' + status;
+    }
+
+    function renderStatus(data) {
+        bar.classList.remove('hidden');
+        setDot(data.status);
+
+        if (data.connected && data.tenant_name) {
+            label.textContent = 'Connected to: ' + data.tenant_name;
+        } else if (data.status === 'expired') {
+            label.textContent = data.tenant_name
+                ? 'Expired: ' + data.tenant_name
+                : 'Xero connection expired';
+        } else {
+            label.textContent = 'Not connected to Xero';
+        }
+
+        // Actions visibility
+        msg.textContent = '';
+        msg.className = 'xero-bar-msg';
+        connectBtn.style.display = 'none';
+        reconnectBtn.style.display = 'none';
+        orgWrap.style.display = 'none';
+
+        if (data.status === 'disconnected') {
+            connectBtn.style.display = '';
+        } else if (data.status === 'expired') {
+            msg.textContent = 'Token expired. Please reconnect to continue.';
+            msg.classList.add('xero-bar-msg--error');
+            reconnectBtn.style.display = '';
+        } else if (data.status === 'expiring') {
+            msg.textContent = 'Connection expiring soon.';
+            msg.classList.add('xero-bar-msg--warning');
+            reconnectBtn.style.display = '';
+            orgWrap.style.display = '';
+        } else {
+            orgWrap.style.display = '';
+        }
+    }
+
+    function fetchStatus() {
+        fetch('/api/connection-status', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(renderStatus)
+            .catch(function() {});
+    }
+
+    function fetchOrgs() {
+        fetch('/xero/api/connections', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var list = data.connections || [];
+                var html = '';
+                list.forEach(function(c) {
+                    var activeClass = c.is_active ? ' xero-org-item--active' : '';
+                    var check = c.is_active ? '&#10003;' : '';
+                    html += '<div class="xero-org-item' + activeClass + '" data-tid="' +
+                        c.tenant_id + '">' +
+                        '<span class="xero-org-check">' + check + '</span>' +
+                        '<span>' + escapeHtml(c.tenant_name) + '</span></div>';
+                });
+                html += '<div class="xero-org-divider"></div>';
+                html += '<a href="/xero/login" class="xero-org-item xero-org-connect" style="text-decoration:none;">' +
+                    '<span class="xero-org-check">+</span><span>Connect another org</span></a>';
+                orgDropdown.innerHTML = html;
+
+                // Bind click on org items
+                orgDropdown.querySelectorAll('[data-tid]').forEach(function(el) {
+                    el.addEventListener('click', function() {
+                        var tid = this.getAttribute('data-tid');
+                        switchOrg(tid);
+                    });
+                });
+            })
+            .catch(function() {});
+    }
+
+    function switchOrg(tenantId) {
+        fetch('/xero/api/switch-connection', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenant_id: tenantId })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                window.location.reload();
+            }
+        })
+        .catch(function() {});
+    }
+
+    function escapeHtml(str) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(str || ''));
+        return d.innerHTML;
+    }
+
+    // Toggle expand/collapse
+    toggle.addEventListener('click', function() {
+        setExpanded(!expanded);
+        if (expanded) {
+            fetchOrgs();
+        }
+    });
+
+    // Toggle org dropdown
+    orgToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = orgDropdown.classList.contains('open');
+        orgDropdown.classList.toggle('open');
+        if (!isOpen) {
+            fetchOrgs();
+        }
+    });
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function(e) {
+        if (!orgDropdown.contains(e.target) && e.target !== orgToggle) {
+            orgDropdown.classList.remove('open');
+        }
+    });
+
+    // Initial state
+    if (expanded) {
+        setExpanded(true);
+    }
+
+    // Initial fetch and polling
+    fetchStatus();
+    setInterval(fetchStatus, 120000); // 2 minutes
+})();
+</script>
+{% endif %}
