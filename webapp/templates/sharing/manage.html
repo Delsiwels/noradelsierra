@@ -1,36 +1,784 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Sharing - BAS Reviewer{% endblock %}
+{% block title %}Accountant Hub - BAS Reviewer{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --color-primary: #0066CC;
+        --color-primary-hover: #0052A3;
+        --color-primary-light: rgba(0, 102, 204, 0.08);
+        --color-accent: #00A67D;
+        --color-accent-light: rgba(0, 166, 125, 0.08);
+        --color-purple: #7C3AED;
+        --color-purple-light: rgba(124, 58, 237, 0.08);
+        --color-text-primary: #111827;
+        --color-text-secondary: #4B5563;
+        --color-text-muted: #6B7280;
+        --color-text-light: #9CA3AF;
+        --color-border: #E5E7EB;
+        --color-border-light: #F3F4F6;
+        --color-bg-page: #F9FAFB;
+        --color-bg-card: #FFFFFF;
+        --color-bg-subtle: #F3F4F6;
+        --color-success: #059669;
+        --color-success-light: #D1FAE5;
+        --color-error: #DC2626;
+        --color-error-light: #FEE2E2;
+        --color-warning: #D97706;
+        --color-warning-light: #FEF3C7;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --radius-xl: 20px;
+    }
+
+    .hub-container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+    }
+
+    /* Page Header */
+    .hub-header {
+        margin-bottom: 40px;
+    }
+
+    .hub-header-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 12px;
+    }
+
+    .hub-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--color-purple) 0%, #9333EA 100%);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+        flex-shrink: 0;
+    }
+
+    .hub-icon svg {
+        width: 28px;
+        height: 28px;
+        color: white;
+    }
+
+    .hub-title-group {
+        flex: 1;
+    }
+
+    .hub-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-text-primary);
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+        margin: 0 0 6px 0;
+    }
+
+    .hub-subtitle {
+        font-size: 15px;
+        color: var(--color-text-muted);
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    /* Stats Row */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 20px 24px;
+        transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--color-border);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--color-text-primary);
+        letter-spacing: -0.025em;
+        line-height: 1;
+        margin-bottom: 6px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-card.accent .stat-value {
+        color: var(--color-accent);
+    }
+
+    .stat-card.purple .stat-value {
+        color: var(--color-purple);
+    }
+
+    /* Section Containers */
+    .section {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--color-border-light);
+        background: var(--color-bg-subtle);
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .section-title-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .section-title-icon.purple {
+        background: var(--color-purple-light);
+        color: var(--color-purple);
+    }
+
+    .section-title-icon.accent {
+        background: var(--color-accent-light);
+        color: var(--color-accent);
+    }
+
+    .section-title h2 {
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0;
+    }
+
+    .section-title p {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        margin: 2px 0 0 0;
+    }
+
+    .section-body {
+        padding: 24px;
+    }
+
+    /* Form Styles */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        letter-spacing: 0.01em;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 15px;
+        font-family: inherit;
+        color: var(--color-text-primary);
+        background: var(--color-bg-card);
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-md);
+        transition: all 0.15s ease;
+        outline: none;
+    }
+
+    .form-input::placeholder {
+        color: var(--color-text-light);
+    }
+
+    .form-input:hover {
+        border-color: #D1D5DB;
+    }
+
+    .form-input:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    .form-hint {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+    }
+
+    .form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--color-border-light);
+    }
+
+    /* Buttons */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        border-radius: var(--radius-md);
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--color-primary) 0%, #0077E6 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--color-primary-hover) 0%, #0066CC 100%);
+        box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+
+    .btn-secondary {
+        background: var(--color-bg-card);
+        color: var(--color-text-secondary);
+        border: 1.5px solid var(--color-border);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-bg-subtle);
+        border-color: #D1D5DB;
+    }
+
+    .btn-danger {
+        background: transparent;
+        color: var(--color-error);
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .btn-danger:hover {
+        background: var(--color-error-light);
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--color-text-muted);
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-icon:hover {
+        background: var(--color-bg-subtle);
+        color: var(--color-text-primary);
+    }
+
+    .btn-icon.danger:hover {
+        background: var(--color-error-light);
+        color: var(--color-error);
+    }
+
+    /* Alert Messages */
+    .alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    .alert.hidden {
+        display: none;
+    }
+
+    .alert-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .alert-success {
+        background: var(--color-success-light);
+        color: var(--color-success);
+        border: 1px solid rgba(5, 150, 105, 0.2);
+    }
+
+    .alert-error {
+        background: var(--color-error-light);
+        color: var(--color-error);
+        border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    /* Accountant List */
+    .accountant-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .accountant-item {
+        display: flex;
+        align-items: center;
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--color-border-light);
+        transition: background 0.15s ease;
+    }
+
+    .accountant-item:last-child {
+        border-bottom: none;
+    }
+
+    .accountant-item:hover {
+        background: var(--color-bg-subtle);
+    }
+
+    .accountant-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-purple-light) 0%, rgba(124, 58, 237, 0.15) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        flex-shrink: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-purple);
+        text-transform: uppercase;
+    }
+
+    .accountant-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .accountant-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .accountant-email {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .accountant-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-right: 16px;
+    }
+
+    .access-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        background: var(--color-accent-light);
+        color: var(--color-accent);
+    }
+
+    .access-badge svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .shared-date {
+        font-size: 12px;
+        color: var(--color-text-light);
+    }
+
+    .accountant-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        padding: 60px 24px;
+        text-align: center;
+    }
+
+    .empty-icon {
+        width: 72px;
+        height: 72px;
+        background: var(--color-bg-subtle);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: var(--color-text-light);
+    }
+
+    .empty-icon svg {
+        width: 32px;
+        height: 32px;
+    }
+
+    .empty-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: var(--color-text-muted);
+        max-width: 320px;
+        margin: 0 auto 24px;
+        line-height: 1.6;
+    }
+
+    /* Loading State */
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+        color: var(--color-text-muted);
+        font-size: 14px;
+    }
+
+    .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--color-border);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 12px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 16px;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal {
+        background: var(--color-bg-card);
+        border-radius: var(--radius-xl);
+        width: 100%;
+        max-width: 420px;
+        padding: 28px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+
+    .modal-icon.danger {
+        background: var(--color-error-light);
+        color: var(--color-error);
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
+    .modal-text {
+        font-size: 14px;
+        color: var(--color-text-muted);
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .modal-actions .btn-danger {
+        background: var(--color-error);
+        color: white;
+        padding: 12px 20px;
+    }
+
+    .modal-actions .btn-danger:hover {
+        background: #B91C1C;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .hub-container {
+            padding: 24px 16px 60px;
+        }
+
+        .hub-header-top {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .hub-title {
+            font-size: 24px;
+        }
+
+        .stats-row {
+            grid-template-columns: 1fr;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .accountant-item {
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .accountant-meta {
+            margin-right: 0;
+            order: 3;
+            width: 100%;
+        }
+
+        .accountant-actions {
+            order: 2;
+            margin-left: auto;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">Manage Accountant Access</h1>
-
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Invite Accountant</h2>
-        <div id="invite-error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4"></div>
-        <div id="invite-success" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4"></div>
-        <form id="invite-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Email</label>
-                    <input id="invite-email" type="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Name</label>
-                    <input id="invite-name" type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                </div>
+<div class="hub-container">
+    <!-- Page Header -->
+    <header class="hub-header">
+        <div class="hub-header-top">
+            <div class="hub-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
             </div>
-            <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
-                Send Invite
-            </button>
-        </form>
+            <div class="hub-title-group">
+                <h1 class="hub-title">Accountant Hub</h1>
+                <p class="hub-subtitle">Invite accountants to collaborate and securely share access to your team's financial data.</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-label">Total Accountants</div>
+        </div>
+        <div class="stat-card accent">
+            <div class="stat-value" id="stat-active">0</div>
+            <div class="stat-label">Active Access</div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-value" id="stat-readonly">0</div>
+            <div class="stat-label">Read-Only</div>
+        </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold mb-4">Active Shares</h2>
-        <div id="shares-list" class="space-y-3">
-            <p class="text-gray-500 text-sm">Loading...</p>
+    <!-- Invite Section -->
+    <section class="section">
+        <div class="section-header">
+            <div class="section-title">
+                <div class="section-title-icon purple">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Invite Accountant</h2>
+                    <p>Send an invitation to your accountant or bookkeeper</p>
+                </div>
+            </div>
+        </div>
+        <div class="section-body">
+            <div id="invite-error" class="alert alert-error hidden">
+                <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span id="invite-error-text"></span>
+            </div>
+            <div id="invite-success" class="alert alert-success hidden">
+                <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span id="invite-success-text"></span>
+            </div>
+            <form id="invite-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="invite-email">Email Address</label>
+                        <input type="email" id="invite-email" class="form-input" placeholder="accountant@example.com" required>
+                        <span class="form-hint">They'll receive an invitation to access your data</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="invite-name">Full Name</label>
+                        <input type="text" id="invite-name" class="form-input" placeholder="Jane Smith">
+                        <span class="form-hint">Required if this is a new user</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <span class="form-hint">Access will be set to read-only by default</span>
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        Send Invitation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Active Accountants Section -->
+    <section class="section">
+        <div class="section-header">
+            <div class="section-title">
+                <div class="section-title-icon accent">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Shared Access</h2>
+                    <p>Accountants with access to your team's data</p>
+                </div>
+            </div>
+        </div>
+        <div id="shares-container">
+            <div class="loading-state" id="shares-loading">
+                <div class="loading-spinner"></div>
+                <span>Loading accountants...</span>
+            </div>
+            <ul class="accountant-list" id="shares-list" style="display: none;"></ul>
+            <div class="empty-state" id="shares-empty" style="display: none;">
+                <div class="empty-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <div class="empty-title">No accountants yet</div>
+                <p class="empty-text">Invite your accountant or bookkeeper to securely collaborate on your financial data.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Revoke Confirmation Modal -->
+<div class="modal-overlay" id="revoke-modal">
+    <div class="modal">
+        <div class="modal-icon danger">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+        <div class="modal-title">Revoke Access</div>
+        <p class="modal-text">Are you sure you want to revoke <strong id="revoke-name"></strong>'s access? They will no longer be able to view your team's financial data.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="revoke-cancel">Cancel</button>
+            <button type="button" class="btn btn-danger" id="revoke-confirm">Revoke Access</button>
         </div>
     </div>
 </div>
@@ -38,53 +786,176 @@
 
 {% block extra_scripts %}
 <script>
-async function loadShares() {
-    const res = await fetch('/api/sharing/invites');
-    const data = await res.json();
-    const list = document.getElementById('shares-list');
-    if (!data.shares || data.shares.length === 0) {
-        list.innerHTML = '<p class="text-gray-500 text-sm">No active shares</p>';
-        return;
-    }
-    list.innerHTML = data.shares.map(s => `
-        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <div>
-                <span class="font-medium text-sm">${s.accountant_name || s.accountant_email}</span>
-                <span class="text-gray-500 text-xs ml-2">${s.access_level}</span>
-            </div>
-            <button onclick="revokeShare('${s.id}')" class="text-red-600 text-sm hover:underline">Revoke</button>
-        </div>
-    `).join('');
-}
+    let shares = [];
+    let shareToRevoke = null;
 
-async function revokeShare(id) {
-    await fetch('/api/sharing/invites/' + id, {method: 'DELETE'});
-    loadShares();
-}
-
-document.getElementById('invite-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const res = await fetch('/api/sharing/invite', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            email: document.getElementById('invite-email').value,
-            name: document.getElementById('invite-name').value,
-        })
-    });
-    const data = await res.json();
-    if (data.success) {
-        document.getElementById('invite-success').textContent = 'Accountant invited successfully';
-        document.getElementById('invite-success').classList.remove('hidden');
-        document.getElementById('invite-error').classList.add('hidden');
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
         loadShares();
-    } else {
-        document.getElementById('invite-error').textContent = data.error;
-        document.getElementById('invite-error').classList.remove('hidden');
-        document.getElementById('invite-success').classList.add('hidden');
-    }
-});
+        setupForm();
+        setupModal();
+    });
 
-loadShares();
+    async function loadShares() {
+        try {
+            const res = await fetch('/api/sharing/invites');
+            const data = await res.json();
+
+            document.getElementById('shares-loading').style.display = 'none';
+
+            if (!data.shares || data.shares.length === 0) {
+                document.getElementById('shares-empty').style.display = 'block';
+                updateStats(0, 0, 0);
+                return;
+            }
+
+            shares = data.shares;
+            renderShares();
+            updateStats(shares.length, shares.length, shares.filter(s => s.access_level === 'read_only').length);
+
+        } catch (error) {
+            console.error('Error loading shares:', error);
+            document.getElementById('shares-loading').innerHTML = '<p style="color: var(--color-error);">Failed to load accountants</p>';
+        }
+    }
+
+    function renderShares() {
+        const list = document.getElementById('shares-list');
+        const empty = document.getElementById('shares-empty');
+
+        if (shares.length === 0) {
+            list.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        list.style.display = 'block';
+
+        list.innerHTML = shares.map(share => {
+            const name = share.accountant_name || share.accountant_email.split('@')[0];
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2);
+            const sharedDate = share.created_at ? new Date(share.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+            return `
+                <li class="accountant-item">
+                    <div class="accountant-avatar">${escapeHtml(initials)}</div>
+                    <div class="accountant-info">
+                        <div class="accountant-name">${escapeHtml(name)}</div>
+                        <div class="accountant-email">${escapeHtml(share.accountant_email)}</div>
+                    </div>
+                    <div class="accountant-meta">
+                        <span class="access-badge">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            ${share.access_level === 'read_only' ? 'Read Only' : share.access_level}
+                        </span>
+                        ${sharedDate ? `<span class="shared-date">Shared ${sharedDate}</span>` : ''}
+                    </div>
+                    <div class="accountant-actions">
+                        <button type="button" class="btn-icon danger" onclick="promptRevoke('${share.id}', '${escapeHtml(name)}')" title="Revoke access">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </li>
+            `;
+        }).join('');
+    }
+
+    function updateStats(total, active, readonly) {
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-active').textContent = active;
+        document.getElementById('stat-readonly').textContent = readonly;
+    }
+
+    function setupForm() {
+        const form = document.getElementById('invite-form');
+        const errorEl = document.getElementById('invite-error');
+        const errorText = document.getElementById('invite-error-text');
+        const successEl = document.getElementById('invite-success');
+        const successText = document.getElementById('invite-success-text');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Hide previous messages
+            errorEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+
+            const email = document.getElementById('invite-email').value.trim();
+            const name = document.getElementById('invite-name').value.trim();
+
+            try {
+                const res = await fetch('/api/sharing/invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    successText.textContent = `Invitation sent to ${email} successfully!`;
+                    successEl.classList.remove('hidden');
+                    form.reset();
+                    loadShares();
+                } else {
+                    errorText.textContent = data.error || 'Failed to send invitation';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorText.textContent = 'Failed to send invitation. Please try again.';
+                errorEl.classList.remove('hidden');
+            }
+        });
+    }
+
+    function setupModal() {
+        const modal = document.getElementById('revoke-modal');
+        const cancelBtn = document.getElementById('revoke-cancel');
+        const confirmBtn = document.getElementById('revoke-confirm');
+
+        cancelBtn.addEventListener('click', () => {
+            shareToRevoke = null;
+            modal.classList.remove('active');
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            if (!shareToRevoke) return;
+
+            try {
+                await fetch(`/api/sharing/invites/${shareToRevoke}`, { method: 'DELETE' });
+                shareToRevoke = null;
+                modal.classList.remove('active');
+                loadShares();
+            } catch (error) {
+                console.error('Error revoking access:', error);
+            }
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                shareToRevoke = null;
+                modal.classList.remove('active');
+            }
+        });
+    }
+
+    function promptRevoke(shareId, name) {
+        shareToRevoke = shareId;
+        document.getElementById('revoke-name').textContent = name;
+        document.getElementById('revoke-modal').classList.add('active');
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 </script>
 {% endblock %}

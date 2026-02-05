@@ -45,9 +45,9 @@
                         <a href="/payroll-review" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Payroll</a>
                         <a href="/skills" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Skills</a>
                         {% if current_user.role in ('owner', 'admin') %}
-                        <a href="/sharing/manage" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Sharing</a>
+                        <a href="/sharing/manage" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Accountant Hub</a>
                         {% elif current_user.role == 'accountant' %}
-                        <a href="/sharing/dashboard" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Shared Teams</a>
+                        <a href="/sharing/dashboard" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">My Clients</a>
                         {% endif %}
                         {% else %}
                         <a href="/features" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Features</a>
