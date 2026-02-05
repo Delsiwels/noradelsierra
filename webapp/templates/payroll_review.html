@@ -1,0 +1,750 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Review - BAS Reviewer{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Payroll Review</h1>
+                <p class="mt-1 text-gray-500">Compare pay runs, review leave, and onboard employees</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Xero Not Connected Banner (hidden by default) -->
+<div id="xeroNotConnected" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect your Xero account</h2>
+            <p class="text-gray-500 mb-6">Payroll review requires a Xero connection with payroll access.</p>
+            <a href="/connections/xero/connect"
+               class="inline-flex items-center bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors">
+                Connect to Xero
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent">
+    <!-- Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button onclick="switchTab('comparison')" id="tab-comparison"
+                        class="border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Pay Run Comparison
+                </button>
+                <button onclick="switchTab('leave')" id="tab-leave"
+                        class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Leave Flags
+                </button>
+                <button onclick="switchTab('upload')" id="tab-upload"
+                        class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Employee Upload
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Tab 1: Pay Run Comparison -->
+    <div id="panel-comparison" class="tab-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- Pay Run Selector -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="flex flex-col md:flex-row md:items-end gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">DRAFT Pay Run</label>
+                        <select id="draftPayRunSelect" onchange="onDraftPayRunChange()"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Compare with POSTED</label>
+                        <div id="postedPayRunLabel" class="px-3 py-2 text-sm text-gray-600 bg-gray-50 rounded-lg border border-gray-200">
+                            Loading...
+                        </div>
+                    </div>
+                    <button onclick="runComparison()" id="compareBtn"
+                            class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Compare
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Cards (hidden until comparison) -->
+            <div id="comparisonSummary" class="hidden mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">DRAFT Total Gross</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryDraftGross">--</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">POSTED Total Gross</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryPostedGross">--</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">Net Variance</p>
+                        <p class="text-2xl font-bold mt-1" id="summaryVariance">--</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">Employees with Flags</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryFlags">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div id="comparisonTableContainer" class="hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-900">Employee Variance</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">DRAFT Gross</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">POSTED Gross</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Variance</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">DRAFT Super</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">POSTED Super</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Variance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonTableBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="comparisonEmpty" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-gray-500">Select a DRAFT pay run and click Compare to see variances</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Leave Flags -->
+    <div id="panel-leave" class="tab-panel hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- Pay Run Selector -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="flex flex-col md:flex-row md:items-end gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pay Run</label>
+                        <select id="leavePayRunSelect" onchange="onLeavePayRunChange()"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <button onclick="loadLeaveFlags()" id="leaveBtn"
+                            class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Load Leave Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Leave Table -->
+            <div id="leaveTableContainer" class="hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-900">Employees with Leave</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leave Type</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance Remaining</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaveTableBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="leaveEmpty" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-gray-500">Select a pay run and click Load Leave Data to see employees with leave</p>
+            </div>
+
+            <!-- No Leave message -->
+            <div id="leaveNone" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-green-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-gray-500">No employees have leave in this pay run</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 3: Employee Upload -->
+    <div id="panel-upload" class="tab-panel hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- Upload Area -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-semibold text-gray-900">Upload Employee Data</h2>
+                    <a href="/payroll-review/api/employee-template"
+                       class="text-primary hover:text-blue-700 text-sm font-medium flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Download Template
+                    </a>
+                </div>
+
+                <!-- Drop zone -->
+                <div id="dropZone" onclick="document.getElementById('fileInput').click()"
+                     class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-primary transition-colors">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    <p class="text-gray-600 mb-1">Drop your Excel file here, or click to browse</p>
+                    <p class="text-gray-400 text-sm">Supports .xlsx files up to 5MB</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event)">
+                </div>
+            </div>
+
+            <!-- Preview Table (hidden until file uploaded) -->
+            <div id="uploadPreview" class="hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+                    <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-sm font-semibold text-gray-900">Preview</h2>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <span id="previewParsed">0</span> employees parsed,
+                                <span id="previewValid" class="text-green-600">0</span> valid,
+                                <span id="previewInvalid" class="text-red-600">0</span> with errors
+                            </p>
+                        </div>
+                        <button onclick="clearUpload()"
+                                class="text-gray-400 hover:text-gray-600 text-sm">
+                            Clear
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto max-h-96">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Row</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uploadPreviewBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Create Button -->
+                <div class="flex justify-end">
+                    <button onclick="createEmployees()" id="createBtn"
+                            class="bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Create in Xero
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results (hidden until creation attempted) -->
+            <div id="uploadResults" class="hidden mt-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-sm font-semibold text-gray-900 mb-4">Creation Results</h2>
+                    <div id="uploadResultsList" class="space-y-2">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let payRunsData = null;
+let parsedEmployees = [];
+
+// Tab switching
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+        btn.className = 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+    });
+    document.getElementById('tab-' + tabName).className = 'border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+
+    // Update panels
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+    document.getElementById('panel-' + tabName).classList.remove('hidden');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadPayRuns();
+    setupDropZone();
+});
+
+// Load pay runs
+async function loadPayRuns() {
+    try {
+        const resp = await fetch('/payroll-review/api/pay-runs');
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === 'Xero not connected') {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('xeroNotConnected').classList.remove('hidden');
+                return;
+            }
+            console.error('Failed to load pay runs:', data.error);
+            return;
+        }
+
+        payRunsData = data;
+        populatePayRunSelects(data);
+    } catch (e) {
+        console.error('Error loading pay runs:', e);
+    }
+}
+
+function populatePayRunSelects(data) {
+    const draftSelect = document.getElementById('draftPayRunSelect');
+    const leaveSelect = document.getElementById('leavePayRunSelect');
+
+    // Draft select
+    draftSelect.innerHTML = '';
+    if (data.draft_pay_runs && data.draft_pay_runs.length > 0) {
+        data.draft_pay_runs.forEach((pr, i) => {
+            const opt = document.createElement('option');
+            opt.value = pr.pay_run_id;
+            opt.textContent = `${pr.payment_date} - $${formatNumber(pr.wages)} gross`;
+            if (i === 0) opt.selected = true;
+            draftSelect.appendChild(opt);
+        });
+    } else {
+        draftSelect.innerHTML = '<option value="">No DRAFT pay runs</option>';
+    }
+
+    // Posted label
+    const postedLabel = document.getElementById('postedPayRunLabel');
+    if (data.recent_posted) {
+        postedLabel.textContent = `${data.recent_posted.payment_date} - $${formatNumber(data.recent_posted.wages)} gross`;
+    } else {
+        postedLabel.textContent = 'No POSTED pay runs available';
+    }
+
+    // Leave select - include both draft and posted
+    leaveSelect.innerHTML = '';
+    let allPayRuns = [];
+    if (data.draft_pay_runs) {
+        allPayRuns = allPayRuns.concat(data.draft_pay_runs.map(pr => ({...pr, label: `DRAFT: ${pr.payment_date}`})));
+    }
+    if (data.recent_posted) {
+        allPayRuns.push({...data.recent_posted, label: `POSTED: ${data.recent_posted.payment_date}`});
+    }
+
+    if (allPayRuns.length > 0) {
+        allPayRuns.forEach((pr, i) => {
+            const opt = document.createElement('option');
+            opt.value = pr.pay_run_id;
+            opt.textContent = pr.label;
+            if (i === 0) opt.selected = true;
+            leaveSelect.appendChild(opt);
+        });
+    } else {
+        leaveSelect.innerHTML = '<option value="">No pay runs available</option>';
+    }
+}
+
+function onDraftPayRunChange() {
+    // Reset comparison display
+    document.getElementById('comparisonSummary').classList.add('hidden');
+    document.getElementById('comparisonTableContainer').classList.add('hidden');
+    document.getElementById('comparisonEmpty').classList.remove('hidden');
+}
+
+function onLeavePayRunChange() {
+    // Reset leave display
+    document.getElementById('leaveTableContainer').classList.add('hidden');
+    document.getElementById('leaveEmpty').classList.remove('hidden');
+    document.getElementById('leaveNone').classList.add('hidden');
+}
+
+// Run comparison
+async function runComparison() {
+    const draftId = document.getElementById('draftPayRunSelect').value;
+    if (!draftId) {
+        alert('Please select a DRAFT pay run');
+        return;
+    }
+
+    const btn = document.getElementById('compareBtn');
+    btn.disabled = true;
+    btn.textContent = 'Comparing...';
+
+    try {
+        const resp = await fetch(`/payroll-review/api/compare?draft_id=${draftId}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            alert(data.error || 'Failed to compare pay runs');
+            return;
+        }
+
+        renderComparison(data);
+    } catch (e) {
+        alert('Network error. Please try again.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Compare';
+    }
+}
+
+function renderComparison(data) {
+    // Show summary
+    document.getElementById('comparisonEmpty').classList.add('hidden');
+    document.getElementById('comparisonSummary').classList.remove('hidden');
+    document.getElementById('comparisonTableContainer').classList.remove('hidden');
+
+    // Summary cards
+    const draftGross = data.draft ? data.draft.total_gross : 0;
+    const postedGross = data.posted ? data.posted.total_gross : 0;
+    const variance = draftGross - postedGross;
+    const flagged = data.comparison.filter(c => c.flag !== 'normal').length;
+
+    document.getElementById('summaryDraftGross').textContent = formatCurrency(draftGross);
+    document.getElementById('summaryPostedGross').textContent = data.posted ? formatCurrency(postedGross) : 'N/A';
+
+    const varianceEl = document.getElementById('summaryVariance');
+    varianceEl.textContent = formatCurrency(variance);
+    varianceEl.className = `text-2xl font-bold mt-1 ${variance > 0 ? 'text-green-600' : variance < 0 ? 'text-red-600' : 'text-gray-900'}`;
+
+    document.getElementById('summaryFlags').textContent = flagged;
+
+    // Comparison table
+    const tbody = document.getElementById('comparisonTableBody');
+    tbody.innerHTML = '';
+
+    if (!data.comparison || data.comparison.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No payslip data available</td></tr>';
+        return;
+    }
+
+    data.comparison.forEach(row => {
+        const tr = document.createElement('tr');
+
+        // Row styling based on flag
+        if (row.flag === 'alert') {
+            tr.className = 'bg-red-50';
+        } else if (row.flag === 'warning') {
+            tr.className = 'bg-yellow-50';
+        }
+
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${row.name}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(row.draft_gross)}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-500">${formatCurrency(row.posted_gross)}</td>
+            <td class="px-4 py-3 text-sm text-right ${row.gross_variance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                ${row.gross_variance >= 0 ? '+' : ''}${formatCurrency(row.gross_variance)}
+                <span class="text-xs text-gray-400 ml-1">(${row.gross_variance_pct}%)</span>
+            </td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(row.draft_super)}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-500">${formatCurrency(row.posted_super)}</td>
+            <td class="px-4 py-3 text-sm text-right ${row.super_variance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                ${row.super_variance >= 0 ? '+' : ''}${formatCurrency(row.super_variance)}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Load leave flags
+async function loadLeaveFlags() {
+    const payRunId = document.getElementById('leavePayRunSelect').value;
+    if (!payRunId) {
+        alert('Please select a pay run');
+        return;
+    }
+
+    const btn = document.getElementById('leaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+
+    try {
+        const resp = await fetch(`/payroll-review/api/leave-flags?pay_run_id=${payRunId}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            alert(data.error || 'Failed to load leave data');
+            return;
+        }
+
+        renderLeaveFlags(data);
+    } catch (e) {
+        alert('Network error. Please try again.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Load Leave Data';
+    }
+}
+
+function renderLeaveFlags(data) {
+    document.getElementById('leaveEmpty').classList.add('hidden');
+
+    if (!data.employees_with_leave || data.employees_with_leave.length === 0) {
+        document.getElementById('leaveTableContainer').classList.add('hidden');
+        document.getElementById('leaveNone').classList.remove('hidden');
+        return;
+    }
+
+    document.getElementById('leaveNone').classList.add('hidden');
+    document.getElementById('leaveTableContainer').classList.remove('hidden');
+
+    const tbody = document.getElementById('leaveTableBody');
+    tbody.innerHTML = '';
+
+    data.employees_with_leave.forEach(emp => {
+        const tr = document.createElement('tr');
+        if (emp.low_balance_warning) {
+            tr.className = 'bg-yellow-50';
+        }
+
+        let statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>';
+        if (emp.low_balance_warning) {
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                Low Balance
+            </span>`;
+        }
+
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${emp.name}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${emp.leave_type}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900">${emp.hours}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(emp.amount)}</td>
+            <td class="px-4 py-3 text-sm text-right ${emp.low_balance_warning ? 'text-yellow-700 font-medium' : 'text-gray-600'}">
+                ${emp.balance_remaining !== null ? emp.balance_remaining + ' hrs' : 'N/A'}
+            </td>
+            <td class="px-4 py-3 text-center">${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// File upload
+function setupDropZone() {
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-primary', 'bg-primary/5');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-primary', 'bg-primary/5');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-primary', 'bg-primary/5');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            uploadFile(files[0]);
+        }
+    });
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        uploadFile(file);
+    }
+}
+
+async function uploadFile(file) {
+    if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+        alert('Please upload an Excel file (.xlsx or .xls)');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const resp = await fetch('/payroll-review/api/upload-employees', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            alert(data.error || 'Failed to parse file');
+            return;
+        }
+
+        parsedEmployees = data.employees || [];
+        renderUploadPreview(data);
+    } catch (e) {
+        alert('Upload failed. Please try again.');
+        console.error(e);
+    }
+}
+
+function renderUploadPreview(data) {
+    document.getElementById('uploadPreview').classList.remove('hidden');
+    document.getElementById('previewParsed').textContent = data.parsed_count;
+    document.getElementById('previewValid').textContent = data.valid_count;
+    document.getElementById('previewInvalid').textContent = data.parsed_count - data.valid_count;
+
+    const tbody = document.getElementById('uploadPreviewBody');
+    tbody.innerHTML = '';
+
+    data.employees.forEach(emp => {
+        const tr = document.createElement('tr');
+        if (!emp.valid) {
+            tr.className = 'bg-red-50';
+        }
+
+        let statusBadge;
+        if (emp.valid) {
+            statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Valid</span>';
+        } else {
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800" title="${emp.errors.join('; ')}">
+                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                ${emp.errors.length} error${emp.errors.length > 1 ? 's' : ''}
+            </span>`;
+        }
+
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-sm text-gray-500">${emp.row}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${emp.first_name || ''} ${emp.last_name || ''}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${emp.email || ''}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${emp.start_date || ''}</td>
+            <td class="px-4 py-3 text-center">${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Enable/disable create button
+    const createBtn = document.getElementById('createBtn');
+    createBtn.disabled = data.valid_count === 0;
+}
+
+function clearUpload() {
+    parsedEmployees = [];
+    document.getElementById('uploadPreview').classList.add('hidden');
+    document.getElementById('uploadResults').classList.add('hidden');
+    document.getElementById('fileInput').value = '';
+}
+
+async function createEmployees() {
+    const validEmployees = parsedEmployees.filter(e => e.valid);
+    if (validEmployees.length === 0) {
+        alert('No valid employees to create');
+        return;
+    }
+
+    const btn = document.getElementById('createBtn');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    try {
+        const resp = await fetch('/payroll-review/api/create-employees', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ employees: validEmployees })
+        });
+        const data = await resp.json();
+
+        renderCreationResults(data);
+    } catch (e) {
+        alert('Failed to create employees. Please try again.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create in Xero';
+    }
+}
+
+function renderCreationResults(data) {
+    document.getElementById('uploadResults').classList.remove('hidden');
+
+    const list = document.getElementById('uploadResultsList');
+    list.innerHTML = '';
+
+    // Summary
+    const summary = document.createElement('div');
+    summary.className = `p-3 rounded-lg mb-4 ${data.success ? 'bg-green-50 text-green-800' : 'bg-yellow-50 text-yellow-800'}`;
+    summary.innerHTML = `<strong>${data.created}</strong> of <strong>${data.total}</strong> employees created successfully`;
+    list.appendChild(summary);
+
+    // Individual results
+    data.results.forEach(result => {
+        const div = document.createElement('div');
+        if (result.success) {
+            div.className = 'flex items-center justify-between p-3 bg-green-50 rounded-lg';
+            div.innerHTML = `
+                <span class="text-sm font-medium text-gray-900">${result.name}</span>
+                <span class="text-xs text-green-600">Created</span>
+            `;
+        } else {
+            div.className = 'flex items-start justify-between p-3 bg-red-50 rounded-lg';
+            div.innerHTML = `
+                <div>
+                    <span class="text-sm font-medium text-gray-900">${result.name}</span>
+                    <p class="text-xs text-red-600 mt-1">${result.error}</p>
+                </div>
+                <span class="text-xs text-red-600">Failed</span>
+            `;
+        }
+        list.appendChild(div);
+    });
+}
+
+// Helpers
+function formatCurrency(amount) {
+    const abs = Math.abs(amount);
+    const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+
+function formatNumber(amount) {
+    return Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+</script>
+{% endblock %}

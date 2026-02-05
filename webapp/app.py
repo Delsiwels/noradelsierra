@@ -186,6 +186,10 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.register_blueprint(ask_fin_bp)
 
+    from webapp.blueprints.payroll_review import payroll_review_bp
+
+    app.register_blueprint(payroll_review_bp)
+
     @app.route("/health")
     def health_check():
         """Health check endpoint."""
