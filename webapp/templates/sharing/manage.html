@@ -29,7 +29,6 @@
         --color-warning-light: #FEF3C7;
         --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         --radius-sm: 6px;
         --radius-md: 10px;
         --radius-lg: 14px;
@@ -37,192 +36,146 @@
     }
 
     .hub-container {
-        max-width: 960px;
+        max-width: 1200px;
         margin: 0 auto;
         padding: 40px 24px 80px;
     }
 
     /* Page Header */
     .hub-header {
+        text-align: center;
         margin-bottom: 40px;
     }
 
-    .hub-header-top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 24px;
-        margin-bottom: 12px;
-    }
-
-    .hub-icon {
-        width: 56px;
-        height: 56px;
-        background: linear-gradient(135deg, var(--color-purple) 0%, #9333EA 100%);
-        border-radius: var(--radius-lg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
-        flex-shrink: 0;
-    }
-
-    .hub-icon svg {
-        width: 28px;
-        height: 28px;
-        color: white;
-    }
-
-    .hub-title-group {
-        flex: 1;
-    }
-
     .hub-title {
-        font-size: 28px;
+        font-size: 36px;
         font-weight: 700;
         color: var(--color-text-primary);
         letter-spacing: -0.025em;
-        line-height: 1.2;
-        margin: 0 0 6px 0;
+        margin: 0 0 8px 0;
     }
 
     .hub-subtitle {
-        font-size: 15px;
+        font-size: 16px;
         color: var(--color-text-muted);
-        line-height: 1.5;
         margin: 0;
     }
 
-    /* Stats Row */
-    .stats-row {
+    /* Two Column Layout */
+    .hub-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin-bottom: 32px;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
     }
 
-    .stat-card {
-        background: var(--color-bg-card);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 20px 24px;
-        transition: all 0.2s ease;
-    }
-
-    .stat-card:hover {
-        border-color: var(--color-border);
-        box-shadow: var(--shadow-md);
-    }
-
-    .stat-value {
-        font-size: 32px;
-        font-weight: 700;
-        color: var(--color-text-primary);
-        letter-spacing: -0.025em;
-        line-height: 1;
-        margin-bottom: 6px;
-    }
-
-    .stat-label {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--color-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .stat-card.accent .stat-value {
-        color: var(--color-accent);
-    }
-
-    .stat-card.purple .stat-value {
-        color: var(--color-purple);
-    }
-
-    /* Section Containers */
-    .section {
+    /* Panel Styling */
+    .panel {
         background: var(--color-bg-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-xl);
         overflow: hidden;
-        margin-bottom: 24px;
     }
 
-    .section-header {
+    .panel-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 20px 24px;
         border-bottom: 1px solid var(--color-border-light);
-        background: var(--color-bg-subtle);
     }
 
-    .section-title {
+    .panel-title {
         display: flex;
         align-items: center;
         gap: 12px;
     }
 
-    .section-title-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .panel-title-icon {
+        width: 24px;
+        height: 24px;
+        color: var(--color-text-muted);
     }
 
-    .section-title-icon.purple {
-        background: var(--color-purple-light);
-        color: var(--color-purple);
-    }
-
-    .section-title-icon.accent {
-        background: var(--color-accent-light);
-        color: var(--color-accent);
-    }
-
-    .section-title h2 {
-        font-size: 17px;
+    .panel-title h2 {
+        font-size: 18px;
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0;
     }
 
-    .section-title p {
-        font-size: 13px;
-        color: var(--color-text-muted);
-        margin: 2px 0 0 0;
-    }
-
-    .section-body {
-        padding: 24px;
-    }
-
-    /* Form Styles */
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .form-label {
+    .selected-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        background: var(--color-accent-light);
+        color: var(--color-accent);
+        border-radius: 20px;
         font-size: 13px;
         font-weight: 600;
-        color: var(--color-text-secondary);
-        letter-spacing: 0.01em;
     }
 
-    .form-input {
+    .panel-body {
+        padding: 20px 24px;
+    }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        background: transparent;
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .tab:hover {
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+    }
+
+    .tab.active {
+        background: var(--color-primary-light);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+    }
+
+    .tab svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Search Box */
+    .search-box {
+        position: relative;
+        margin-bottom: 16px;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-light);
+        pointer-events: none;
+    }
+
+    .search-input {
         width: 100%;
-        padding: 12px 16px;
-        font-size: 15px;
+        padding: 12px 16px 12px 44px;
+        font-size: 14px;
         font-family: inherit;
         color: var(--color-text-primary);
         background: var(--color-bg-card);
@@ -232,278 +185,295 @@
         outline: none;
     }
 
-    .form-input::placeholder {
+    .search-input::placeholder {
         color: var(--color-text-light);
     }
 
-    .form-input:hover {
-        border-color: #D1D5DB;
-    }
-
-    .form-input:focus {
+    .search-input:focus {
         border-color: var(--color-primary);
         box-shadow: 0 0 0 3px var(--color-primary-light);
     }
 
-    .form-hint {
-        font-size: 12px;
-        color: var(--color-text-muted);
-        margin-top: 4px;
-    }
-
-    .form-actions {
+    /* Action Bar */
+    .action-bar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-top: 24px;
-        padding-top: 20px;
-        border-top: 1px solid var(--color-border-light);
+        gap: 16px;
+        margin-bottom: 16px;
     }
 
-    /* Buttons */
-    .btn {
+    .action-btn {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 20px;
-        font-size: 14px;
-        font-weight: 600;
-        font-family: inherit;
-        border-radius: var(--radius-md);
-        border: none;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        text-decoration: none;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, var(--color-primary) 0%, #0077E6 100%);
-        color: white;
-        box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
-    }
-
-    .btn-primary:hover {
-        background: linear-gradient(135deg, var(--color-primary-hover) 0%, #0066CC 100%);
-        box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
-        transform: translateY(-1px);
-    }
-
-    .btn-primary:active {
-        transform: translateY(0);
-    }
-
-    .btn-secondary {
-        background: var(--color-bg-card);
-        color: var(--color-text-secondary);
-        border: 1.5px solid var(--color-border);
-    }
-
-    .btn-secondary:hover {
-        background: var(--color-bg-subtle);
-        border-color: #D1D5DB;
-    }
-
-    .btn-danger {
-        background: transparent;
-        color: var(--color-error);
+        gap: 6px;
         padding: 8px 12px;
         font-size: 13px;
-    }
-
-    .btn-danger:hover {
-        background: var(--color-error-light);
-    }
-
-    .btn-icon {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border-radius: var(--radius-sm);
-        background: transparent;
+        font-weight: 500;
         color: var(--color-text-muted);
+        background: transparent;
         border: none;
+        border-radius: var(--radius-sm);
         cursor: pointer;
         transition: all 0.15s ease;
     }
 
-    .btn-icon:hover {
+    .action-btn:hover {
         background: var(--color-bg-subtle);
         color: var(--color-text-primary);
     }
 
-    .btn-icon.danger:hover {
-        background: var(--color-error-light);
-        color: var(--color-error);
+    .action-btn svg {
+        width: 16px;
+        height: 16px;
     }
 
-    /* Alert Messages */
-    .alert {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 14px 16px;
-        border-radius: var(--radius-md);
-        font-size: 14px;
-        line-height: 1.5;
-        margin-bottom: 20px;
-    }
-
-    .alert.hidden {
-        display: none;
-    }
-
-    .alert-icon {
-        width: 20px;
-        height: 20px;
-        flex-shrink: 0;
-        margin-top: 1px;
-    }
-
-    .alert-success {
-        background: var(--color-success-light);
-        color: var(--color-success);
-        border: 1px solid rgba(5, 150, 105, 0.2);
-    }
-
-    .alert-error {
-        background: var(--color-error-light);
-        color: var(--color-error);
-        border: 1px solid rgba(220, 38, 38, 0.2);
-    }
-
-    /* Accountant List */
-    .accountant-list {
+    /* Client List */
+    .client-list {
         list-style: none;
         padding: 0;
         margin: 0;
+        max-height: 400px;
+        overflow-y: auto;
     }
 
-    .accountant-item {
+    .client-item {
         display: flex;
         align-items: center;
-        padding: 16px 24px;
-        border-bottom: 1px solid var(--color-border-light);
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+        cursor: pointer;
         transition: background 0.15s ease;
     }
 
-    .accountant-item:last-child {
-        border-bottom: none;
-    }
-
-    .accountant-item:hover {
+    .client-item:hover {
         background: var(--color-bg-subtle);
     }
 
-    .accountant-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--color-purple-light) 0%, rgba(124, 58, 237, 0.15) 100%);
+    .client-item.selected {
+        background: var(--color-accent-light);
+    }
+
+    .client-checkbox {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--color-border);
+        border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-right: 16px;
         flex-shrink: 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-purple);
-        text-transform: uppercase;
+        transition: all 0.15s ease;
     }
 
-    .accountant-info {
+    .client-item.selected .client-checkbox {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+    }
+
+    .client-checkbox svg {
+        width: 14px;
+        height: 14px;
+        color: white;
+        opacity: 0;
+    }
+
+    .client-item.selected .client-checkbox svg {
+        opacity: 1;
+    }
+
+    .client-info {
         flex: 1;
         min-width: 0;
     }
 
-    .accountant-name {
-        font-size: 15px;
+    .client-name {
+        font-size: 14px;
         font-weight: 600;
         color: var(--color-text-primary);
         margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    .accountant-email {
-        font-size: 13px;
+    .client-meta {
+        font-size: 12px;
         color: var(--color-text-muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    .accountant-meta {
+    /* Date Range */
+    .date-range {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-right: 16px;
+        margin-bottom: 20px;
     }
 
-    .access-badge {
+    .date-group {
+        flex: 1;
+    }
+
+    .date-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+    }
+
+    .date-input {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-family: inherit;
+        color: var(--color-text-primary);
+        background: var(--color-bg-card);
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-md);
+        outline: none;
+        transition: all 0.15s ease;
+    }
+
+    .date-input:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    .date-separator {
+        color: var(--color-text-light);
+        font-size: 14px;
+        padding-top: 24px;
+    }
+
+    /* Task List */
+    .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 500px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .task-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px;
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .task-item:hover {
+        border-color: var(--color-accent);
+    }
+
+    .task-item.selected {
+        background: var(--color-accent-light);
+        border-color: var(--color-accent);
+    }
+
+    .task-checkbox {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--color-border);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+        transition: all 0.15s ease;
+    }
+
+    .task-item.selected .task-checkbox {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+    }
+
+    .task-checkbox svg {
+        width: 14px;
+        height: 14px;
+        color: white;
+        opacity: 0;
+    }
+
+    .task-item.selected .task-checkbox svg {
+        opacity: 1;
+    }
+
+    .task-info {
+        flex: 1;
+    }
+
+    .task-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 4px;
+    }
+
+    .task-description {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        line-height: 1.4;
+    }
+
+    /* Run Button */
+    .run-section {
+        padding: 20px 24px;
+        border-top: 1px solid var(--color-border-light);
+        background: var(--color-bg-subtle);
+    }
+
+    .btn-run {
+        width: 100%;
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 500;
-        background: var(--color-accent-light);
-        color: var(--color-accent);
+        justify-content: center;
+        gap: 10px;
+        padding: 14px 24px;
+        font-size: 15px;
+        font-weight: 600;
+        font-family: inherit;
+        color: white;
+        background: linear-gradient(135deg, var(--color-accent) 0%, #10B981 100%);
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        box-shadow: 0 2px 8px rgba(0, 166, 125, 0.25);
     }
 
-    .access-badge svg {
-        width: 12px;
-        height: 12px;
+    .btn-run:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 166, 125, 0.35);
     }
 
-    .shared-date {
-        font-size: 12px;
-        color: var(--color-text-light);
+    .btn-run:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
-    .accountant-actions {
-        display: flex;
-        gap: 4px;
+    .btn-run svg {
+        width: 18px;
+        height: 18px;
     }
 
     /* Empty State */
     .empty-state {
-        padding: 60px 24px;
         text-align: center;
-    }
-
-    .empty-icon {
-        width: 72px;
-        height: 72px;
-        background: var(--color-bg-subtle);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-        color: var(--color-text-light);
-    }
-
-    .empty-icon svg {
-        width: 32px;
-        height: 32px;
-    }
-
-    .empty-title {
-        font-size: 17px;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin-bottom: 8px;
-    }
-
-    .empty-text {
-        font-size: 14px;
+        padding: 40px 20px;
         color: var(--color-text-muted);
-        max-width: 320px;
-        margin: 0 auto 24px;
-        line-height: 1.6;
+    }
+
+    .empty-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 12px;
+        opacity: 0.5;
     }
 
     /* Loading State */
@@ -511,15 +481,13 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 48px 24px;
+        padding: 40px 20px;
         color: var(--color-text-muted);
-        font-size: 14px;
     }
 
     .loading-spinner {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         border: 3px solid var(--color-border);
         border-top-color: var(--color-primary);
         border-radius: 50%;
@@ -531,115 +499,33 @@
         to { transform: rotate(360deg); }
     }
 
-    /* Modal Overlay */
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        padding: 16px;
-    }
-
-    .modal-overlay.active {
-        display: flex;
-    }
-
-    .modal {
-        background: var(--color-bg-card);
-        border-radius: var(--radius-xl);
-        width: 100%;
-        max-width: 420px;
-        padding: 28px;
-        box-shadow: var(--shadow-lg);
-    }
-
-    .modal-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 16px;
-    }
-
-    .modal-icon.danger {
-        background: var(--color-error-light);
-        color: var(--color-error);
-    }
-
-    .modal-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin-bottom: 8px;
-    }
-
-    .modal-text {
-        font-size: 14px;
-        color: var(--color-text-muted);
-        line-height: 1.6;
-        margin-bottom: 24px;
-    }
-
-    .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-    }
-
-    .modal-actions .btn-danger {
-        background: var(--color-error);
-        color: white;
-        padding: 12px 20px;
-    }
-
-    .modal-actions .btn-danger:hover {
-        background: #B91C1C;
-    }
-
     /* Responsive */
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
+        .hub-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .hub-title {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 600px) {
         .hub-container {
             padding: 24px 16px 60px;
         }
 
-        .hub-header-top {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .hub-title {
-            font-size: 24px;
-        }
-
-        .stats-row {
-            grid-template-columns: 1fr;
-        }
-
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .accountant-item {
+        .tabs {
             flex-wrap: wrap;
+        }
+
+        .date-range {
+            flex-direction: column;
             gap: 12px;
-            padding: 16px;
         }
 
-        .accountant-meta {
-            margin-right: 0;
-            order: 3;
-            width: 100%;
-        }
-
-        .accountant-actions {
-            order: 2;
-            margin-left: auto;
+        .date-separator {
+            display: none;
         }
     }
 </style>
@@ -649,136 +535,267 @@
 <div class="hub-container">
     <!-- Page Header -->
     <header class="hub-header">
-        <div class="hub-header-top">
-            <div class="hub-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-            </div>
-            <div class="hub-title-group">
-                <h1 class="hub-title">Accountant Hub</h1>
-                <p class="hub-subtitle">Invite accountants to collaborate and securely share access to your team's financial data.</p>
-            </div>
-        </div>
+        <h1 class="hub-title">Accountant Hub</h1>
+        <p class="hub-subtitle">Run batch compliance tasks across your client portfolio</p>
     </header>
 
-    <!-- Stats Row -->
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-value" id="stat-total">0</div>
-            <div class="stat-label">Total Accountants</div>
-        </div>
-        <div class="stat-card accent">
-            <div class="stat-value" id="stat-active">0</div>
-            <div class="stat-label">Active Access</div>
-        </div>
-        <div class="stat-card purple">
-            <div class="stat-value" id="stat-readonly">0</div>
-            <div class="stat-label">Read-Only</div>
-        </div>
-    </div>
-
-    <!-- Invite Section -->
-    <section class="section">
-        <div class="section-header">
-            <div class="section-title">
-                <div class="section-title-icon purple">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+    <!-- Two Column Layout -->
+    <div class="hub-grid">
+        <!-- Left Panel: Clients -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg class="panel-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
+                    <h2>Clients</h2>
                 </div>
-                <div>
-                    <h2>Invite Accountant</h2>
-                    <p>Send an invitation to your accountant or bookkeeper</p>
-                </div>
+                <span class="selected-badge" id="clients-selected-badge">0 selected</span>
             </div>
-        </div>
-        <div class="section-body">
-            <div id="invite-error" class="alert alert-error hidden">
-                <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span id="invite-error-text"></span>
-            </div>
-            <div id="invite-success" class="alert alert-success hidden">
-                <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span id="invite-success-text"></span>
-            </div>
-            <form id="invite-form">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label" for="invite-email">Email Address</label>
-                        <input type="email" id="invite-email" class="form-input" placeholder="accountant@example.com" required>
-                        <span class="form-hint">They'll receive an invitation to access your data</span>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="invite-name">Full Name</label>
-                        <input type="text" id="invite-name" class="form-input" placeholder="Jane Smith">
-                        <span class="form-hint">Required if this is a new user</span>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <span class="form-hint">Access will be set to read-only by default</span>
-                    <button type="submit" class="btn btn-primary">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            <div class="panel-body">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button type="button" class="tab active" data-source="xero">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
-                        Send Invitation
+                        Xero Orgs
+                    </button>
+                    <button type="button" class="tab" data-source="xpm">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                        XPM Clients
                     </button>
                 </div>
-            </form>
-        </div>
-    </section>
 
-    <!-- Active Accountants Section -->
-    <section class="section">
-        <div class="section-header">
-            <div class="section-title">
-                <div class="section-title-icon accent">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                <!-- Search -->
+                <div class="search-box">
+                    <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
+                    <input type="text" class="search-input" id="client-search" placeholder="Search clients...">
                 </div>
-                <div>
-                    <h2>Shared Access</h2>
-                    <p>Accountants with access to your team's data</p>
+
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <button type="button" class="action-btn" id="refresh-clients">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Refresh
+                    </button>
+                    <button type="button" class="action-btn" id="select-all-clients">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        Select all
+                    </button>
                 </div>
-            </div>
-        </div>
-        <div id="shares-container">
-            <div class="loading-state" id="shares-loading">
-                <div class="loading-spinner"></div>
-                <span>Loading accountants...</span>
-            </div>
-            <ul class="accountant-list" id="shares-list" style="display: none;"></ul>
-            <div class="empty-state" id="shares-empty" style="display: none;">
-                <div class="empty-icon">
+
+                <!-- Client List -->
+                <div id="clients-loading" class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <span>Loading clients...</span>
+                </div>
+                <ul class="client-list" id="client-list" style="display: none;"></ul>
+                <div id="clients-empty" class="empty-state" style="display: none;">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
+                    <p>No clients found. Connect to Xero to get started.</p>
                 </div>
-                <div class="empty-title">No accountants yet</div>
-                <p class="empty-text">Invite your accountant or bookkeeper to securely collaborate on your financial data.</p>
             </div>
         </div>
-    </section>
-</div>
 
-<!-- Revoke Confirmation Modal -->
-<div class="modal-overlay" id="revoke-modal">
-    <div class="modal">
-        <div class="modal-icon danger">
-            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-        </div>
-        <div class="modal-title">Revoke Access</div>
-        <p class="modal-text">Are you sure you want to revoke <strong id="revoke-name"></strong>'s access? They will no longer be able to view your team's financial data.</p>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" id="revoke-cancel">Cancel</button>
-            <button type="button" class="btn btn-danger" id="revoke-confirm">Revoke Access</button>
+        <!-- Right Panel: Batch Tasks -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg class="panel-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h2>Batch Tasks</h2>
+                </div>
+                <span class="selected-badge" id="tasks-selected-badge">0 selected</span>
+            </div>
+            <div class="panel-body">
+                <!-- Date Range -->
+                <div class="date-range">
+                    <div class="date-group">
+                        <label class="date-label">From</label>
+                        <input type="date" class="date-input" id="date-from" value="2025-09-30">
+                    </div>
+                    <span class="date-separator">to</span>
+                    <div class="date-group">
+                        <label class="date-label">To</label>
+                        <input type="date" class="date-input" id="date-to" value="2025-12-30">
+                    </div>
+                </div>
+
+                <!-- Select All Tasks -->
+                <div class="action-bar">
+                    <button type="button" class="action-btn" id="select-all-tasks">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        Select all
+                    </button>
+                    <button type="button" class="action-btn" id="clear-all-tasks">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Clear all
+                    </button>
+                </div>
+
+                <!-- Task List -->
+                <div class="task-list" id="task-list">
+                    <div class="task-item" data-task="bas-variance">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">BAS Variance Scan</div>
+                            <div class="task-description">Check GST calculations against GL balances</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="gst-reconciliation">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">GST Reconciliation Deep Scan</div>
+                            <div class="task-description">Reconcile GST + flag audit issues</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="unallocated">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Unallocated Transactions</div>
+                            <div class="task-description">Find missing account codes</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="bank-reconciliation">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Bank Reconciliation Health</div>
+                            <div class="task-description">Check unreconciled bank balances</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="super-reconciliation">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Super Reconciliation</div>
+                            <div class="task-description">Verify superannuation payments match obligations</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="payroll-super-compliance">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Payroll & Super Compliance</div>
+                            <div class="task-description">PAYG W1/W2 + super payment status</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="payg-w1w2-check">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">PAYG W1/W2 Check</div>
+                            <div class="task-description">Detect drift between payroll and BAS labels</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="aging-drift">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Aging Drift</div>
+                            <div class="task-description">AR/AP totals and movement risk</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="div7a-loan">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Div 7A / Loan Accounts</div>
+                            <div class="task-description">Scan for drawings/loan GST issues</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="capital-expense-miscode">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Capital vs Expense Miscode</div>
+                            <div class="task-description">Flag asset purchases expensed</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="related-party-scan">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">Related Party Scan</div>
+                            <div class="task-description">Detect related party/loan transactions</div>
+                        </div>
+                    </div>
+                    <div class="task-item" data-task="bas-period-completeness">
+                        <div class="task-checkbox">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">BAS Period Completeness</div>
+                            <div class="task-description">Check period completeness warnings</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Run Button -->
+            <div class="run-section">
+                <button type="button" class="btn-run" id="run-tasks" disabled>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    </svg>
+                    Run Batch Tasks
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -786,44 +803,81 @@
 
 {% block extra_scripts %}
 <script>
-    let shares = [];
-    let shareToRevoke = null;
+    // State
+    let clients = [];
+    let selectedClients = new Set();
+    let selectedTasks = new Set();
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
-        loadShares();
-        setupForm();
-        setupModal();
+        loadClients();
+        setupClientSearch();
+        setupTabs();
+        setupClientSelection();
+        setupTaskSelection();
+        setupRunButton();
+        setDefaultDates();
     });
 
-    async function loadShares() {
+    // Set default date range (last quarter)
+    function setDefaultDates() {
+        const today = new Date();
+        const threeMonthsAgo = new Date(today);
+        threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+        document.getElementById('date-from').value = threeMonthsAgo.toISOString().split('T')[0];
+        document.getElementById('date-to').value = today.toISOString().split('T')[0];
+    }
+
+    // Load clients from API
+    async function loadClients() {
         try {
+            // Try to load from sharing API first
             const res = await fetch('/api/sharing/invites');
             const data = await res.json();
 
-            document.getElementById('shares-loading').style.display = 'none';
+            document.getElementById('clients-loading').style.display = 'none';
 
-            if (!data.shares || data.shares.length === 0) {
-                document.getElementById('shares-empty').style.display = 'block';
-                updateStats(0, 0, 0);
-                return;
+            if (data.shares && data.shares.length > 0) {
+                clients = data.shares.map(s => ({
+                    id: s.id,
+                    name: s.accountant_name || s.accountant_email.split('@')[0],
+                    email: s.accountant_email,
+                    lastUsed: s.created_at
+                }));
+                renderClients();
+            } else {
+                // Show demo clients
+                clients = [
+                    { id: '1', name: 'API Testing', lastUsed: '2026-02-01' },
+                    { id: '2', name: 'Demo Company (AU)', lastUsed: '2026-02-01' },
+                    { id: '3', name: 'Demo Company (AU)', lastUsed: '2026-01-30' },
+                    { id: '4', name: 'Demo Company (AU)', lastUsed: '2026-02-06' }
+                ];
+                renderClients();
             }
-
-            shares = data.shares;
-            renderShares();
-            updateStats(shares.length, shares.length, shares.filter(s => s.access_level === 'read_only').length);
-
         } catch (error) {
-            console.error('Error loading shares:', error);
-            document.getElementById('shares-loading').innerHTML = '<p style="color: var(--color-error);">Failed to load accountants</p>';
+            console.error('Error loading clients:', error);
+            // Show demo clients on error
+            clients = [
+                { id: '1', name: 'API Testing', lastUsed: '2026-02-01' },
+                { id: '2', name: 'Demo Company (AU)', lastUsed: '2026-02-01' },
+                { id: '3', name: 'Demo Company (AU)', lastUsed: '2026-01-30' },
+                { id: '4', name: 'Demo Company (AU)', lastUsed: '2026-02-06' }
+            ];
+            document.getElementById('clients-loading').style.display = 'none';
+            renderClients();
         }
     }
 
-    function renderShares() {
-        const list = document.getElementById('shares-list');
-        const empty = document.getElementById('shares-empty');
+    function renderClients(filter = '') {
+        const list = document.getElementById('client-list');
+        const empty = document.getElementById('clients-empty');
+        const filtered = clients.filter(c =>
+            c.name.toLowerCase().includes(filter.toLowerCase())
+        );
 
-        if (shares.length === 0) {
+        if (filtered.length === 0) {
             list.style.display = 'none';
             empty.style.display = 'block';
             return;
@@ -832,123 +886,153 @@
         empty.style.display = 'none';
         list.style.display = 'block';
 
-        list.innerHTML = shares.map(share => {
-            const name = share.accountant_name || share.accountant_email.split('@')[0];
-            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2);
-            const sharedDate = share.created_at ? new Date(share.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-
+        list.innerHTML = filtered.map(client => {
+            const isSelected = selectedClients.has(client.id);
+            const lastUsed = client.lastUsed ? new Date(client.lastUsed).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : '';
             return `
-                <li class="accountant-item">
-                    <div class="accountant-avatar">${escapeHtml(initials)}</div>
-                    <div class="accountant-info">
-                        <div class="accountant-name">${escapeHtml(name)}</div>
-                        <div class="accountant-email">${escapeHtml(share.accountant_email)}</div>
+                <li class="client-item ${isSelected ? 'selected' : ''}" data-id="${client.id}">
+                    <div class="client-checkbox">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                        </svg>
                     </div>
-                    <div class="accountant-meta">
-                        <span class="access-badge">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                            ${share.access_level === 'read_only' ? 'Read Only' : share.access_level}
-                        </span>
-                        ${sharedDate ? `<span class="shared-date">Shared ${sharedDate}</span>` : ''}
-                    </div>
-                    <div class="accountant-actions">
-                        <button type="button" class="btn-icon danger" onclick="promptRevoke('${share.id}', '${escapeHtml(name)}')" title="Revoke access">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
+                    <div class="client-info">
+                        <div class="client-name">${escapeHtml(client.name)}</div>
+                        <div class="client-meta">Last used: ${lastUsed}</div>
                     </div>
                 </li>
             `;
         }).join('');
+
+        updateSelectedBadge();
     }
 
-    function updateStats(total, active, readonly) {
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-active').textContent = active;
-        document.getElementById('stat-readonly').textContent = readonly;
+    function setupClientSearch() {
+        const input = document.getElementById('client-search');
+        let debounce;
+        input.addEventListener('input', (e) => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                renderClients(e.target.value);
+            }, 200);
+        });
     }
 
-    function setupForm() {
-        const form = document.getElementById('invite-form');
-        const errorEl = document.getElementById('invite-error');
-        const errorText = document.getElementById('invite-error-text');
-        const successEl = document.getElementById('invite-success');
-        const successText = document.getElementById('invite-success-text');
+    function setupTabs() {
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                // In real app, would load different client source
+            });
+        });
+    }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    function setupClientSelection() {
+        const list = document.getElementById('client-list');
+        const selectAllBtn = document.getElementById('select-all-clients');
+        const refreshBtn = document.getElementById('refresh-clients');
 
-            // Hide previous messages
-            errorEl.classList.add('hidden');
-            successEl.classList.add('hidden');
+        list.addEventListener('click', (e) => {
+            const item = e.target.closest('.client-item');
+            if (!item) return;
 
-            const email = document.getElementById('invite-email').value.trim();
-            const name = document.getElementById('invite-name').value.trim();
-
-            try {
-                const res = await fetch('/api/sharing/invite', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, name })
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    successText.textContent = `Invitation sent to ${email} successfully!`;
-                    successEl.classList.remove('hidden');
-                    form.reset();
-                    loadShares();
-                } else {
-                    errorText.textContent = data.error || 'Failed to send invitation';
-                    errorEl.classList.remove('hidden');
-                }
-            } catch (error) {
-                errorText.textContent = 'Failed to send invitation. Please try again.';
-                errorEl.classList.remove('hidden');
+            const id = item.dataset.id;
+            if (selectedClients.has(id)) {
+                selectedClients.delete(id);
+                item.classList.remove('selected');
+            } else {
+                selectedClients.add(id);
+                item.classList.add('selected');
             }
+            updateSelectedBadge();
+            updateRunButton();
+        });
+
+        selectAllBtn.addEventListener('click', () => {
+            const allSelected = selectedClients.size === clients.length;
+            if (allSelected) {
+                selectedClients.clear();
+            } else {
+                clients.forEach(c => selectedClients.add(c.id));
+            }
+            renderClients(document.getElementById('client-search').value);
+            updateRunButton();
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            document.getElementById('clients-loading').style.display = 'flex';
+            document.getElementById('client-list').style.display = 'none';
+            loadClients();
         });
     }
 
-    function setupModal() {
-        const modal = document.getElementById('revoke-modal');
-        const cancelBtn = document.getElementById('revoke-cancel');
-        const confirmBtn = document.getElementById('revoke-confirm');
+    function setupTaskSelection() {
+        const taskList = document.getElementById('task-list');
+        const selectAllBtn = document.getElementById('select-all-tasks');
+        const clearAllBtn = document.getElementById('clear-all-tasks');
 
-        cancelBtn.addEventListener('click', () => {
-            shareToRevoke = null;
-            modal.classList.remove('active');
+        taskList.addEventListener('click', (e) => {
+            const item = e.target.closest('.task-item');
+            if (!item) return;
+
+            const task = item.dataset.task;
+            if (selectedTasks.has(task)) {
+                selectedTasks.delete(task);
+                item.classList.remove('selected');
+            } else {
+                selectedTasks.add(task);
+                item.classList.add('selected');
+            }
+            updateTaskBadge();
+            updateRunButton();
         });
 
-        confirmBtn.addEventListener('click', async () => {
-            if (!shareToRevoke) return;
-
-            try {
-                await fetch(`/api/sharing/invites/${shareToRevoke}`, { method: 'DELETE' });
-                shareToRevoke = null;
-                modal.classList.remove('active');
-                loadShares();
-            } catch (error) {
-                console.error('Error revoking access:', error);
-            }
+        selectAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('.task-item').forEach(item => {
+                selectedTasks.add(item.dataset.task);
+                item.classList.add('selected');
+            });
+            updateTaskBadge();
+            updateRunButton();
         });
 
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                shareToRevoke = null;
-                modal.classList.remove('active');
-            }
+        clearAllBtn.addEventListener('click', () => {
+            selectedTasks.clear();
+            document.querySelectorAll('.task-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            updateTaskBadge();
+            updateRunButton();
         });
     }
 
-    function promptRevoke(shareId, name) {
-        shareToRevoke = shareId;
-        document.getElementById('revoke-name').textContent = name;
-        document.getElementById('revoke-modal').classList.add('active');
+    function updateSelectedBadge() {
+        document.getElementById('clients-selected-badge').textContent = `${selectedClients.size} selected`;
+    }
+
+    function updateTaskBadge() {
+        document.getElementById('tasks-selected-badge').textContent = `${selectedTasks.size} selected`;
+    }
+
+    function updateRunButton() {
+        const btn = document.getElementById('run-tasks');
+        btn.disabled = selectedClients.size === 0 || selectedTasks.size === 0;
+    }
+
+    function setupRunButton() {
+        document.getElementById('run-tasks').addEventListener('click', () => {
+            const dateFrom = document.getElementById('date-from').value;
+            const dateTo = document.getElementById('date-to').value;
+
+            console.log('Running batch tasks:', {
+                clients: Array.from(selectedClients),
+                tasks: Array.from(selectedTasks),
+                dateRange: { from: dateFrom, to: dateTo }
+            });
+
+            alert(`Running ${selectedTasks.size} tasks on ${selectedClients.size} clients...`);
+        });
     }
 
     function escapeHtml(text) {
