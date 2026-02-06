@@ -198,8 +198,355 @@
     .action-bar {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
         margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    /* Group Selector */
+    .group-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .group-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .group-tabs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        flex: 1;
+    }
+
+    .group-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        background: var(--color-bg-subtle);
+        border: 1px solid transparent;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .group-tab:hover {
+        background: var(--color-border-light);
+        color: var(--color-text-primary);
+    }
+
+    .group-tab.active {
+        background: var(--color-purple-light);
+        color: var(--color-purple);
+        border-color: var(--color-purple);
+    }
+
+    .group-tab .group-count {
+        font-size: 11px;
+        background: rgba(0,0,0,0.1);
+        padding: 1px 6px;
+        border-radius: 10px;
+    }
+
+    .group-tab.active .group-count {
+        background: rgba(124, 58, 237, 0.2);
+    }
+
+    .group-tab-delete {
+        display: none;
+        width: 14px;
+        height: 14px;
+        padding: 0;
+        margin-left: 2px;
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        opacity: 0.6;
+    }
+
+    .group-tab:hover .group-tab-delete {
+        display: inline-flex;
+    }
+
+    .group-tab-delete:hover {
+        opacity: 1;
+    }
+
+    .btn-new-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 10px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-purple);
+        background: transparent;
+        border: 1px dashed var(--color-purple);
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-new-group:hover {
+        background: var(--color-purple-light);
+    }
+
+    .btn-new-group svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Add to Group Dropdown */
+    .dropdown-container {
+        position: relative;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        min-width: 180px;
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        z-index: 100;
+        display: none;
+    }
+
+    .dropdown-menu.show {
+        display: block;
+    }
+
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--color-text-primary);
+        background: none;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.1s ease;
+    }
+
+    .dropdown-item:hover {
+        background: var(--color-bg-subtle);
+    }
+
+    .dropdown-item svg {
+        width: 16px;
+        height: 16px;
+        color: var(--color-text-muted);
+    }
+
+    .dropdown-divider {
+        height: 1px;
+        background: var(--color-border-light);
+        margin: 4px 0;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal {
+        background: var(--color-bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        width: 100%;
+        max-width: 400px;
+        margin: 20px;
+        transform: scale(0.95);
+        transition: transform 0.2s ease;
+    }
+
+    .modal-overlay.show .modal {
+        transform: scale(1);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0;
+    }
+
+    .modal-close {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: var(--color-text-muted);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .modal-close:hover {
+        background: var(--color-bg-subtle);
+        color: var(--color-text-primary);
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 14px;
+        font-family: inherit;
+        color: var(--color-text-primary);
+        background: var(--color-bg-card);
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-md);
+        outline: none;
+        transition: all 0.15s ease;
+    }
+
+    .form-input:focus {
+        border-color: var(--color-purple);
+        box-shadow: 0 0 0 3px var(--color-purple-light);
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid var(--color-border-light);
+        background: var(--color-bg-subtle);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+
+    .btn-secondary {
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 500;
+        font-family: inherit;
+        color: var(--color-text-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-bg-subtle);
+    }
+
+    .btn-primary {
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 500;
+        font-family: inherit;
+        color: white;
+        background: var(--color-purple);
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-primary:hover {
+        background: #6D28D9;
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Toast notification */
+    .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        background: var(--color-text-primary);
+        color: white;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        z-index: 2000;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    .toast svg {
+        width: 18px;
+        height: 18px;
+        color: var(--color-accent);
     }
 
     /* Task Action Bar - Sticky below header */
@@ -579,6 +926,23 @@
                     </button>
                 </div>
 
+                <!-- Group Selector -->
+                <div class="group-selector">
+                    <div class="group-tabs" id="group-tabs">
+                        <button type="button" class="group-tab active" data-group="all">
+                            All Clients
+                            <span class="group-count" id="all-clients-count">0</span>
+                        </button>
+                        <!-- Dynamic groups will be inserted here -->
+                    </div>
+                    <button type="button" class="btn-new-group" id="btn-new-group">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Group
+                    </button>
+                </div>
+
                 <!-- Search -->
                 <div class="search-box">
                     <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -601,6 +965,26 @@
                         </svg>
                         Select all
                     </button>
+                    <div class="dropdown-container">
+                        <button type="button" class="action-btn" id="add-to-group-btn" disabled>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/>
+                            </svg>
+                            Add to Group
+                        </button>
+                        <div class="dropdown-menu" id="add-to-group-menu">
+                            <div id="group-menu-items">
+                                <!-- Dynamic group items -->
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item" id="create-group-from-menu">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Create new group...
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Client List -->
@@ -808,6 +1192,41 @@
         </div>
     </div>
 </div>
+
+<!-- Create Group Modal -->
+<div class="modal-overlay" id="create-group-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Create Client Group</h3>
+            <button type="button" class="modal-close" id="modal-close">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label" for="group-name">Group Name</label>
+                <input type="text" class="form-input" id="group-name" placeholder="e.g., BAS Clients, Monthly Review">
+            </div>
+            <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+                <span id="selected-for-group-count">0</span> client(s) will be added to this group.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
+            <button type="button" class="btn-primary" id="modal-create" disabled>Create Group</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Group created successfully</span>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -816,9 +1235,13 @@
     let clients = [];
     let selectedClients = new Set();
     let selectedTasks = new Set();
+    let clientGroups = [];
+    let activeGroup = 'all';
+    const STORAGE_KEY = 'accountant_hub_client_groups';
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
+        loadGroupsFromStorage();
         loadClients();
         setupClientSearch();
         setupTabs();
@@ -826,7 +1249,280 @@
         setupTaskSelection();
         setupRunButton();
         setDefaultDates();
+        setupGroupFeatures();
     });
+
+    // ==========================================
+    // GROUP MANAGEMENT - localStorage MVP
+    // ==========================================
+
+    function loadGroupsFromStorage() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                clientGroups = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error('Error loading groups:', e);
+            clientGroups = [];
+        }
+        renderGroupTabs();
+    }
+
+    function saveGroupsToStorage() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(clientGroups));
+        } catch (e) {
+            console.error('Error saving groups:', e);
+        }
+    }
+
+    function createGroup(name, clientIds) {
+        const group = {
+            id: 'group-' + Date.now(),
+            name: name,
+            clientIds: Array.from(clientIds),
+            createdAt: new Date().toISOString()
+        };
+        clientGroups.push(group);
+        saveGroupsToStorage();
+        renderGroupTabs();
+        updateGroupMenuItems();
+        showToast(`Group "${name}" created with ${clientIds.length} client(s)`);
+        return group;
+    }
+
+    function deleteGroup(groupId) {
+        const group = clientGroups.find(g => g.id === groupId);
+        if (!group) return;
+
+        clientGroups = clientGroups.filter(g => g.id !== groupId);
+        saveGroupsToStorage();
+
+        // If we deleted the active group, switch to all
+        if (activeGroup === groupId) {
+            activeGroup = 'all';
+            selectedClients.clear();
+            renderClients(document.getElementById('client-search').value);
+        }
+
+        renderGroupTabs();
+        updateGroupMenuItems();
+        showToast(`Group "${group.name}" deleted`);
+    }
+
+    function addClientsToGroup(groupId, clientIds) {
+        const group = clientGroups.find(g => g.id === groupId);
+        if (!group) return;
+
+        const existingIds = new Set(group.clientIds);
+        let addedCount = 0;
+        clientIds.forEach(id => {
+            if (!existingIds.has(id)) {
+                group.clientIds.push(id);
+                addedCount++;
+            }
+        });
+
+        saveGroupsToStorage();
+        renderGroupTabs();
+        showToast(`Added ${addedCount} client(s) to "${group.name}"`);
+    }
+
+    function renderGroupTabs() {
+        const container = document.getElementById('group-tabs');
+        const allCount = clients.length;
+
+        let html = `
+            <button type="button" class="group-tab ${activeGroup === 'all' ? 'active' : ''}" data-group="all">
+                All Clients
+                <span class="group-count" id="all-clients-count">${allCount}</span>
+            </button>
+        `;
+
+        clientGroups.forEach(group => {
+            const count = group.clientIds.length;
+            html += `
+                <button type="button" class="group-tab ${activeGroup === group.id ? 'active' : ''}" data-group="${group.id}">
+                    ${escapeHtml(group.name)}
+                    <span class="group-count">${count}</span>
+                    <span class="group-tab-delete" data-delete="${group.id}" title="Delete group">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </span>
+                </button>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Attach click handlers
+        container.querySelectorAll('.group-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                // Check if delete button was clicked
+                const deleteBtn = e.target.closest('.group-tab-delete');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const groupId = deleteBtn.dataset.delete;
+                    if (confirm('Delete this group? Clients will not be deleted.')) {
+                        deleteGroup(groupId);
+                    }
+                    return;
+                }
+
+                const groupId = tab.dataset.group;
+                selectGroup(groupId);
+            });
+        });
+    }
+
+    function selectGroup(groupId) {
+        activeGroup = groupId;
+
+        // Update active tab
+        document.querySelectorAll('.group-tab').forEach(t => t.classList.remove('active'));
+        const activeTab = document.querySelector(`.group-tab[data-group="${groupId}"]`);
+        if (activeTab) activeTab.classList.add('active');
+
+        // Auto-select clients in the group
+        selectedClients.clear();
+        if (groupId !== 'all') {
+            const group = clientGroups.find(g => g.id === groupId);
+            if (group) {
+                group.clientIds.forEach(id => {
+                    // Only select if client exists in current client list
+                    if (clients.find(c => c.id === id)) {
+                        selectedClients.add(id);
+                    }
+                });
+            }
+        }
+
+        renderClients(document.getElementById('client-search').value);
+        updateRunButton();
+    }
+
+    function updateGroupMenuItems() {
+        const container = document.getElementById('group-menu-items');
+        if (clientGroups.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 10px 14px; font-size: 13px; color: var(--color-text-muted);">
+                    No groups yet
+                </div>
+            `;
+        } else {
+            container.innerHTML = clientGroups.map(group => `
+                <button type="button" class="dropdown-item" data-add-to-group="${group.id}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/>
+                    </svg>
+                    ${escapeHtml(group.name)}
+                </button>
+            `).join('');
+
+            // Attach handlers
+            container.querySelectorAll('[data-add-to-group]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const groupId = btn.dataset.addToGroup;
+                    addClientsToGroup(groupId, selectedClients);
+                    hideDropdown();
+                });
+            });
+        }
+    }
+
+    function setupGroupFeatures() {
+        const addToGroupBtn = document.getElementById('add-to-group-btn');
+        const addToGroupMenu = document.getElementById('add-to-group-menu');
+        const newGroupBtn = document.getElementById('btn-new-group');
+        const createFromMenuBtn = document.getElementById('create-group-from-menu');
+        const modal = document.getElementById('create-group-modal');
+        const modalClose = document.getElementById('modal-close');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalCreate = document.getElementById('modal-create');
+        const groupNameInput = document.getElementById('group-name');
+
+        // Initialize group menu
+        updateGroupMenuItems();
+
+        // Toggle dropdown
+        addToGroupBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addToGroupMenu.classList.toggle('show');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            hideDropdown();
+        });
+
+        addToGroupMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Open modal from various places
+        newGroupBtn.addEventListener('click', () => openCreateModal());
+        createFromMenuBtn.addEventListener('click', () => {
+            hideDropdown();
+            openCreateModal();
+        });
+
+        // Modal controls
+        modalClose.addEventListener('click', closeModal);
+        modalCancel.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Enable/disable create button based on input
+        groupNameInput.addEventListener('input', () => {
+            modalCreate.disabled = groupNameInput.value.trim() === '';
+        });
+
+        // Handle enter key in input
+        groupNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && groupNameInput.value.trim()) {
+                handleCreateGroup();
+            }
+        });
+
+        // Create group
+        modalCreate.addEventListener('click', handleCreateGroup);
+
+        function openCreateModal() {
+            document.getElementById('selected-for-group-count').textContent = selectedClients.size;
+            groupNameInput.value = '';
+            modalCreate.disabled = true;
+            modal.classList.add('show');
+            setTimeout(() => groupNameInput.focus(), 100);
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+        }
+
+        function handleCreateGroup() {
+            const name = groupNameInput.value.trim();
+            if (!name) return;
+
+            createGroup(name, selectedClients);
+            closeModal();
+        }
+    }
+
+    function hideDropdown() {
+        document.getElementById('add-to-group-menu').classList.remove('show');
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-message').textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
 
     // Set default date range (last quarter)
     function setDefaultDates() {
@@ -855,6 +1551,7 @@
                     lastUsed: s.created_at
                 }));
                 renderClients();
+                renderGroupTabs();
             } else {
                 // Show demo clients
                 clients = [
@@ -864,6 +1561,7 @@
                     { id: '4', name: 'Demo Company (AU)', lastUsed: '2026-02-06' }
                 ];
                 renderClients();
+                renderGroupTabs();
             }
         } catch (error) {
             console.error('Error loading clients:', error);
@@ -876,6 +1574,7 @@
             ];
             document.getElementById('clients-loading').style.display = 'none';
             renderClients();
+            renderGroupTabs();
         }
     }
 
@@ -1018,6 +1717,11 @@
 
     function updateSelectedBadge() {
         document.getElementById('clients-selected-badge').textContent = `${selectedClients.size} selected`;
+        // Enable/disable Add to Group button
+        const addToGroupBtn = document.getElementById('add-to-group-btn');
+        if (addToGroupBtn) {
+            addToGroupBtn.disabled = selectedClients.size === 0;
+        }
     }
 
     function updateTaskBadge() {

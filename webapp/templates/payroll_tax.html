@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Tax Calculator - BAS Reviewer{% endblock %}
+
+{% block content %}
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Payroll Tax Calculator</h1>
+            <p class="mt-1 text-gray-500">Calculate state payroll tax liabilities</p>
+        </div>
+    </div>
+</section>
+
+<div id="xeroNotConnected" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect your Xero account</h2>
+            <p class="text-gray-500 mb-6">Payroll tax calculator requires a Xero connection.</p>
+            <a href="/connections/xero/connect" class="bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium">Connect to Xero</a>
+        </div>
+    </div>
+</div>
+
+<div id="mainContent">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-end gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                    <input type="date" id="fromDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                    <input type="date" id="toDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div class="w-40">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                    <select id="stateSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="NSW">NSW</option>
+                        <option value="VIC">VIC</option>
+                        <option value="QLD">QLD</option>
+                        <option value="SA">SA</option>
+                        <option value="WA">WA</option>
+                        <option value="TAS">TAS</option>
+                        <option value="NT">NT</option>
+                        <option value="ACT">ACT</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generateTax()" id="generateBtn" class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium">Generate</button>
+                    <button onclick="downloadExcel()" id="downloadBtn" class="hidden border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium">Excel</button>
+                </div>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button onclick="setQuarter('Q1')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q1</button>
+                <button onclick="setQuarter('Q2')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q2</button>
+                <button onclick="setQuarter('Q3')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q3</button>
+                <button onclick="setQuarter('Q4')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q4</button>
+            </div>
+        </div>
+
+        <div id="summaryCards" class="hidden mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Taxable Wages</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryTaxableWages">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Period Threshold</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryThreshold">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Rate</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryRate">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Tax Payable</p>
+                    <p class="text-2xl font-bold mt-1" id="summaryTaxPayable">--</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="detailsContainer" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Calculation Details</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Gross Wages</span>
+                        <span class="font-medium" id="detailGrossWages">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Exempt Wages</span>
+                        <span class="font-medium" id="detailExemptWages">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Taxable Wages</span>
+                        <span class="font-medium" id="detailTaxableWages">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Annual Threshold</span>
+                        <span class="font-medium" id="detailAnnualThreshold">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Period Threshold (pro-rata)</span>
+                        <span class="font-medium" id="detailPeriodThreshold">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Wages Over Threshold</span>
+                        <span class="font-medium" id="detailWagesOver">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 bg-primary/5 rounded-lg px-3">
+                        <span class="font-semibold text-gray-900">Payroll Tax Payable</span>
+                        <span class="font-bold text-primary" id="detailTaxPayable">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="stateRatesContainer" class="mt-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">State Payroll Tax Rates (2024-25)</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead>
+                            <tr>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500">State</th>
+                                <th class="px-3 py-2 text-right font-medium text-gray-500">Annual Threshold</th>
+                                <th class="px-3 py-2 text-right font-medium text-gray-500">Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stateRatesBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <p class="text-gray-500">Select a date range and state, then click Generate to calculate payroll tax</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const stateRates = {
+    NSW: { annual_threshold: 1200000, rate: 5.45 },
+    VIC: { annual_threshold: 900000, rate: 4.85 },
+    QLD: { annual_threshold: 1300000, rate: 4.75 },
+    SA: { annual_threshold: 1500000, rate: 4.95 },
+    WA: { annual_threshold: 1000000, rate: 5.50 },
+    TAS: { annual_threshold: 1250000, rate: 4.85 },
+    NT: { annual_threshold: 1500000, rate: 5.50 },
+    ACT: { annual_threshold: 2000000, rate: 6.85 }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    setCurrentQuarter();
+    renderStateRates();
+});
+
+function renderStateRates() {
+    const tbody = document.getElementById('stateRatesBody');
+    Object.entries(stateRates).forEach(([state, info]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="px-3 py-2 font-medium text-gray-900">${state}</td>
+            <td class="px-3 py-2 text-right text-gray-600">${formatCurrency(info.annual_threshold)}</td>
+            <td class="px-3 py-2 text-right text-gray-600">${info.rate}%</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function setCurrentQuarter() {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    let qStart, qEnd;
+    if (month >= 6 && month <= 8) { qStart = new Date(year, 6, 1); qEnd = new Date(year, 8, 30); }
+    else if (month >= 9 && month <= 11) { qStart = new Date(year, 9, 1); qEnd = new Date(year, 11, 31); }
+    else if (month >= 0 && month <= 2) { qStart = new Date(year, 0, 1); qEnd = new Date(year, 2, 31); }
+    else { qStart = new Date(year, 3, 1); qEnd = new Date(year, 5, 30); }
+    document.getElementById('fromDate').value = qStart.toISOString().split('T')[0];
+    document.getElementById('toDate').value = qEnd.toISOString().split('T')[0];
+}
+
+function setQuarter(q) {
+    const now = new Date();
+    const fyYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+    let qStart, qEnd;
+    switch(q) {
+        case 'Q1': qStart = new Date(fyYear, 6, 1); qEnd = new Date(fyYear, 8, 30); break;
+        case 'Q2': qStart = new Date(fyYear, 9, 1); qEnd = new Date(fyYear, 11, 31); break;
+        case 'Q3': qStart = new Date(fyYear + 1, 0, 1); qEnd = new Date(fyYear + 1, 2, 31); break;
+        case 'Q4': qStart = new Date(fyYear + 1, 3, 1); qEnd = new Date(fyYear + 1, 5, 30); break;
+    }
+    document.getElementById('fromDate').value = qStart.toISOString().split('T')[0];
+    document.getElementById('toDate').value = qEnd.toISOString().split('T')[0];
+}
+
+async function generateTax() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const state = document.getElementById('stateSelect').value;
+    if (!fromDate || !toDate) { alert('Please select dates'); return; }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true; btn.textContent = 'Generating...';
+
+    try {
+        const resp = await fetch(`/payroll-tax/api/generate?from_date=${fromDate}&to_date=${toDate}&state=${state}`);
+        const data = await resp.json();
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === 'Xero not connected') {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('xeroNotConnected').classList.remove('hidden');
+                return;
+            }
+            alert(data.error || 'Failed'); return;
+        }
+        renderResults(data);
+    } catch (e) { alert('Network error'); console.error(e); }
+    finally { btn.disabled = false; btn.textContent = 'Generate'; }
+}
+
+function renderResults(data) {
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('summaryCards').classList.remove('hidden');
+    document.getElementById('detailsContainer').classList.remove('hidden');
+    document.getElementById('downloadBtn').classList.remove('hidden');
+
+    const wages = data.data.wages || {};
+    const calc = data.data.calculation || {};
+
+    document.getElementById('summaryTaxableWages').textContent = formatCurrency(calc.taxable_wages);
+    document.getElementById('summaryThreshold').textContent = formatCurrency(calc.period_threshold);
+    document.getElementById('summaryRate').textContent = `${calc.rate_percent}%`;
+
+    const taxEl = document.getElementById('summaryTaxPayable');
+    taxEl.textContent = formatCurrency(calc.tax_payable);
+    taxEl.className = `text-2xl font-bold mt-1 ${calc.tax_payable > 0 ? 'text-red-600' : 'text-green-600'}`;
+
+    document.getElementById('detailGrossWages').textContent = formatCurrency(wages.gross_wages);
+    document.getElementById('detailExemptWages').textContent = formatCurrency(wages.exempt_wages);
+    document.getElementById('detailTaxableWages').textContent = formatCurrency(calc.taxable_wages);
+    document.getElementById('detailAnnualThreshold').textContent = formatCurrency(calc.annual_threshold);
+    document.getElementById('detailPeriodThreshold').textContent = formatCurrency(calc.period_threshold);
+    document.getElementById('detailWagesOver').textContent = formatCurrency(calc.wages_over_threshold);
+    document.getElementById('detailTaxPayable').textContent = formatCurrency(calc.tax_payable);
+}
+
+function downloadExcel() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const state = document.getElementById('stateSelect').value;
+    if (!fromDate || !toDate) { alert('Select dates first'); return; }
+    window.location.href = `/payroll-tax/api/download?from_date=${fromDate}&to_date=${toDate}&state=${state}`;
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '$0.00';
+    return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+</script>
+{% endblock %}

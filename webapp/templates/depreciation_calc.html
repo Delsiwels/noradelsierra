@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+
+{% block title %}Depreciation Calculator - BAS Reviewer{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Depreciation Calculator</h1>
+                <p class="mt-1 text-gray-500">Calculate and review quarterly depreciation using Australian tax methods</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Xero Not Connected Banner -->
+<div id="xeroNotConnected" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect your Xero account</h2>
+            <p class="text-gray-500 mb-6">Depreciation calculator requires a Xero connection for asset data.</p>
+            <a href="/connections/xero/connect"
+               class="inline-flex items-center bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors">
+                Connect to Xero
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Date Range Selector -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-end gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                    <input type="date" id="fromDate"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                    <input type="date" id="toDate"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generateSchedule()" id="generateBtn"
+                            class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                        Generate
+                    </button>
+                    <button onclick="downloadExcel()" id="downloadBtn"
+                            class="hidden border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Excel
+                    </button>
+                </div>
+            </div>
+            <!-- Quick Period Buttons -->
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button onclick="setQuarter('Q1')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q1 (Jul-Sep)</button>
+                <button onclick="setQuarter('Q2')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q2 (Oct-Dec)</button>
+                <button onclick="setQuarter('Q3')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q3 (Jan-Mar)</button>
+                <button onclick="setQuarter('Q4')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q4 (Apr-Jun)</button>
+            </div>
+        </div>
+
+        <!-- Summary Cards (hidden until generation) -->
+        <div id="summaryCards" class="hidden mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Total Asset Value</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryTotalValue">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Quarterly Depreciation</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryQuarterlyDep">--</p>
+                    <p class="text-xs text-gray-400">Actual recorded</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Expected Depreciation</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryExpectedDep">--</p>
+                    <p class="text-xs text-gray-400">Based on tax rates</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Variance</p>
+                    <p class="text-2xl font-bold mt-1" id="summaryVariance">--</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Depreciation Schedule Table -->
+        <div id="scheduleContainer" class="hidden mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <h2 class="text-sm font-semibold text-gray-900">Depreciation Schedule</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Category</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Opening Value</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Additions</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Expected Dep.</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actual Dep.</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Variance</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Closing Value</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                        <tfoot id="scheduleTableFoot" class="bg-gray-50">
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Calculator -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 class="text-sm font-semibold text-gray-900 mb-4">Quick Depreciation Calculator</h3>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Asset Value ($)</label>
+                    <input type="number" id="calcAssetValue" step="0.01" placeholder="10000.00"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Effective Life (yrs)</label>
+                    <input type="number" id="calcEffectiveLife" step="0.5" placeholder="10"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Method</label>
+                    <select id="calcMethod" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                        <option value="diminishing">Diminishing Value</option>
+                        <option value="prime_cost">Prime Cost</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Period (months)</label>
+                    <select id="calcPeriodMonths" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                        <option value="3">Quarter (3)</option>
+                        <option value="6">Half Year (6)</option>
+                        <option value="12">Full Year (12)</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="calculateDepreciation()"
+                            class="w-full bg-accent hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Calculate
+                    </button>
+                </div>
+            </div>
+            <!-- Calculator Result -->
+            <div id="calcResult" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <p class="text-xs text-gray-500">Annual Rate</p>
+                        <p class="text-lg font-bold text-gray-900" id="calcAnnualRate">--</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Annual Depreciation</p>
+                        <p class="text-lg font-bold text-gray-900" id="calcAnnualDep">--</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Period Depreciation</p>
+                        <p class="text-lg font-bold text-primary" id="calcPeriodDep">--</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-gray-500">Select a date range and click Generate to view depreciation schedule</p>
+            <p class="text-xs text-gray-400 mt-2">Uses Australian diminishing value method (200% / effective life)</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentData = null;
+
+// Set default dates to current quarter
+document.addEventListener('DOMContentLoaded', function() {
+    setCurrentQuarter();
+});
+
+function setCurrentQuarter() {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+
+    let qStart, qEnd;
+    if (month >= 6 && month <= 8) {
+        qStart = new Date(year, 6, 1);
+        qEnd = new Date(year, 8, 30);
+    } else if (month >= 9 && month <= 11) {
+        qStart = new Date(year, 9, 1);
+        qEnd = new Date(year, 11, 31);
+    } else if (month >= 0 && month <= 2) {
+        qStart = new Date(year, 0, 1);
+        qEnd = new Date(year, 2, 31);
+    } else {
+        qStart = new Date(year, 3, 1);
+        qEnd = new Date(year, 5, 30);
+    }
+
+    document.getElementById('fromDate').value = formatDate(qStart);
+    document.getElementById('toDate').value = formatDate(qEnd);
+}
+
+function setQuarter(quarter) {
+    const now = new Date();
+    const month = now.getMonth();
+    const fyYear = month >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+
+    let qStart, qEnd;
+    switch(quarter) {
+        case 'Q1':
+            qStart = new Date(fyYear, 6, 1);
+            qEnd = new Date(fyYear, 8, 30);
+            break;
+        case 'Q2':
+            qStart = new Date(fyYear, 9, 1);
+            qEnd = new Date(fyYear, 11, 31);
+            break;
+        case 'Q3':
+            qStart = new Date(fyYear + 1, 0, 1);
+            qEnd = new Date(fyYear + 1, 2, 31);
+            break;
+        case 'Q4':
+            qStart = new Date(fyYear + 1, 3, 1);
+            qEnd = new Date(fyYear + 1, 5, 30);
+            break;
+    }
+
+    document.getElementById('fromDate').value = formatDate(qStart);
+    document.getElementById('toDate').value = formatDate(qEnd);
+}
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+async function generateSchedule() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+
+    if (!fromDate || !toDate) {
+        alert('Please select both from and to dates');
+        return;
+    }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    try {
+        const resp = await fetch(`/depreciation-calc/api/generate?from_date=${fromDate}&to_date=${toDate}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === 'Xero not connected') {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('xeroNotConnected').classList.remove('hidden');
+                return;
+            }
+            alert(data.error || 'Failed to generate schedule');
+            return;
+        }
+
+        currentData = data;
+        renderResults(data);
+
+    } catch (e) {
+        alert('Network error. Please try again.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+    }
+}
+
+function renderResults(data) {
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('summaryCards').classList.remove('hidden');
+    document.getElementById('scheduleContainer').classList.remove('hidden');
+    document.getElementById('downloadBtn').classList.remove('hidden');
+
+    const result = data.data;
+    const totals = result.totals || {};
+
+    // Summary cards
+    document.getElementById('summaryTotalValue').textContent = formatCurrency(totals.total_opening || 0);
+    document.getElementById('summaryQuarterlyDep').textContent = formatCurrency(totals.total_depreciation_actual || 0);
+    document.getElementById('summaryExpectedDep').textContent = formatCurrency(totals.total_depreciation_expected || 0);
+
+    const varianceEl = document.getElementById('summaryVariance');
+    const variance = totals.total_variance || 0;
+    varianceEl.textContent = formatCurrency(variance);
+    varianceEl.className = `text-2xl font-bold mt-1 ${variance === 0 ? 'text-green-600' : Math.abs(variance) < 100 ? 'text-yellow-600' : 'text-red-600'}`;
+
+    // Schedule table
+    const tbody = document.getElementById('scheduleTableBody');
+    const tfoot = document.getElementById('scheduleTableFoot');
+    tbody.innerHTML = '';
+
+    const schedule = result.schedule || [];
+    if (schedule.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">No fixed assets found in Xero</td></tr>';
+        tfoot.innerHTML = '';
+    } else {
+        schedule.forEach(item => {
+            const tr = document.createElement('tr');
+
+            // Status styling
+            if (item.status === 'error') {
+                tr.className = 'bg-red-50';
+            } else if (item.status === 'warning') {
+                tr.className = 'bg-yellow-50';
+            }
+
+            let statusBadge = '';
+            switch(item.status) {
+                case 'ok':
+                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>';
+                    break;
+                case 'warning':
+                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Warning</span>';
+                    break;
+                case 'error':
+                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Variance</span>';
+                    break;
+            }
+
+            tr.innerHTML = `
+                <td class="px-4 py-3">
+                    <div class="text-sm font-medium text-gray-900">${item.account_name}</div>
+                    <div class="text-xs text-gray-500">${formatCategory(item.category)}</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-center text-gray-600">${item.depreciation_rate}%</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(item.opening_value)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.additions)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.depreciation_expected)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(item.depreciation_actual)}</td>
+                <td class="px-4 py-3 text-sm text-right ${item.variance === 0 ? 'text-gray-600' : item.variance > 0 ? 'text-green-600' : 'text-red-600'}">
+                    ${formatCurrency(item.variance)} (${item.variance_pct}%)
+                </td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(item.closing_value)}</td>
+                <td class="px-4 py-3 text-center">${statusBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Totals row
+        tfoot.innerHTML = `
+            <tr class="font-semibold">
+                <td class="px-4 py-3 text-sm text-gray-900" colspan="2">Total</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(totals.total_opening)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(totals.total_additions)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(totals.total_depreciation_expected)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(totals.total_depreciation_actual)}</td>
+                <td class="px-4 py-3 text-sm text-right ${totals.total_variance === 0 ? 'text-gray-600' : totals.total_variance > 0 ? 'text-green-600' : 'text-red-600'}">${formatCurrency(totals.total_variance)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(totals.total_closing)}</td>
+                <td class="px-4 py-3"></td>
+            </tr>
+        `;
+    }
+}
+
+async function calculateDepreciation() {
+    const assetValue = document.getElementById('calcAssetValue').value;
+    const effectiveLife = document.getElementById('calcEffectiveLife').value;
+    const method = document.getElementById('calcMethod').value;
+    const periodMonths = document.getElementById('calcPeriodMonths').value;
+
+    if (!assetValue || !effectiveLife) {
+        alert('Please enter asset value and effective life');
+        return;
+    }
+
+    try {
+        const resp = await fetch('/depreciation-calc/api/calculate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                asset_value: parseFloat(assetValue),
+                effective_life: parseFloat(effectiveLife),
+                method: method,
+                period_months: parseInt(periodMonths)
+            })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            alert(data.error || 'Calculation failed');
+            return;
+        }
+
+        const calc = data.calculation;
+        document.getElementById('calcResult').classList.remove('hidden');
+        document.getElementById('calcAnnualRate').textContent = `${calc.annual_rate}%`;
+        document.getElementById('calcAnnualDep').textContent = formatCurrency(calc.annual_depreciation);
+        document.getElementById('calcPeriodDep').textContent = formatCurrency(calc.period_depreciation);
+
+    } catch (e) {
+        alert('Calculation error. Please try again.');
+        console.error(e);
+    }
+}
+
+function downloadExcel() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+
+    if (!fromDate || !toDate) {
+        alert('Please select dates first');
+        return;
+    }
+
+    window.location.href = `/depreciation-calc/api/download?from_date=${fromDate}&to_date=${toDate}`;
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '$0.00';
+    const abs = Math.abs(amount);
+    const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+
+function formatCategory(category) {
+    if (!category) return '';
+    return category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+</script>
+{% endblock %}

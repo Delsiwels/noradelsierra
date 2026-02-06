@@ -190,6 +190,29 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.register_blueprint(payroll_review_bp)
 
+    # Quarter-End Readiness Features
+    from webapp.blueprints.aging_dashboard import aging_dashboard_bp
+    from webapp.blueprints.bank_recon_status import bank_recon_status_bp
+    from webapp.blueprints.budget_actual import budget_actual_bp
+    from webapp.blueprints.depreciation_calc import depreciation_calc_bp
+    from webapp.blueprints.fuel_tax_credits import fuel_tax_credits_bp
+    from webapp.blueprints.payg_instalment import payg_instalment_bp
+    from webapp.blueprints.payg_reconciliation import payg_reconciliation_bp
+    from webapp.blueprints.payroll_tax import payroll_tax_bp
+    from webapp.blueprints.prepayment_tracker import prepayment_tracker_bp
+    from webapp.blueprints.stp_tracker import stp_tracker_bp
+
+    app.register_blueprint(payg_reconciliation_bp)
+    app.register_blueprint(aging_dashboard_bp)
+    app.register_blueprint(bank_recon_status_bp)
+    app.register_blueprint(depreciation_calc_bp)
+    app.register_blueprint(payg_instalment_bp)
+    app.register_blueprint(stp_tracker_bp)
+    app.register_blueprint(payroll_tax_bp)
+    app.register_blueprint(budget_actual_bp)
+    app.register_blueprint(prepayment_tracker_bp)
+    app.register_blueprint(fuel_tax_credits_bp)
+
     @app.route("/health")
     def health_check():
         """Health check endpoint."""

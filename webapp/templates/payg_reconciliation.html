@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+
+{% block title %}PAYG-W Reconciliation - BAS Reviewer{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">PAYG-W Reconciliation</h1>
+                <p class="mt-1 text-gray-500">Reconcile PAYG withholding from payroll vs W2 on BAS</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Xero Not Connected Banner -->
+<div id="xeroNotConnected" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect your Xero account</h2>
+            <p class="text-gray-500 mb-6">PAYG reconciliation requires a Xero connection with payroll access.</p>
+            <a href="/connections/xero/connect"
+               class="inline-flex items-center bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors">
+                Connect to Xero
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Date Range Selector -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-end gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                    <input type="date" id="fromDate"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                    <input type="date" id="toDate"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generateReconciliation()" id="generateBtn"
+                            class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                        Generate
+                    </button>
+                    <button onclick="downloadExcel()" id="downloadBtn"
+                            class="hidden border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Excel
+                    </button>
+                </div>
+            </div>
+            <!-- Quick Period Buttons -->
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button onclick="setQuarter('Q1')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q1 (Jul-Sep)</button>
+                <button onclick="setQuarter('Q2')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q2 (Oct-Dec)</button>
+                <button onclick="setQuarter('Q3')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q3 (Jan-Mar)</button>
+                <button onclick="setQuarter('Q4')" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200">Q4 (Apr-Jun)</button>
+            </div>
+        </div>
+
+        <!-- Warnings (hidden until generation) -->
+        <div id="warningsContainer" class="hidden mb-6">
+            <div id="warningsList" class="space-y-2"></div>
+        </div>
+
+        <!-- Summary Cards (hidden until generation) -->
+        <div id="summaryCards" class="hidden mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Payroll W1</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryPayrollW1">--</p>
+                    <p class="text-xs text-gray-400">Gross Wages</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Payroll W2</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryPayrollW2">--</p>
+                    <p class="text-xs text-gray-400">PAYG Withheld</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">BAS W2</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryBasW2">--</p>
+                    <p class="text-xs text-gray-400">Reported</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Variance</p>
+                    <p class="text-2xl font-bold mt-1" id="summaryVariance">--</p>
+                    <p class="text-xs text-gray-400">Difference</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Status</p>
+                    <div class="mt-2" id="summaryStatus">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual BAS Entry (shown when BAS data not available) -->
+        <div id="manualBasEntry" class="hidden mb-6">
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                <h3 class="text-sm font-semibold text-yellow-800 mb-4">Enter BAS Values Manually</h3>
+                <p class="text-sm text-yellow-700 mb-4">BAS data is not available via API. Enter your BAS W1 and W2 values to complete reconciliation.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-yellow-800 mb-1">W1 - Gross Wages</label>
+                        <input type="number" id="manualBasW1" step="0.01" placeholder="0.00"
+                               class="w-full border border-yellow-300 rounded-lg px-3 py-2 text-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-yellow-800 mb-1">W2 - PAYG Withheld</label>
+                        <input type="number" id="manualBasW2" step="0.01" placeholder="0.00"
+                               class="w-full border border-yellow-300 rounded-lg px-3 py-2 text-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="applyManualBas()"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pay Runs Table -->
+        <div id="payRunsContainer" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <h2 class="text-sm font-semibold text-gray-900">Pay Runs in Period</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Date</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Wages</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">PAYG Withheld</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Super</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payRunsTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                        <tfoot id="payRunsTableFoot" class="bg-gray-50">
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-gray-500">Select a date range and click Generate to reconcile PAYG withholding</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentData = null;
+
+// Set default dates to current quarter
+document.addEventListener('DOMContentLoaded', function() {
+    setCurrentQuarter();
+});
+
+function setCurrentQuarter() {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    const year = now.getFullYear();
+
+    // Australian financial year quarters
+    // Q1: Jul-Sep, Q2: Oct-Dec, Q3: Jan-Mar, Q4: Apr-Jun
+    let qStart, qEnd;
+
+    if (month >= 6 && month <= 8) { // Jul-Sep (Q1)
+        qStart = new Date(year, 6, 1);
+        qEnd = new Date(year, 8, 30);
+    } else if (month >= 9 && month <= 11) { // Oct-Dec (Q2)
+        qStart = new Date(year, 9, 1);
+        qEnd = new Date(year, 11, 31);
+    } else if (month >= 0 && month <= 2) { // Jan-Mar (Q3)
+        qStart = new Date(year, 0, 1);
+        qEnd = new Date(year, 2, 31);
+    } else { // Apr-Jun (Q4)
+        qStart = new Date(year, 3, 1);
+        qEnd = new Date(year, 5, 30);
+    }
+
+    document.getElementById('fromDate').value = formatDate(qStart);
+    document.getElementById('toDate').value = formatDate(qEnd);
+}
+
+function setQuarter(quarter) {
+    const now = new Date();
+    let year = now.getFullYear();
+    const month = now.getMonth();
+
+    // Determine financial year
+    const fyYear = month >= 6 ? year : year - 1;
+
+    let qStart, qEnd;
+    switch(quarter) {
+        case 'Q1': // Jul-Sep
+            qStart = new Date(fyYear, 6, 1);
+            qEnd = new Date(fyYear, 8, 30);
+            break;
+        case 'Q2': // Oct-Dec
+            qStart = new Date(fyYear, 9, 1);
+            qEnd = new Date(fyYear, 11, 31);
+            break;
+        case 'Q3': // Jan-Mar
+            qStart = new Date(fyYear + 1, 0, 1);
+            qEnd = new Date(fyYear + 1, 2, 31);
+            break;
+        case 'Q4': // Apr-Jun
+            qStart = new Date(fyYear + 1, 3, 1);
+            qEnd = new Date(fyYear + 1, 5, 30);
+            break;
+    }
+
+    document.getElementById('fromDate').value = formatDate(qStart);
+    document.getElementById('toDate').value = formatDate(qEnd);
+}
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+async function generateReconciliation() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+
+    if (!fromDate || !toDate) {
+        alert('Please select both from and to dates');
+        return;
+    }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    try {
+        const resp = await fetch(`/payg-reconciliation/api/generate?from_date=${fromDate}&to_date=${toDate}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === 'Xero not connected') {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('xeroNotConnected').classList.remove('hidden');
+                return;
+            }
+            alert(data.error || 'Failed to generate reconciliation');
+            return;
+        }
+
+        currentData = data;
+        renderResults(data);
+
+    } catch (e) {
+        alert('Network error. Please try again.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+    }
+}
+
+function renderResults(data) {
+    // Hide empty state, show results
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('summaryCards').classList.remove('hidden');
+    document.getElementById('payRunsContainer').classList.remove('hidden');
+    document.getElementById('downloadBtn').classList.remove('hidden');
+
+    const result = data.data;
+    const payroll = result.payroll || {};
+    const bas = result.bas || {};
+    const variance = result.variance || {};
+
+    // Summary cards
+    document.getElementById('summaryPayrollW1').textContent = formatCurrency(payroll.w1_gross_wages || 0);
+    document.getElementById('summaryPayrollW2').textContent = formatCurrency(payroll.w2_payg_withheld || 0);
+
+    if (bas.w2_payg_withheld !== null && bas.w2_payg_withheld !== undefined) {
+        document.getElementById('summaryBasW2').textContent = formatCurrency(bas.w2_payg_withheld);
+        document.getElementById('manualBasEntry').classList.add('hidden');
+    } else {
+        document.getElementById('summaryBasW2').textContent = 'N/A';
+        document.getElementById('manualBasEntry').classList.remove('hidden');
+    }
+
+    const varianceEl = document.getElementById('summaryVariance');
+    if (variance.w2_variance !== null && variance.w2_variance !== undefined) {
+        varianceEl.textContent = formatCurrency(variance.w2_variance);
+        varianceEl.className = `text-2xl font-bold mt-1 ${variance.w2_variance === 0 ? 'text-green-600' : Math.abs(variance.w2_variance) <= 100 ? 'text-yellow-600' : 'text-red-600'}`;
+    } else {
+        varianceEl.textContent = 'N/A';
+        varianceEl.className = 'text-2xl font-bold mt-1 text-gray-400';
+    }
+
+    // Status badge
+    const statusEl = document.getElementById('summaryStatus');
+    const status = result.status;
+    let statusBadge = '';
+    switch(status) {
+        case 'ok':
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Reconciled</span>';
+            break;
+        case 'warning':
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Minor Variance</span>';
+            break;
+        case 'error':
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Variance Alert</span>';
+            break;
+        default:
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">Incomplete</span>';
+    }
+    statusEl.innerHTML = statusBadge;
+
+    // Warnings
+    const warnings = data.warnings || [];
+    const warningsContainer = document.getElementById('warningsContainer');
+    const warningsList = document.getElementById('warningsList');
+    warningsList.innerHTML = '';
+
+    if (warnings.length > 0) {
+        warningsContainer.classList.remove('hidden');
+        warnings.forEach(warning => {
+            const div = document.createElement('div');
+            div.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start';
+            div.innerHTML = `
+                <svg class="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-sm text-yellow-800">${warning}</span>
+            `;
+            warningsList.appendChild(div);
+        });
+    } else {
+        warningsContainer.classList.add('hidden');
+    }
+
+    // Pay runs table
+    const tbody = document.getElementById('payRunsTableBody');
+    const tfoot = document.getElementById('payRunsTableFoot');
+    tbody.innerHTML = '';
+
+    const payRuns = result.pay_runs || [];
+    if (payRuns.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No pay runs found in this period</td></tr>';
+        tfoot.innerHTML = '';
+    } else {
+        payRuns.forEach(pr => {
+            const tr = document.createElement('tr');
+            if (pr.status === 'DRAFT') {
+                tr.className = 'bg-yellow-50';
+            }
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-sm text-gray-900">${pr.payment_date}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${pr.period_start || ''} - ${pr.period_end || ''}</td>
+                <td class="px-4 py-3 text-sm">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${pr.status === 'POSTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${pr.status}</span>
+                </td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(pr.gross_wages)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(pr.payg_withheld)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(pr.super)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${pr.employee_count}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Totals row
+        tfoot.innerHTML = `
+            <tr class="font-semibold">
+                <td class="px-4 py-3 text-sm text-gray-900" colspan="3">Total</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(payroll.w1_gross_wages)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(payroll.w2_payg_withheld)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(payroll.super)}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-600">${payroll.employee_count}</td>
+            </tr>
+        `;
+    }
+}
+
+function applyManualBas() {
+    if (!currentData) return;
+
+    const manualW1 = parseFloat(document.getElementById('manualBasW1').value) || 0;
+    const manualW2 = parseFloat(document.getElementById('manualBasW2').value) || 0;
+
+    // Update BAS data
+    currentData.data.bas = {
+        w1_gross_wages: manualW1,
+        w2_payg_withheld: manualW2,
+        source: 'manual',
+        message: null
+    };
+
+    // Recalculate variance
+    const payroll = currentData.data.payroll;
+    const payrollW1 = payroll.w1_gross_wages || 0;
+    const payrollW2 = payroll.w2_payg_withheld || 0;
+
+    const w1Variance = payrollW1 - manualW1;
+    const w2Variance = payrollW2 - manualW2;
+
+    currentData.data.variance = {
+        w1_variance: Math.round(w1Variance * 100) / 100,
+        w1_variance_pct: manualW1 !== 0 ? Math.round((w1Variance / manualW1) * 10000) / 100 : null,
+        w2_variance: Math.round(w2Variance * 100) / 100,
+        w2_variance_pct: manualW2 !== 0 ? Math.round((w2Variance / manualW2) * 10000) / 100 : null,
+        comparable: true
+    };
+
+    // Determine new status
+    const absVar = Math.abs(w2Variance);
+    currentData.data.status = absVar <= 1 ? 'ok' : absVar <= 100 ? 'warning' : 'error';
+
+    // Remove manual entry warning
+    currentData.warnings = (currentData.warnings || []).filter(w => !w.includes('BAS data not available'));
+
+    // Re-render
+    renderResults(currentData);
+}
+
+function downloadExcel() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+
+    if (!fromDate || !toDate) {
+        alert('Please select dates first');
+        return;
+    }
+
+    window.location.href = `/payg-reconciliation/api/download?from_date=${fromDate}&to_date=${toDate}`;
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return 'N/A';
+    const abs = Math.abs(amount);
+    const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+</script>
+{% endblock %}

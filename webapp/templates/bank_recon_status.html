@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Reconciliation Status - BAS Reviewer{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Bank Reconciliation Status</h1>
+                <p class="mt-1 text-gray-500">Dashboard showing bank account reconciliation status</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Xero Not Connected Banner -->
+<div id="xeroNotConnected" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect your Xero account</h2>
+            <p class="text-gray-500 mb-6">Bank reconciliation status requires a Xero connection.</p>
+            <a href="/connections/xero/connect"
+               class="inline-flex items-center bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors">
+                Connect to Xero
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Date Selector -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-end gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">As at Date</label>
+                    <input type="date" id="asAtDate"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generateStatus()" id="generateBtn"
+                            class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                        Generate
+                    </button>
+                    <button onclick="downloadExcel()" id="downloadBtn"
+                            class="hidden border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards (hidden until generation) -->
+        <div id="summaryCards" class="hidden mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Total Bank Balance</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryTotalBalance">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Unreconciled Count</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryUnreconCount">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Unreconciled Amount</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryUnreconAmount">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Overall Status</p>
+                    <div class="mt-2" id="summaryStatus">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Table -->
+        <div id="accountsContainer" class="hidden mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <h2 class="text-sm font-semibold text-gray-900">Bank Accounts</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Statement Balance</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unreconciled Items</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unreconciled Amount</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountsTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unreconciled Transactions (per account, hidden until expanded) -->
+        <div id="unreconciledContainer" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-sm font-semibold text-gray-900">
+                        Unreconciled Transactions - <span id="selectedAccountName">Account</span>
+                    </h2>
+                    <button onclick="hideUnreconciled()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unreconciledTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+            </svg>
+            <p class="text-gray-500">Select a date and click Generate to view bank reconciliation status</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentData = null;
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('asAtDate').value = today;
+});
+
+async function generateStatus() {
+    const asAtDate = document.getElementById('asAtDate').value;
+
+    if (!asAtDate) {
+        alert('Please select a date');
+        return;
+    }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    try {
+        const resp = await fetch(`/bank-recon-status/api/generate?as_at_date=${asAtDate}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === 'Xero not connected') {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('xeroNotConnected').classList.remove('hidden');
+                return;
+            }
+            alert(data.error || 'Failed to generate status');
+            return;
+        }
+
+        currentData = data;
+        renderResults(data);
+
+    } catch (e) {
+        alert('Network error. Please try again.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+    }
+}
+
+function renderResults(data) {
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('summaryCards').classList.remove('hidden');
+    document.getElementById('accountsContainer').classList.remove('hidden');
+    document.getElementById('downloadBtn').classList.remove('hidden');
+    document.getElementById('unreconciledContainer').classList.add('hidden');
+
+    const result = data.data;
+    const totals = result.totals || {};
+
+    // Summary cards
+    document.getElementById('summaryTotalBalance').textContent = formatCurrency(totals.total_bank_balance || 0);
+    document.getElementById('summaryUnreconCount').textContent = totals.total_unreconciled_count || 0;
+    document.getElementById('summaryUnreconAmount').textContent = formatCurrency(totals.total_unreconciled_amount || 0);
+
+    // Status badge
+    const status = result.overall_status;
+    let statusBadge = '';
+    switch(status) {
+        case 'ok':
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Reconciled</span>';
+            break;
+        case 'warning':
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Minor Issues</span>';
+            break;
+        case 'error':
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Needs Attention</span>';
+            break;
+        default:
+            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">Unknown</span>';
+    }
+    document.getElementById('summaryStatus').innerHTML = statusBadge;
+
+    // Accounts table
+    const tbody = document.getElementById('accountsTableBody');
+    tbody.innerHTML = '';
+
+    const accounts = result.accounts || [];
+    if (accounts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No bank accounts found</td></tr>';
+    } else {
+        accounts.forEach(acc => {
+            const tr = document.createElement('tr');
+
+            // Status styling
+            let statusClass = '';
+            let statusText = '';
+            switch(acc.status) {
+                case 'ok':
+                    statusClass = 'bg-green-100 text-green-800';
+                    statusText = 'OK';
+                    break;
+                case 'warning':
+                    tr.className = 'bg-yellow-50';
+                    statusClass = 'bg-yellow-100 text-yellow-800';
+                    statusText = 'Warning';
+                    break;
+                case 'error':
+                    tr.className = 'bg-red-50';
+                    statusClass = 'bg-red-100 text-red-800';
+                    statusText = 'Error';
+                    break;
+                default:
+                    statusClass = 'bg-gray-100 text-gray-800';
+                    statusText = 'Unknown';
+            }
+
+            const hasUnreconciled = acc.unreconciled_count > 0;
+
+            tr.innerHTML = `
+                <td class="px-4 py-3">
+                    <div class="text-sm font-medium text-gray-900">${acc.name}</div>
+                    <div class="text-xs text-gray-500">${acc.code || ''}</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900">${acc.statement_balance !== null ? formatCurrency(acc.statement_balance) : 'N/A'}</td>
+                <td class="px-4 py-3 text-sm text-right ${hasUnreconciled ? 'text-red-600 font-medium' : 'text-gray-600'}">${acc.unreconciled_count}</td>
+                <td class="px-4 py-3 text-sm text-right ${hasUnreconciled ? 'text-red-600 font-medium' : 'text-gray-600'}">${formatCurrency(acc.unreconciled_amount)}</td>
+                <td class="px-4 py-3 text-center">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusClass}">${statusText}</span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    ${hasUnreconciled ? `<button onclick="showUnreconciled('${acc.account_id}')" class="text-primary hover:text-blue-700 text-sm font-medium">View Items</button>` : '<span class="text-gray-400 text-sm">-</span>'}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+}
+
+function showUnreconciled(accountId) {
+    const account = currentData.data.accounts.find(a => a.account_id === accountId);
+    if (!account) return;
+
+    document.getElementById('selectedAccountName').textContent = account.name;
+    document.getElementById('unreconciledContainer').classList.remove('hidden');
+
+    const tbody = document.getElementById('unreconciledTableBody');
+    tbody.innerHTML = '';
+
+    const transactions = account.unreconciled_items || [];
+    if (transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No unreconciled transactions</td></tr>';
+    } else {
+        transactions.forEach(txn => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-sm text-gray-900">${txn.date}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${txn.type}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">${txn.contact || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${txn.reference || '-'}</td>
+                <td class="px-4 py-3 text-sm text-right ${txn.amount >= 0 ? 'text-green-600' : 'text-red-600'}">${formatCurrency(txn.amount)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Scroll to the container
+    document.getElementById('unreconciledContainer').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideUnreconciled() {
+    document.getElementById('unreconciledContainer').classList.add('hidden');
+}
+
+function downloadExcel() {
+    const asAtDate = document.getElementById('asAtDate').value;
+
+    if (!asAtDate) {
+        alert('Please select a date first');
+        return;
+    }
+
+    window.location.href = `/bank-recon-status/api/download?as_at_date=${asAtDate}`;
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '$0.00';
+    const abs = Math.abs(amount);
+    const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+</script>
+{% endblock %}

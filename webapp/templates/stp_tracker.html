@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}STP Submission Tracker - BAS Reviewer{% endblock %}
+
+{% block content %}
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">STP Submission Tracker</h1>
+            <p class="mt-1 text-gray-500">Track STP lodgement status and payroll totals</p>
+        </div>
+    </div>
+</section>
+
+<div id="xeroNotConnected" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect your Xero account</h2>
+            <p class="text-gray-500 mb-6">STP tracker requires a Xero connection with payroll access.</p>
+            <a href="/connections/xero/connect" class="bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium">Connect to Xero</a>
+        </div>
+    </div>
+</div>
+
+<div id="mainContent">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-end gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Financial Year</label>
+                    <select id="financialYear" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generateSummary()" id="generateBtn" class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium">Generate</button>
+                    <button onclick="downloadExcel()" id="downloadBtn" class="hidden border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium">Excel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="summaryCards" class="hidden mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">YTD Gross Wages</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryGrossWages">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">YTD PAYG Withheld</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryPaygWithheld">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">YTD Super</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summarySuper">--</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Pay Runs Processed</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryPayRuns">--</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="quartersContainer" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <h2 class="text-sm font-semibold text-gray-900">Quarterly Breakdown</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quarter</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gross Wages</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">PAYG Withheld</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Super</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Pay Runs</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Employees</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quartersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="noteContainer" class="hidden mt-6">
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <p class="text-sm text-yellow-800">
+                    <strong>Note:</strong> STP submission status is not available via Xero API. Please check Xero Payroll directly for lodgement confirmation.
+                </p>
+            </div>
+        </div>
+
+        <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <p class="text-gray-500">Select a financial year and click Generate to view STP summary</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('financialYear');
+    const now = new Date();
+    const currentFY = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
+    for (let fy = currentFY; fy >= currentFY - 3; fy--) {
+        const opt = document.createElement('option');
+        opt.value = fy;
+        opt.textContent = `FY${fy - 1}-${String(fy).slice(-2)}`;
+        select.appendChild(opt);
+    }
+});
+
+async function generateSummary() {
+    const fy = document.getElementById('financialYear').value;
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true; btn.textContent = 'Generating...';
+
+    try {
+        const resp = await fetch(`/stp-tracker/api/generate?financial_year=${fy}`);
+        const data = await resp.json();
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === 'Xero not connected') {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('xeroNotConnected').classList.remove('hidden');
+                return;
+            }
+            alert(data.error || 'Failed'); return;
+        }
+        renderResults(data);
+    } catch (e) { alert('Network error'); console.error(e); }
+    finally { btn.disabled = false; btn.textContent = 'Generate'; }
+}
+
+function renderResults(data) {
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('summaryCards').classList.remove('hidden');
+    document.getElementById('quartersContainer').classList.remove('hidden');
+    document.getElementById('noteContainer').classList.remove('hidden');
+    document.getElementById('downloadBtn').classList.remove('hidden');
+
+    const ytd = data.data.ytd_totals || {};
+    document.getElementById('summaryGrossWages').textContent = formatCurrency(ytd.gross_wages);
+    document.getElementById('summaryPaygWithheld').textContent = formatCurrency(ytd.payg_withheld);
+    document.getElementById('summarySuper').textContent = formatCurrency(ytd.super);
+    document.getElementById('summaryPayRuns').textContent = ytd.pay_run_count || 0;
+
+    const tbody = document.getElementById('quartersTableBody');
+    tbody.innerHTML = '';
+    (data.data.quarters || []).forEach(q => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${q.quarter}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${q.period}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(q.gross_wages)}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(q.payg_withheld)}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(q.super)}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-600">${q.pay_run_count}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-600">${q.employee_count}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function downloadExcel() {
+    const fy = document.getElementById('financialYear').value;
+    window.location.href = `/stp-tracker/api/download?financial_year=${fy}`;
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '$0.00';
+    return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+</script>
+{% endblock %}

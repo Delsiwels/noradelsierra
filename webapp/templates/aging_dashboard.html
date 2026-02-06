@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}AR/AP Aging Dashboard - BAS Reviewer{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">AR/AP Aging Dashboard</h1>
+                <p class="mt-1 text-gray-500">Interactive aging analysis with overdue alerts</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Xero Not Connected Banner -->
+<div id="xeroNotConnected" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect your Xero account</h2>
+            <p class="text-gray-500 mb-6">Aging dashboard requires a Xero connection.</p>
+            <a href="/connections/xero/connect"
+               class="inline-flex items-center bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors">
+                Connect to Xero
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Date Selector -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-end gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">As at Date</label>
+                    <input type="date" id="asAtDate"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generateDashboard()" id="generateBtn"
+                            class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                        Generate
+                    </button>
+                    <button onclick="downloadExcel()" id="downloadBtn"
+                            class="hidden border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts (hidden until generation) -->
+        <div id="alertsContainer" class="hidden mb-6">
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-red-800 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Overdue Alerts
+                </h3>
+                <div id="alertsList" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- Summary Cards (hidden until generation) -->
+        <div id="summaryCards" class="hidden mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Total AR</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryTotalAR">--</p>
+                    <p class="text-xs text-gray-400" id="summaryARContacts">-- contacts</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Total AP</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryTotalAP">--</p>
+                    <p class="text-xs text-gray-400" id="summaryAPContacts">-- contacts</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Overdue AR (60+)</p>
+                    <p class="text-2xl font-bold text-red-600 mt-1" id="summaryOverdueAR">--</p>
+                    <p class="text-xs text-gray-400" id="summaryOverdueARPct">--% of total</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">Overdue AP (60+)</p>
+                    <p class="text-2xl font-bold text-red-600 mt-1" id="summaryOverdueAP">--</p>
+                    <p class="text-xs text-gray-400" id="summaryOverdueAPPct">--% of total</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div id="tabsContainer" class="hidden">
+            <div class="border-b border-gray-200 mb-6">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button onclick="switchTab('receivables')" id="tab-receivables"
+                            class="border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        Receivables
+                    </button>
+                    <button onclick="switchTab('payables')" id="tab-payables"
+                            class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        Payables
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Receivables Panel -->
+            <div id="panel-receivables" class="tab-panel">
+                <!-- AR Age Distribution Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-4">Receivables Age Distribution</h3>
+                    <div class="flex h-8 rounded-lg overflow-hidden" id="arDistributionChart">
+                        <!-- Filled by JS -->
+                    </div>
+                    <div class="flex justify-between mt-2 text-xs text-gray-500">
+                        <span>Current</span>
+                        <span>30 Days</span>
+                        <span>60 Days</span>
+                        <span>90+ Days</span>
+                    </div>
+                </div>
+
+                <!-- Receivables Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                        <h2 class="text-sm font-semibold text-gray-900">Aged Receivables by Contact</h2>
+                        <input type="text" id="arSearchInput" placeholder="Search contacts..."
+                               class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-primary focus:border-primary"
+                               onkeyup="filterTable('receivables')">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('receivables', 'contact_name')">Contact</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('receivables', 'current')">Current</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('receivables', 'days_30')">30 Days</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('receivables', 'days_60')">60 Days</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('receivables', 'days_90_plus')">90+ Days</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('receivables', 'total')">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="arTableBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payables Panel -->
+            <div id="panel-payables" class="tab-panel hidden">
+                <!-- AP Age Distribution Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-4">Payables Age Distribution</h3>
+                    <div class="flex h-8 rounded-lg overflow-hidden" id="apDistributionChart">
+                        <!-- Filled by JS -->
+                    </div>
+                    <div class="flex justify-between mt-2 text-xs text-gray-500">
+                        <span>Current</span>
+                        <span>30 Days</span>
+                        <span>60 Days</span>
+                        <span>90+ Days</span>
+                    </div>
+                </div>
+
+                <!-- Payables Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                        <h2 class="text-sm font-semibold text-gray-900">Aged Payables by Contact</h2>
+                        <input type="text" id="apSearchInput" placeholder="Search contacts..."
+                               class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-primary focus:border-primary"
+                               onkeyup="filterTable('payables')">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('payables', 'contact_name')">Contact</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('payables', 'current')">Current</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('payables', 'days_30')">30 Days</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('payables', 'days_60')">60 Days</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('payables', 'days_90_plus')">90+ Days</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('payables', 'total')">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="apTableBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <p class="text-gray-500">Select a date and click Generate to view aging analysis</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentData = null;
+let sortState = { receivables: { field: 'total', asc: false }, payables: { field: 'total', asc: false } };
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('asAtDate').value = today;
+});
+
+function switchTab(tabName) {
+    document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+        btn.className = 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+    });
+    document.getElementById('tab-' + tabName).className = 'border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+    document.getElementById('panel-' + tabName).classList.remove('hidden');
+}
+
+async function generateDashboard() {
+    const asAtDate = document.getElementById('asAtDate').value;
+
+    if (!asAtDate) {
+        alert('Please select a date');
+        return;
+    }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    try {
+        const resp = await fetch(`/aging-dashboard/api/generate?as_at_date=${asAtDate}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === 'Xero not connected') {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('xeroNotConnected').classList.remove('hidden');
+                return;
+            }
+            alert(data.error || 'Failed to generate aging data');
+            return;
+        }
+
+        currentData = data;
+        renderResults(data);
+
+    } catch (e) {
+        alert('Network error. Please try again.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+    }
+}
+
+function renderResults(data) {
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('summaryCards').classList.remove('hidden');
+    document.getElementById('tabsContainer').classList.remove('hidden');
+    document.getElementById('downloadBtn').classList.remove('hidden');
+
+    const result = data.data;
+    const arSummary = result.ar_summary || {};
+    const apSummary = result.ap_summary || {};
+
+    // Summary cards
+    document.getElementById('summaryTotalAR').textContent = formatCurrency(arSummary.total || 0);
+    document.getElementById('summaryARContacts').textContent = `${arSummary.contact_count || 0} contacts`;
+    document.getElementById('summaryTotalAP').textContent = formatCurrency(apSummary.total || 0);
+    document.getElementById('summaryAPContacts').textContent = `${apSummary.contact_count || 0} contacts`;
+
+    document.getElementById('summaryOverdueAR').textContent = formatCurrency(arSummary.overdue_60_plus || 0);
+    const arOverduePct = arSummary.total ? Math.round((arSummary.overdue_60_plus / arSummary.total) * 100) : 0;
+    document.getElementById('summaryOverdueARPct').textContent = `${arOverduePct}% of total`;
+
+    document.getElementById('summaryOverdueAP').textContent = formatCurrency(apSummary.overdue_60_plus || 0);
+    const apOverduePct = apSummary.total ? Math.round((apSummary.overdue_60_plus / apSummary.total) * 100) : 0;
+    document.getElementById('summaryOverdueAPPct').textContent = `${apOverduePct}% of total`;
+
+    // Alerts
+    const allAlerts = [...(result.ar_alerts || []), ...(result.ap_alerts || [])];
+    const alertsContainer = document.getElementById('alertsContainer');
+    const alertsList = document.getElementById('alertsList');
+
+    if (allAlerts.length > 0) {
+        alertsContainer.classList.remove('hidden');
+        alertsList.innerHTML = '';
+        allAlerts.slice(0, 5).forEach(alert => {
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-lg p-3 flex justify-between items-center';
+            div.innerHTML = `
+                <div>
+                    <span class="font-medium text-gray-900">${alert.contact_name}</span>
+                    <span class="text-xs text-gray-500 ml-2">${alert.type === 'receivable' ? 'AR' : 'AP'}</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm font-semibold ${alert.severity === 'high' ? 'text-red-600' : 'text-yellow-600'}">${formatCurrency(alert.amount)}</span>
+                    <span class="text-xs text-gray-500 ml-2">60+ days</span>
+                </div>
+            `;
+            alertsList.appendChild(div);
+        });
+    } else {
+        alertsContainer.classList.add('hidden');
+    }
+
+    // Distribution charts
+    renderDistributionChart('ar', arSummary);
+    renderDistributionChart('ap', apSummary);
+
+    // Tables
+    renderTable('receivables', result.receivables || []);
+    renderTable('payables', result.payables || []);
+}
+
+function renderDistributionChart(type, summary) {
+    const chart = document.getElementById(type + 'DistributionChart');
+    const total = summary.total || 1;
+
+    const currentPct = (summary.current || 0) / total * 100;
+    const days30Pct = (summary.days_30 || 0) / total * 100;
+    const days60Pct = (summary.days_60 || 0) / total * 100;
+    const days90Pct = (summary.days_90_plus || 0) / total * 100;
+
+    chart.innerHTML = `
+        <div class="bg-green-500" style="width: ${currentPct}%" title="Current: ${formatCurrency(summary.current)}"></div>
+        <div class="bg-yellow-400" style="width: ${days30Pct}%" title="30 Days: ${formatCurrency(summary.days_30)}"></div>
+        <div class="bg-orange-500" style="width: ${days60Pct}%" title="60 Days: ${formatCurrency(summary.days_60)}"></div>
+        <div class="bg-red-500" style="width: ${days90Pct}%" title="90+ Days: ${formatCurrency(summary.days_90_plus)}"></div>
+    `;
+}
+
+function renderTable(type, contacts) {
+    const tbody = document.getElementById(type === 'receivables' ? 'arTableBody' : 'apTableBody');
+    tbody.innerHTML = '';
+
+    if (contacts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No ${type} data available</td></tr>`;
+        return;
+    }
+
+    // Sort
+    const state = sortState[type];
+    contacts.sort((a, b) => {
+        let valA = a[state.field];
+        let valB = b[state.field];
+        if (typeof valA === 'string') {
+            return state.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+        return state.asc ? valA - valB : valB - valA;
+    });
+
+    contacts.forEach(contact => {
+        const tr = document.createElement('tr');
+
+        // Highlight overdue rows
+        if (contact.days_90_plus > 500) {
+            tr.className = 'bg-red-50';
+        } else if (contact.days_60 > 500) {
+            tr.className = 'bg-yellow-50';
+        }
+
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${contact.contact_name}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(contact.current)}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(contact.days_30)}</td>
+            <td class="px-4 py-3 text-sm text-right ${contact.days_60 > 0 ? 'text-orange-600 font-medium' : 'text-gray-600'}">${formatCurrency(contact.days_60)}</td>
+            <td class="px-4 py-3 text-sm text-right ${contact.days_90_plus > 0 ? 'text-red-600 font-medium' : 'text-gray-600'}">${formatCurrency(contact.days_90_plus)}</td>
+            <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900">${formatCurrency(contact.total)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function sortTable(type, field) {
+    if (sortState[type].field === field) {
+        sortState[type].asc = !sortState[type].asc;
+    } else {
+        sortState[type].field = field;
+        sortState[type].asc = field === 'contact_name';
+    }
+
+    const contacts = type === 'receivables' ? currentData.data.receivables : currentData.data.payables;
+    renderTable(type, [...contacts]);
+}
+
+function filterTable(type) {
+    const searchInput = document.getElementById(type === 'receivables' ? 'arSearchInput' : 'apSearchInput');
+    const query = searchInput.value.toLowerCase();
+    const contacts = type === 'receivables' ? currentData.data.receivables : currentData.data.payables;
+
+    const filtered = contacts.filter(c => c.contact_name.toLowerCase().includes(query));
+    renderTable(type, filtered);
+}
+
+function downloadExcel() {
+    const asAtDate = document.getElementById('asAtDate').value;
+
+    if (!asAtDate) {
+        alert('Please select a date first');
+        return;
+    }
+
+    window.location.href = `/aging-dashboard/api/download?as_at_date=${asAtDate}`;
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '$0.00';
+    const abs = Math.abs(amount);
+    const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+</script>
+{% endblock %}
