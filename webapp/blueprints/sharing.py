@@ -35,9 +35,10 @@ def _require_owner_or_admin():
 
 
 @sharing_bp.route("/sharing/manage")
+@sharing_bp.route("/accountant-hub")
 @login_required
 def manage_page():
-    """Render sharing management page."""
+    """Render sharing management page (Accountant Hub)."""
     return render_template("sharing/manage.html")
 
 
