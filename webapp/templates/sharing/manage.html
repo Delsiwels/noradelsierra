@@ -202,6 +202,16 @@
         margin-bottom: 16px;
     }
 
+    /* Task Action Bar - Sticky below header */
+    .task-action-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 24px;
+        background: var(--color-bg-subtle);
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
     .action-btn {
         display: inline-flex;
         align-items: center;
@@ -620,6 +630,21 @@
                 </div>
                 <span class="selected-badge" id="tasks-selected-badge">0 selected</span>
             </div>
+            <!-- Task Selection Bar -->
+            <div class="task-action-bar">
+                <button type="button" class="action-btn" id="select-all-tasks">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    Select all
+                </button>
+                <button type="button" class="action-btn" id="clear-all-tasks">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Clear all
+                </button>
+            </div>
             <div class="panel-body">
                 <!-- Date Range -->
                 <div class="date-range">
@@ -632,22 +657,6 @@
                         <label class="date-label">To</label>
                         <input type="date" class="date-input" id="date-to" value="2025-12-30">
                     </div>
-                </div>
-
-                <!-- Select All Tasks -->
-                <div class="action-bar">
-                    <button type="button" class="action-btn" id="select-all-tasks">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                        </svg>
-                        Select all
-                    </button>
-                    <button type="button" class="action-btn" id="clear-all-tasks">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                        Clear all
-                    </button>
                 </div>
 
                 <!-- Task List -->
