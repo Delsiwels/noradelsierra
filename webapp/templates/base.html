@@ -19,6 +19,17 @@
         }
     </script>
     <style>
+        /* Global zoom to 80% */
+        body {
+            zoom: 0.8;
+        }
+        @supports not (zoom: 0.8) {
+            body {
+                transform: scale(0.8);
+                transform-origin: top left;
+                width: 125%;
+            }
+        }
         .gradient-bg {
             background: linear-gradient(135deg, #0066CC 0%, #13B5EA 100%);
         }
