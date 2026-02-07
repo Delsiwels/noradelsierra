@@ -33,66 +33,237 @@
         .gradient-bg {
             background: linear-gradient(135deg, #0066CC 0%, #13B5EA 100%);
         }
+        /* Sidebar styles */
+        .sidebar {
+            width: 64px;
+            transition: width 0.2s ease;
+        }
+        .sidebar:hover, .sidebar.expanded {
+            width: 240px;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: #6B7280;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .sidebar-item:hover {
+            background: #F3F4F6;
+            color: #111827;
+        }
+        .sidebar-item.active {
+            background: rgba(0, 102, 204, 0.08);
+            color: #0066CC;
+            border-right: 3px solid #0066CC;
+        }
+        .sidebar-item svg {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .sidebar-item span {
+            margin-left: 12px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .sidebar:hover .sidebar-item span,
+        .sidebar.expanded .sidebar-item span {
+            opacity: 1;
+        }
+        .sidebar-section {
+            border-top: 1px solid #E5E7EB;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+        .sidebar-section-title {
+            padding: 8px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .sidebar:hover .sidebar-section-title,
+        .sidebar.expanded .sidebar-section-title {
+            opacity: 1;
+        }
+        .main-with-sidebar {
+            margin-left: 64px;
+            transition: margin-left 0.2s ease;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Navigation -->
+    {% if current_user and current_user.is_authenticated %}
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 flex flex-col">
+        <!-- Logo -->
+        <div class="p-4 border-b border-gray-200">
+            <a href="/dashboard" class="flex items-center">
+                <svg class="w-8 h-8 text-primary flex-shrink-0" viewBox="0 0 32 32" fill="currentColor">
+                    <rect x="4" y="4" width="10" height="10" rx="2"/>
+                    <rect x="18" y="4" width="10" height="10" rx="2"/>
+                    <rect x="4" y="18" width="10" height="10" rx="2"/>
+                    <rect x="18" y="18" width="10" height="10" rx="2"/>
+                </svg>
+                <span class="ml-3 text-xl font-bold text-primary" style="opacity: 0; transition: opacity 0.15s;">FinQL</span>
+            </a>
+        </div>
+
+        <!-- Xero Connection -->
+        <div class="sidebar-item" style="border-bottom: 1px solid #E5E7EB;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-accent">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <span>Xero Connected</span>
+        </div>
+
+        <!-- Main Navigation -->
+        <nav class="flex-1 py-4 overflow-y-auto">
+            <!-- Dashboard -->
+            <a href="/dashboard" class="sidebar-item {% if request.path == '/dashboard' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+
+            <!-- Stack -->
+            <a href="/stack" class="sidebar-item {% if request.path == '/stack' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                <span>Stack</span>
+            </a>
+
+            <!-- Readiness -->
+            <a href="/readiness" class="sidebar-item {% if request.path == '/readiness' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span>Readiness</span>
+            </a>
+
+            <!-- AI Tasks -->
+            <a href="/ai-tasks" class="sidebar-item {% if request.path == '/ai-tasks' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <span>AI Tasks</span>
+            </a>
+
+            <!-- Payroll Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Payroll</div>
+                <a href="/payroll-review" class="sidebar-item {% if request.path == '/payroll-review' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span>Payroll Review</span>
+                </a>
+                <a href="/payg-reconciliation" class="sidebar-item {% if request.path == '/payg-reconciliation' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    <span>PAYG-W Reconciliation</span>
+                </a>
+                <a href="/stp-tracker" class="sidebar-item {% if request.path == '/stp-tracker' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>STP Tracker</span>
+                </a>
+                <a href="/payroll-tax" class="sidebar-item {% if request.path == '/payroll-tax' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Payroll Tax</span>
+                </a>
+            </div>
+
+            <!-- Accountant Hub -->
+            {% if current_user.role in ('owner', 'admin') %}
+            <div class="sidebar-section">
+                <a href="/accountant-hub" class="sidebar-item {% if request.path == '/accountant-hub' or request.path == '/sharing/manage' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Accountant Hub</span>
+                </a>
+            </div>
+            {% endif %}
+        </nav>
+
+        <!-- User Section -->
+        <div class="border-t border-gray-200 p-4">
+            <div class="sidebar-item" style="padding: 8px;">
+                <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                    {{ current_user.name[0] | upper if current_user.name else 'U' }}
+                </div>
+                <span class="truncate">{{ current_user.name }}</span>
+            </div>
+            <button onclick="fetch('/api/auth/logout',{method:'POST'}).then(()=>window.location.href='/login')"
+                    class="sidebar-item w-full text-left" style="padding: 8px 8px 8px 16px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span>Log out</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-with-sidebar">
+        <!-- Xero Connection Bar -->
+        {% include "components/xero_connection_bar.html" ignore missing %}
+
+        <!-- BAS Reminder Banner -->
+        {% include "components/bas_reminder_banner.html" ignore missing %}
+
+        <!-- Main Content -->
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    {% else %}
+    <!-- Non-authenticated: Top Navigation -->
     <nav class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="{% if current_user and current_user.is_authenticated %}/dashboard{% else %}/{% endif %}" class="flex items-center">
+                    <a href="/" class="flex items-center">
                         <span class="text-2xl font-bold text-primary">BAS Reviewer</span>
                     </a>
                     <div class="hidden md:flex ml-10 space-x-8">
-                        {% if current_user and current_user.is_authenticated %}
-                        <a href="/dashboard" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Dashboard</a>
-                        <a href="/chat" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Chat</a>
-                        <a href="/ask-fin/tax-agent" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Ask Fin</a>
-                        <a href="/cashflow" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Cash Flow</a>
-                        <a href="/cash-flow-forecast" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Forecast</a>
-                        <a href="/readiness" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Checklists</a>
-                        <a href="/payroll-review" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Payroll</a>
-                        <a href="/skills" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Skills</a>
-                        {% if current_user.role in ('owner', 'admin') %}
-                        <a href="/sharing/manage" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Accountant Hub</a>
-                        {% elif current_user.role == 'accountant' %}
-                        <a href="/sharing/dashboard" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">My Clients</a>
-                        {% endif %}
-                        {% else %}
                         <a href="/features" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Features</a>
                         <a href="/pricing" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Pricing</a>
                         <a href="/docs" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Docs</a>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    {% if current_user and current_user.is_authenticated %}
-                    <span class="text-gray-600 text-sm">{{ current_user.name }}</span>
-                    <button onclick="fetch('/api/auth/logout',{method:'POST'}).then(()=>window.location.href='/login')"
-                            class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Log out</button>
-                    {% else %}
                     <a href="/login" class="text-gray-600 hover:text-primary px-3 py-2 text-sm font-medium">Log in</a>
                     <a href="/register" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Get Started Free
                     </a>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Xero Connection Bar -->
-    {% include "components/xero_connection_bar.html" ignore missing %}
-
-    <!-- BAS Reminder Banner -->
-    {% include "components/bas_reminder_banner.html" ignore missing %}
-
     <!-- Main Content -->
     <main>
         {% block content %}{% endblock %}
     </main>
+    {% endif %}
+
+    {% if current_user and current_user.is_authenticated %}
+    </div><!-- Close main-with-sidebar -->
+    {% endif %}
 
     <!-- Footer -->
     <footer class="bg-gray-900 text-gray-400 mt-20">
