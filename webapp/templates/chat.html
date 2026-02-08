@@ -8,15 +8,15 @@
         <!-- Chat Header -->
         <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
             <div>
-                <h1 class="text-lg font-semibold text-gray-900">AI Chat</h1>
-                <p class="text-gray-500 text-sm">Ask about BAS, GST, compliance, and more</p>
+                <h1 class="text-base font-semibold text-gray-900">AI Chat</h1>
+                <p class="text-gray-500 text-xs">Ask about BAS, GST, compliance, and more</p>
             </div>
-            <button onclick="startNewConversation()" class="text-sm text-primary hover:text-blue-700 font-medium">New conversation</button>
+            <button onclick="startNewConversation()" class="text-xs text-primary hover:text-blue-700 font-medium">New conversation</button>
         </div>
 
         <!-- Messages Area -->
         <div id="messages" class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            <div class="text-center text-gray-400 text-sm py-8">
+            <div class="text-center text-gray-400 text-xs py-8">
                 Start a conversation by typing a message below.
             </div>
         </div>
@@ -25,10 +25,10 @@
         <div class="border-t border-gray-200 px-6 py-4">
             <form id="chat-form" class="flex gap-3">
                 <input type="text" id="chat-input" placeholder="Ask about BAS, GST, compliance..."
-                       class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                       class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                        autocomplete="off">
                 <button type="submit" id="send-btn"
-                        class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     Send
                 </button>
             </form>
@@ -54,8 +54,8 @@ function appendMessage(role, content) {
 
     const bubble = document.createElement('div');
     bubble.className = role === 'user'
-        ? 'bg-primary text-white rounded-lg px-4 py-2 max-w-[80%] text-sm'
-        : 'bg-gray-100 text-gray-900 rounded-lg px-4 py-2 max-w-[80%] text-sm';
+        ? 'bg-primary text-white rounded-lg px-4 py-2 max-w-[80%] text-xs'
+        : 'bg-gray-100 text-gray-900 rounded-lg px-4 py-2 max-w-[80%] text-xs';
     bubble.textContent = content;
 
     div.appendChild(bubble);
@@ -66,7 +66,7 @@ function appendMessage(role, content) {
 function startNewConversation() {
     conversationId = null;
     const container = document.getElementById('messages');
-    container.innerHTML = '<div class="text-center text-gray-400 text-sm py-8">Start a conversation by typing a message below.</div>';
+    container.innerHTML = '<div class="text-center text-gray-400 text-xs py-8">Start a conversation by typing a message below.</div>';
 }
 
 document.getElementById('chat-form').addEventListener('submit', async function(e) {
