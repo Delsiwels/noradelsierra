@@ -1,240 +1,316 @@
 {% if current_user and current_user.is_authenticated %}
 <style>
-    .xero-bar {
+    .xero-connection-banner {
         position: sticky;
         top: 0;
         z-index: 40;
-        background: #fff;
-        border-bottom: 1px solid #e5e7eb;
-        transition: box-shadow 0.2s;
+        background: linear-gradient(135deg, #13B5EA 0%, #0E8FC2 100%);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
-    .xero-bar:hover {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-    .xero-bar-inner {
+
+    .xero-banner-inner {
         max-width: 80rem;
         margin: 0 auto;
-        padding: 0 1rem;
+        padding: 12px 1.5rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 36px;
-        cursor: pointer;
-        user-select: none;
+        gap: 16px;
     }
-    .xero-bar-left {
+
+    .xero-banner-left {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
         min-width: 0;
+        flex: 1;
     }
-    .xero-bar-dot {
-        width: 8px;
-        height: 8px;
+
+    .xero-logo {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        background: white;
+        border-radius: 4px;
+        padding: 4px;
+    }
+
+    .xero-status-dot {
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         flex-shrink: 0;
+        border: 2px solid rgba(255, 255, 255, 0.3);
     }
-    .xero-bar-dot--healthy { background: #22c55e; }
-    .xero-bar-dot--expiring { background: #f59e0b; }
-    .xero-bar-dot--expired { background: #ef4444; }
-    .xero-bar-dot--disconnected { background: #9ca3af; }
-    .xero-bar-label {
-        font-size: 0.8125rem;
-        color: #374151;
+
+    .xero-status-dot--healthy { background: #22c55e; }
+    .xero-status-dot--expiring { background: #fbbf24; animation: pulse-warning 2s infinite; }
+    .xero-status-dot--expired { background: #ef4444; }
+    .xero-status-dot--disconnected { background: #9ca3af; }
+
+    @keyframes pulse-warning {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .xero-banner-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .xero-banner-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: white;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 300px;
     }
-    .xero-bar-chevron {
+
+    .xero-banner-message {
         font-size: 0.75rem;
-        color: #9ca3af;
-        transition: transform 0.2s;
-        flex-shrink: 0;
-        margin-left: 4px;
+        color: rgba(255, 255, 255, 0.9);
+        margin-top: 2px;
     }
-    .xero-bar--expanded .xero-bar-chevron {
-        transform: rotate(180deg);
-    }
-    .xero-bar-actions {
-        display: none;
-        padding: 8px 1rem 10px;
-        max-width: 80rem;
-        margin: 0 auto;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-    .xero-bar--expanded .xero-bar-actions {
+
+    .xero-banner-actions {
         display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
     }
-    .xero-bar-msg {
+
+    .xero-btn {
         font-size: 0.8125rem;
-        margin-right: auto;
-    }
-    .xero-bar-msg--warning { color: #b45309; }
-    .xero-bar-msg--error { color: #dc2626; }
-    .xero-bar-btn {
-        font-size: 0.8125rem;
-        padding: 4px 12px;
+        font-weight: 500;
+        padding: 6px 16px;
         border-radius: 6px;
-        border: 1px solid #d1d5db;
-        background: #fff;
-        color: #374151;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
         cursor: pointer;
         white-space: nowrap;
-        transition: background 0.15s, border-color 0.15s;
+        transition: all 0.15s;
+        text-decoration: none;
+        display: inline-block;
+        backdrop-filter: blur(10px);
     }
-    .xero-bar-btn:hover {
-        background: #f3f4f6;
-        border-color: #9ca3af;
+
+    .xero-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-1px);
     }
-    .xero-bar-btn--primary {
-        background: #0066CC;
-        color: #fff;
-        border-color: #0066CC;
+
+    .xero-btn--solid {
+        background: white;
+        color: #13B5EA;
+        border-color: white;
     }
-    .xero-bar-btn--primary:hover {
-        background: #0052a3;
-        border-color: #0052a3;
+
+    .xero-btn--solid:hover {
+        background: #f8fafc;
+        color: #0E8FC2;
     }
+
+    .xero-btn--danger {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .xero-btn--danger:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.5);
+    }
+
     /* Org dropdown */
     .xero-org-wrap {
         position: relative;
     }
+
     .xero-org-dropdown {
         display: none;
         position: absolute;
-        top: calc(100% + 4px);
+        top: calc(100% + 8px);
         right: 0;
-        min-width: 220px;
-        background: #fff;
+        min-width: 260px;
+        background: white;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         z-index: 50;
         overflow: hidden;
     }
+
     .xero-org-dropdown.open {
         display: block;
+        animation: dropdown-appear 0.2s ease-out;
     }
+
+    @keyframes dropdown-appear {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .xero-org-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        font-size: 0.8125rem;
+        gap: 10px;
+        padding: 10px 16px;
+        font-size: 0.875rem;
         color: #374151;
         cursor: pointer;
         transition: background 0.1s;
     }
+
     .xero-org-item:hover {
         background: #f3f4f6;
     }
+
     .xero-org-item--active {
         font-weight: 600;
-        color: #0066CC;
+        color: #13B5EA;
+        background: #f0f9ff;
     }
+
     .xero-org-check {
-        width: 14px;
+        width: 16px;
         text-align: center;
         flex-shrink: 0;
+        color: #13B5EA;
     }
+
     .xero-org-divider {
         border-top: 1px solid #e5e7eb;
-        margin: 2px 0;
+        margin: 4px 0;
     }
+
     .xero-org-connect {
-        color: #0066CC;
+        color: #13B5EA;
+        font-weight: 500;
     }
-    @media (max-width: 640px) {
-        .xero-bar-label { max-width: 160px; }
-        .xero-bar-inner { padding: 0 0.75rem; }
-        .xero-bar-actions { padding: 8px 0.75rem 10px; }
+
+    @media (max-width: 768px) {
+        .xero-banner-inner {
+            flex-wrap: wrap;
+            padding: 10px 1rem;
+        }
+        .xero-banner-message {
+            display: none;
+        }
+        .xero-btn {
+            font-size: 0.75rem;
+            padding: 5px 12px;
+        }
     }
 </style>
 
-<div id="xero-bar" class="xero-bar hidden">
-    <div class="xero-bar-inner" id="xero-bar-toggle">
-        <div class="xero-bar-left">
-            <span class="xero-bar-dot xero-bar-dot--disconnected" id="xero-bar-dot"></span>
-            <span class="xero-bar-label" id="xero-bar-label">Not connected to Xero</span>
+<div id="xero-connection-banner" class="xero-connection-banner hidden">
+    <div class="xero-banner-inner">
+        <div class="xero-banner-left">
+            <!-- Xero Logo Icon -->
+            <svg class="xero-logo" viewBox="0 0 24 24" fill="#13B5EA">
+                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+            </svg>
+
+            <span class="xero-status-dot xero-status-dot--disconnected" id="xero-status-dot"></span>
+
+            <div class="xero-banner-text">
+                <div class="xero-banner-label" id="xero-banner-label">Not connected to Xero</div>
+                <div class="xero-banner-message" id="xero-banner-message"></div>
+            </div>
         </div>
-        <span class="xero-bar-chevron" id="xero-bar-chevron">&#9662;</span>
-    </div>
-    <div class="xero-bar-actions" id="xero-bar-actions">
-        <span class="xero-bar-msg" id="xero-bar-msg"></span>
-        <a href="/xero/login" class="xero-bar-btn xero-bar-btn--primary" id="xero-bar-connect" style="display:none;text-decoration:none;">Connect</a>
-        <a href="/xero/login" class="xero-bar-btn" id="xero-bar-reconnect" style="display:none;text-decoration:none;">Reconnect</a>
-        <div class="xero-org-wrap" id="xero-org-wrap" style="display:none;">
-            <button class="xero-bar-btn" id="xero-org-toggle">Switch Org &#9662;</button>
-            <div class="xero-org-dropdown" id="xero-org-dropdown"></div>
+
+        <div class="xero-banner-actions">
+            <!-- Switch Org Dropdown -->
+            <div class="xero-org-wrap" id="xero-org-wrap" style="display:none;">
+                <button class="xero-btn" id="xero-org-toggle">
+                    Switch org &#9662;
+                </button>
+                <div class="xero-org-dropdown" id="xero-org-dropdown"></div>
+            </div>
+
+            <!-- Single Connection Button (Connect/Reconnect/Disconnect) -->
+            <a href="/xero/login" class="xero-btn xero-btn--solid" id="xero-connection-btn" style="display:none;">
+                Connect
+            </a>
         </div>
     </div>
 </div>
 
 <script>
 (function() {
-    var bar = document.getElementById('xero-bar');
-    var dot = document.getElementById('xero-bar-dot');
-    var label = document.getElementById('xero-bar-label');
-    var toggle = document.getElementById('xero-bar-toggle');
-    var msg = document.getElementById('xero-bar-msg');
-    var connectBtn = document.getElementById('xero-bar-connect');
-    var reconnectBtn = document.getElementById('xero-bar-reconnect');
+    var banner = document.getElementById('xero-connection-banner');
+    var statusDot = document.getElementById('xero-status-dot');
+    var label = document.getElementById('xero-banner-label');
+    var message = document.getElementById('xero-banner-message');
+    var connectionBtn = document.getElementById('xero-connection-btn');
     var orgWrap = document.getElementById('xero-org-wrap');
     var orgToggle = document.getElementById('xero-org-toggle');
     var orgDropdown = document.getElementById('xero-org-dropdown');
-    var expanded = sessionStorage.getItem('xero_bar_expanded') === '1';
 
-    function setExpanded(val) {
-        expanded = val;
-        if (expanded) {
-            bar.classList.add('xero-bar--expanded');
-        } else {
-            bar.classList.remove('xero-bar--expanded');
-            orgDropdown.classList.remove('open');
-        }
-        sessionStorage.setItem('xero_bar_expanded', val ? '1' : '0');
-    }
-
-    function setDot(status) {
-        dot.className = 'xero-bar-dot xero-bar-dot--' + status;
+    function setStatusDot(status) {
+        statusDot.className = 'xero-status-dot xero-status-dot--' + status;
     }
 
     function renderStatus(data) {
-        bar.classList.remove('hidden');
-        setDot(data.status);
+        banner.classList.remove('hidden');
+        setStatusDot(data.status);
 
+        // Update label
         if (data.connected && data.tenant_name) {
             label.textContent = 'Connected to: ' + data.tenant_name;
         } else if (data.status === 'expired') {
-            label.textContent = data.tenant_name
-                ? 'Expired: ' + data.tenant_name
-                : 'Xero connection expired';
+            label.textContent = data.tenant_name ? 'Expired: ' + data.tenant_name : 'Xero connection expired';
         } else {
             label.textContent = 'Not connected to Xero';
         }
 
-        // Actions visibility
-        msg.textContent = '';
-        msg.className = 'xero-bar-msg';
-        connectBtn.style.display = 'none';
-        reconnectBtn.style.display = 'none';
+        // Update message
+        message.textContent = '';
+        if (data.status === 'expired') {
+            message.textContent = 'Token expired — reconnect to avoid interruptions';
+        } else if (data.status === 'expiring') {
+            message.textContent = 'Connection expiring soon — reconnect to avoid interruptions';
+        }
+
+        // Update connection button based on status
+        connectionBtn.style.display = '';
         orgWrap.style.display = 'none';
 
         if (data.status === 'disconnected') {
-            connectBtn.style.display = '';
-        } else if (data.status === 'expired') {
-            msg.textContent = 'Token expired. Please reconnect to continue.';
-            msg.classList.add('xero-bar-msg--error');
-            reconnectBtn.style.display = '';
-        } else if (data.status === 'expiring') {
-            msg.textContent = 'Connection expiring soon.';
-            msg.classList.add('xero-bar-msg--warning');
-            reconnectBtn.style.display = '';
+            // Show Connect button
+            connectionBtn.textContent = 'Connect';
+            connectionBtn.href = '/xero/login';
+            connectionBtn.className = 'xero-btn xero-btn--solid';
+        } else if (data.status === 'expired' || data.status === 'expiring') {
+            // Show Reconnect button
+            connectionBtn.textContent = 'Reconnect';
+            connectionBtn.href = '/xero/login';
+            connectionBtn.className = 'xero-btn xero-btn--solid';
             orgWrap.style.display = '';
         } else {
+            // Show Disconnect button
+            connectionBtn.textContent = 'Disconnect';
+            connectionBtn.href = '/xero/disconnect';
+            connectionBtn.className = 'xero-btn xero-btn--danger';
+            connectionBtn.onclick = function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to disconnect from Xero?')) {
+                    fetch('/xero/disconnect', {
+                        method: 'POST',
+                        credentials: 'same-origin'
+                    })
+                    .then(function() { window.location.reload(); })
+                    .catch(function() {});
+                }
+            };
             orgWrap.style.display = '';
         }
     }
@@ -298,20 +374,11 @@
         return d.innerHTML;
     }
 
-    // Toggle expand/collapse
-    toggle.addEventListener('click', function() {
-        setExpanded(!expanded);
-        if (expanded) {
-            fetchOrgs();
-        }
-    });
-
     // Toggle org dropdown
     orgToggle.addEventListener('click', function(e) {
         e.stopPropagation();
-        var isOpen = orgDropdown.classList.contains('open');
         orgDropdown.classList.toggle('open');
-        if (!isOpen) {
+        if (orgDropdown.classList.contains('open')) {
             fetchOrgs();
         }
     });
@@ -322,11 +389,6 @@
             orgDropdown.classList.remove('open');
         }
     });
-
-    // Initial state
-    if (expanded) {
-        setExpanded(true);
-    }
 
     // Initial fetch and polling
     fetchStatus();
