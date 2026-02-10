@@ -1,0 +1,49 @@
+name: Deployment Smoke Test
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Boot app and run health checks
+        env:
+          ENABLE_BACKGROUND_JOBS: "false"
+        run: |
+          python - <<'PY'
+          from webapp.app import create_app
+
+          app = create_app()
+          client = app.test_client()
+
+          health = client.get("/health")
+          assert health.status_code == 200, health.data
+          health_payload = health.get_json()
+          assert health_payload["status"] == "healthy", health_payload
+
+          runtime = client.get("/health/runtime")
+          assert runtime.status_code == 200, runtime.data
+          runtime_payload = runtime.get_json()
+          assert "scheduler" in runtime_payload, runtime_payload
+          assert "queue" in runtime_payload, runtime_payload
+
+          print("Deployment smoke checks passed.")
+          PY
