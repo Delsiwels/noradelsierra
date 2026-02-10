@@ -39,6 +39,11 @@ jobs:
           health_payload = health.get_json()
           assert health_payload["status"] == "healthy", health_payload
 
+          ready = client.get("/health/ready")
+          assert ready.status_code == 200, ready.data
+          ready_payload = ready.get_json()
+          assert ready_payload["ready"] is True, ready_payload
+
           runtime = client.get("/health/runtime")
           assert runtime.status_code == 200, runtime.data
           runtime_payload = runtime.get_json()
@@ -46,4 +51,25 @@ jobs:
           assert "queue" in runtime_payload, runtime_payload
 
           print("Deployment smoke checks passed.")
+          PY
+
+      - name: Boot app with invalid cron and ensure safe fallback
+        env:
+          ENABLE_BACKGROUND_JOBS: "true"
+          CLEANUP_CONVERSATIONS_CRON: "*/60"
+          RUNTIME_HEALTH_SNAPSHOT_ENABLED: "false"
+        run: |
+          python - <<'PY'
+          from webapp.app import create_app
+
+          app = create_app()
+          client = app.test_client()
+          runtime_payload = client.get("/health/runtime").get_json()
+
+          scheduler = runtime_payload["scheduler"]
+          assert scheduler["enabled"] is True, scheduler
+          assert scheduler["started"] is True, scheduler
+          assert any("*/60" in warning for warning in scheduler["warnings"]), scheduler
+
+          print("Invalid cron fallback smoke checks passed.")
           PY
