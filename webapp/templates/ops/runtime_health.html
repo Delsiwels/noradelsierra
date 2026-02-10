@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Runtime Health - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Runtime Health</h1>
+                <p class="text-gray-600 mt-1">Operational view of scheduler stability, readiness posture, and recent health snapshots.</p>
+            </div>
+            <a href="/health/runtime" target="_blank" class="inline-flex items-center px-3 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-black transition-colors">
+                JSON Runtime
+            </a>
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Current Status</p>
+            <div class="mt-2 flex items-center gap-2">
+                {% if current.status == "healthy" %}
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800">Healthy</span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800">Degraded</span>
+                {% endif %}
+                <span class="text-xs text-gray-500">{{ current.timestamp_utc }}</span>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Scheduler</p>
+            <p class="mt-2 text-sm text-gray-900 font-medium">
+                Enabled: <span class="font-semibold">{{ "Yes" if current.scheduler.enabled else "No" }}</span>
+                <span class="mx-1 text-gray-300">|</span>
+                Started: <span class="font-semibold">{{ "Yes" if current.scheduler.started else "No" }}</span>
+            </p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Snapshots</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ summary.total_snapshots }}</p>
+            <p class="text-xs text-gray-500">Last 120 records</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Degraded Ratio</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ summary.degraded_count }}/{{ summary.total_snapshots if summary.total_snapshots else 0 }}</p>
+            <p class="text-xs text-gray-500">Degraded snapshots</p>
+        </div>
+    </div>
+
+    <div class="grid xl:grid-cols-3 gap-6 mb-8">
+        <section class="xl:col-span-2 bg-white rounded-xl border border-gray-200">
+            <div class="px-5 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-900">Status Timeline</h2>
+                <p class="text-xs text-gray-500 mt-1">Newest snapshot first. Green means healthy, amber means degraded.</p>
+            </div>
+            <div class="p-5">
+                {% if snapshots %}
+                <div class="grid grid-cols-12 sm:grid-cols-16 md:grid-cols-20 lg:grid-cols-24 gap-1.5">
+                    {% for snapshot in snapshots %}
+                    <div class="h-4 rounded-sm {% if snapshot.status == 'healthy' %}bg-emerald-400{% else %}bg-amber-400{% endif %}" title="{{ snapshot.created_at }} · {{ snapshot.status }}"></div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">No snapshots have been persisted yet.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="bg-white rounded-xl border border-gray-200">
+            <div class="px-5 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-900">Top Degraded Reasons</h2>
+            </div>
+            <div class="p-5">
+                {% if summary.top_reasons %}
+                <ul class="space-y-2">
+                    {% for reason, count in summary.top_reasons %}
+                    <li class="flex items-center justify-between text-sm">
+                        <span class="text-gray-700 truncate pr-3">{{ reason }}</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-semibold">{{ count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-500">No degraded reasons recorded.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6 mb-8">
+        <section class="bg-white rounded-xl border border-gray-200">
+            <div class="px-5 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-900">Startup Config Audit</h2>
+            </div>
+            <div class="p-5">
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">Warnings</p>
+                {% if current.startup_config_audit.warnings %}
+                <ul class="space-y-2 mb-4">
+                    {% for warning in current.startup_config_audit.warnings %}
+                    <li class="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-3 py-2">{{ warning }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-500 mb-4">No warnings.</p>
+                {% endif %}
+
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">Errors</p>
+                {% if current.startup_config_audit.errors %}
+                <ul class="space-y-2">
+                    {% for issue in current.startup_config_audit.errors %}
+                    <li class="text-sm text-rose-700 bg-rose-50 border border-rose-100 rounded-md px-3 py-2">{{ issue }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-500">No errors.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="bg-white rounded-xl border border-gray-200">
+            <div class="px-5 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-900">Scheduler Warnings</h2>
+            </div>
+            <div class="p-5">
+                {% if current.scheduler.warnings %}
+                <ul class="space-y-2">
+                    {% for warning in current.scheduler.warnings %}
+                    <li class="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-3 py-2">{{ warning }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-500">No scheduler warnings.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <section class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-900">Recent Snapshots</h2>
+        </div>
+        {% if snapshots %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Timestamp (UTC)</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Reasons</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for snapshot in snapshots[:30] %}
+                    <tr>
+                        <td class="px-4 py-3 text-gray-700 font-mono text-xs">{{ snapshot.created_at }}</td>
+                        <td class="px-4 py-3">
+                            {% if snapshot.status == "healthy" %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold">Healthy</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-xs font-semibold">Degraded</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-gray-700">
+                            {% if snapshot.degraded_reasons %}
+                                {{ snapshot.degraded_reasons | join(", ") }}
+                            {% else %}
+                                <span class="text-gray-400">None</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5">
+            <p class="text-sm text-gray-500">No runtime snapshots available yet.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

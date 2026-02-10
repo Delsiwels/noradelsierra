@@ -185,6 +185,12 @@
                     </svg>
                     <span>Accountant Hub</span>
                 </a>
+                <a href="/ops/runtime-health" class="sidebar-item {% if request.path == '/ops/runtime-health' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6m6 13V10M5 19V8m14 11V4m-9 15h4"/>
+                    </svg>
+                    <span>Runtime Health</span>
+                </a>
             </div>
             {% endif %}
         </nav>
@@ -214,11 +220,6 @@
 
         <!-- BAS Reminder Banner -->
         {% include "components/bas_reminder_banner.html" ignore missing %}
-
-        <!-- Main Content -->
-        <main>
-            {% block content %}{% endblock %}
-        </main>
     {% else %}
     <!-- Non-authenticated: Top Navigation -->
     <nav class="bg-white shadow-sm border-b border-gray-200">
@@ -244,11 +245,12 @@
         </div>
     </nav>
 
+    {% endif %}
+
     <!-- Main Content -->
     <main>
         {% block content %}{% endblock %}
     </main>
-    {% endif %}
 
     {% if current_user and current_user.is_authenticated %}
     </div><!-- Close main-with-sidebar -->

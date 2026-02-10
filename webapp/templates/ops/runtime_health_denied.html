@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="bg-white rounded-xl border border-gray-200 p-8 text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-rose-100 flex items-center justify-center">
+            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/>
+            </svg>
+        </div>
+        <h1 class="text-xl font-semibold text-gray-900">Access Denied</h1>
+        <p class="text-sm text-gray-600 mt-2">Runtime Health dashboard is restricted to owners and admins.</p>
+        <a href="/dashboard" class="inline-flex items-center mt-6 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-700 transition-colors">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
