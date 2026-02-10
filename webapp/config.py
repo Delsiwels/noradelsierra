@@ -76,6 +76,7 @@ class Config:
     STARTUP_CONFIG_AUDIT_FAIL_FAST = (
         os.environ.get("STARTUP_CONFIG_AUDIT_FAIL_FAST", "false").lower() == "true"
     )
+    ALEMBIC_SCRIPT_LOCATION = os.environ.get("ALEMBIC_SCRIPT_LOCATION", "migrations")
 
     # Background job runtime guardrails
     BACKGROUND_JOB_MAX_RUNTIME_SECONDS = int(

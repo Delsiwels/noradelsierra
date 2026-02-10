@@ -3,11 +3,12 @@
 import importlib
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
 from webapp.ai import init_ai_client, init_chat_service
 from webapp.ai.token_tracker import init_token_tracker
@@ -20,17 +21,19 @@ from webapp.blueprints.pages import pages_bp
 from webapp.blueprints.skills import skills_bp
 from webapp.blueprints.usage import usage_bp
 from webapp.config import Config
-from webapp.models import Conversation, User, db
+from webapp.models import User, db
 from webapp.routes import api_bp
 from webapp.services.background_jobs import ManagedJob, start_background_scheduler
+from webapp.services.maintenance import (
+    cleanup_expired_conversations,
+    snapshot_runtime_health,
+)
 from webapp.services.operational_alerts import send_operational_alert
 from webapp.services.runtime_health import runtime_health
 from webapp.services.runtime_health_persistence import (
     list_runtime_health_snapshots,
-    persist_runtime_health_snapshot,
 )
 from webapp.services.startup_checks import (
-    apply_lightweight_migrations,
     build_readiness_report,
     run_startup_config_audit,
     should_fail_fast_on_config_audit,
@@ -42,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 bcrypt = Bcrypt()
 login_manager = LoginManager()
+migrate = Migrate()
 
 
 @login_manager.user_loader
@@ -54,40 +58,6 @@ def load_user(user_id: str):
 def unauthorized():
     """Handle unauthorized access."""
     return jsonify({"error": "Authentication required"}), 401
-
-
-def cleanup_expired_conversations(app: Flask) -> int:
-    """
-    Delete conversations that have expired (past expires_at date).
-
-    Args:
-        app: Flask application instance
-
-    Returns:
-        Number of conversations deleted
-    """
-    with app.app_context():
-        now = datetime.utcnow()
-
-        # Find and delete expired conversations
-        expired = Conversation.query.filter(Conversation.expires_at <= now).all()
-
-        count = len(expired)
-
-        for conversation in expired:
-            db.session.delete(conversation)
-
-        if count > 0:
-            db.session.commit()
-            logger.info(f"Cleaned up {count} expired conversations")
-
-        return count
-
-
-def snapshot_runtime_health(app: Flask) -> str | None:
-    """Persist a runtime health snapshot for trend analysis."""
-    report = runtime_health.build_report(app)
-    return persist_runtime_health_snapshot(app, report)
 
 
 def _register_optional_blueprint(
@@ -155,20 +125,16 @@ def create_app(config_class: type = Config) -> Flask:
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
+    migrate.init_app(app, db, directory="migrations")
 
     # Session config
     app.permanent_session_lifetime = timedelta(
         seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400)
     )
 
-    # Create tables and run lightweight migrations
+    # Keep bootstrap table creation for fresh ephemeral environments.
     with app.app_context():
         db.create_all()
-        migration_result = apply_lightweight_migrations()
-        for migration in migration_result["applied"]:
-            logger.info("Applied startup migration: %s", migration)
-        for failure in migration_result["failed"]:
-            logger.error("Startup migration failure: %s", failure)
 
     # Initialize R2 skill loader
     init_r2_loader(app)

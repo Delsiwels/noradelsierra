@@ -39,6 +39,7 @@ Last updated: 2026-02-11
 | Variable | Required | Recommended Value | Notes |
 |---|---|---|---|
 | `STARTUP_CONFIG_AUDIT_FAIL_FAST` | No | `true` (prod) | Blocks startup when audit finds blocking config issues. |
+| `ALEMBIC_SCRIPT_LOCATION` | No | `migrations` | Used by readiness checks to validate DB head revision alignment. |
 
 ## Operational Alerts
 
@@ -72,3 +73,5 @@ Last updated: 2026-02-11
 2. `GET /health/ready` returns `200` (or `503` with actionable checks).
 3. `GET /health/runtime` includes scheduler + queue + startup audit data.
 4. `GET /ops/runtime-health` loads for owner/admin users.
+5. `POST /ops/runtime-health/actions` works for owner/admin (`snapshot`, `cleanup`).
+6. `GET /ops/runtime-health/incidents.csv` exports degraded snapshot incidents.

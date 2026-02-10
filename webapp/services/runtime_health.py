@@ -9,6 +9,8 @@ from typing import Any
 
 from flask import Flask
 
+from webapp.services.operational_alerts import get_operational_alert_telemetry
+
 
 def _utc_now_iso() -> str:
     return datetime.now(UTC).isoformat()
@@ -125,6 +127,7 @@ class RuntimeHealthRegistry:
 
         if app is not None:
             report["queue"] = self._collect_queue_summary(app)
+        report["alerting"] = get_operational_alert_telemetry()
         return report
 
     def _collect_queue_summary(self, app: Flask) -> dict[str, Any]:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from flask import Flask
@@ -86,6 +87,73 @@ def apply_lightweight_migrations() -> dict[str, list[str]]:
     return {"applied": applied, "failed": failed}
 
 
+def get_alembic_revision_status(app: Flask) -> dict[str, Any]:
+    """Return Alembic revision status for readiness checks."""
+    try:
+        from alembic.config import Config as AlembicConfig
+        from alembic.runtime.migration import MigrationContext
+        from alembic.script import ScriptDirectory
+    except Exception as exc:
+        return {
+            "ok": False,
+            "available": False,
+            "detail": f"Alembic unavailable: {type(exc).__name__}: {exc}",
+            "current_heads": [],
+            "target_heads": [],
+            "pending_heads": [],
+        }
+
+    script_location = str(app.config.get("ALEMBIC_SCRIPT_LOCATION", "migrations"))
+    if not Path(script_location).exists():
+        return {
+            "ok": False,
+            "available": False,
+            "detail": f"Migration directory not found: {script_location}",
+            "current_heads": [],
+            "target_heads": [],
+            "pending_heads": [],
+        }
+
+    try:
+        alembic_cfg = AlembicConfig()
+        alembic_cfg.set_main_option("script_location", script_location)
+        script = ScriptDirectory.from_config(alembic_cfg)
+        target_heads = list(script.get_heads())
+
+        with db.engine.connect() as conn:
+            context = MigrationContext.configure(conn)
+            current_heads = list(context.get_current_heads() or [])
+    except Exception as exc:
+        return {
+            "ok": False,
+            "available": True,
+            "detail": f"Failed to inspect Alembic revisions: {type(exc).__name__}: {exc}",
+            "current_heads": [],
+            "target_heads": [],
+            "pending_heads": [],
+        }
+
+    if app.config.get("TESTING"):
+        return {
+            "ok": True,
+            "available": True,
+            "detail": "Skipped strict Alembic head enforcement in testing context.",
+            "current_heads": current_heads,
+            "target_heads": target_heads,
+            "pending_heads": [],
+        }
+
+    pending_heads = sorted(set(target_heads) - set(current_heads))
+    return {
+        "ok": len(pending_heads) == 0,
+        "available": True,
+        "detail": "",
+        "current_heads": current_heads,
+        "target_heads": target_heads,
+        "pending_heads": pending_heads,
+    }
+
+
 def db_connectivity_check() -> dict[str, Any]:
     """Check that the app can execute a simple query."""
     try:
@@ -158,6 +226,7 @@ def build_readiness_report(
     """Build readiness state from DB, migration, and startup audit checks."""
     db_check = db_connectivity_check()
     pending_migrations = [m.identifier for m in get_pending_lightweight_migrations()]
+    alembic_status = get_alembic_revision_status(app)
 
     scheduler = app.extensions.get("runtime_scheduler_state", {})
     scheduler_enabled = bool(scheduler.get("enabled"))
@@ -169,7 +238,13 @@ def build_readiness_report(
         "lightweight_migrations": {
             "ok": len(pending_migrations) == 0,
             "pending": pending_migrations,
+            "detail": (
+                "Pending additive schema patches detected. Run Alembic upgrades before deployment."
+                if pending_migrations
+                else ""
+            ),
         },
+        "alembic": alembic_status,
         "startup_config": {
             "ok": len(config_audit.get("errors", [])) == 0,
             "warnings": list(config_audit.get("warnings", [])),
@@ -185,6 +260,7 @@ def build_readiness_report(
     ready = (
         checks["db_connectivity"]["ok"]
         and checks["lightweight_migrations"]["ok"]
+        and checks["alembic"]["ok"]
         and checks["startup_config"]["ok"]
         and checks["scheduler"]["ok"]
     )

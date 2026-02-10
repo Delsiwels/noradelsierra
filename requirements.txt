@@ -3,10 +3,12 @@ flask>=3.0.0
 flask-sqlalchemy>=3.1.0
 flask-login>=0.6.3
 flask-bcrypt>=1.0.1
+flask-migrate>=4.0.0
 gunicorn>=21.0.0
 
 # Database
 sqlalchemy>=2.0.0
+alembic>=1.13.0
 psycopg2-binary>=2.9.0
 
 # AWS/R2 Storage
