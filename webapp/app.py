@@ -1,5 +1,6 @@
 """Main Flask application."""
 
+import importlib
 import logging
 import os
 from datetime import datetime, timedelta
@@ -21,6 +22,8 @@ from webapp.blueprints.usage import usage_bp
 from webapp.config import Config
 from webapp.models import Conversation, User, db
 from webapp.routes import api_bp
+from webapp.services.background_jobs import ManagedJob, start_background_scheduler
+from webapp.services.runtime_health import runtime_health
 from webapp.skills.analytics_service import init_analytics_service
 from webapp.skills.r2_skill_loader import init_r2_loader
 
@@ -68,6 +71,39 @@ def cleanup_expired_conversations(app: Flask) -> int:
             logger.info(f"Cleaned up {count} expired conversations")
 
         return count
+
+
+def _register_optional_blueprint(
+    app: Flask,
+    module_path: str,
+    blueprint_name: str,
+) -> bool:
+    """Register a blueprint if module + symbol are available."""
+    try:
+        module = importlib.import_module(module_path)
+        blueprint = getattr(module, blueprint_name)
+        app.register_blueprint(blueprint)
+        return True
+    except ModuleNotFoundError as exc:
+        logger.warning(
+            "Skipping optional blueprint %s.%s (%s)",
+            module_path,
+            blueprint_name,
+            exc,
+        )
+    except AttributeError:
+        logger.warning(
+            "Skipping optional blueprint %s: missing symbol '%s'",
+            module_path,
+            blueprint_name,
+        )
+    except Exception:
+        logger.exception(
+            "Failed to register optional blueprint %s.%s",
+            module_path,
+            blueprint_name,
+        )
+    return False
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -182,9 +218,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.register_blueprint(connections_bp)
 
-    from webapp.blueprints.ask_fin import ask_fin_bp
-
-    app.register_blueprint(ask_fin_bp)
+    _register_optional_blueprint(app, "webapp.blueprints.ask_fin", "ask_fin_bp")
 
     from webapp.blueprints.payroll_review import payroll_review_bp
 
@@ -213,10 +247,37 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(prepayment_tracker_bp)
     app.register_blueprint(fuel_tax_credits_bp)
 
+    start_background_scheduler(
+        app,
+        jobs=[
+            ManagedJob(
+                job_id="cleanup_expired_conversations",
+                func=lambda: cleanup_expired_conversations(app),
+                cron_env_var="CLEANUP_CONVERSATIONS_CRON",
+                interval_env_var="CLEANUP_CONVERSATIONS_MINUTES",
+                default_interval_minutes=60,
+                fallback_minute=0,
+            )
+        ],
+    )
+
     @app.route("/health")
     def health_check():
         """Health check endpoint."""
-        return jsonify({"status": "healthy", "version": "0.3.0"})
+        runtime_report = runtime_health.build_report(app)
+        return jsonify(
+            {
+                "status": "healthy",
+                "version": "0.3.0",
+                "scheduler_enabled": runtime_report["scheduler"]["enabled"],
+                "scheduler_started": runtime_report["scheduler"]["started"],
+            }
+        )
+
+    @app.route("/health/runtime")
+    def runtime_health_check():
+        """Runtime operational health report."""
+        return jsonify(runtime_health.build_report(app))
 
     # Register CLI commands for maintenance tasks
     @app.cli.command("cleanup-conversations")
