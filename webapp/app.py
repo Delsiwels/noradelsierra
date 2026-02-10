@@ -5,7 +5,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 
@@ -23,7 +23,18 @@ from webapp.config import Config
 from webapp.models import Conversation, User, db
 from webapp.routes import api_bp
 from webapp.services.background_jobs import ManagedJob, start_background_scheduler
+from webapp.services.operational_alerts import send_operational_alert
 from webapp.services.runtime_health import runtime_health
+from webapp.services.runtime_health_persistence import (
+    list_runtime_health_snapshots,
+    persist_runtime_health_snapshot,
+)
+from webapp.services.startup_checks import (
+    apply_lightweight_migrations,
+    build_readiness_report,
+    run_startup_config_audit,
+    should_fail_fast_on_config_audit,
+)
 from webapp.skills.analytics_service import init_analytics_service
 from webapp.skills.r2_skill_loader import init_r2_loader
 
@@ -73,6 +84,12 @@ def cleanup_expired_conversations(app: Flask) -> int:
         return count
 
 
+def snapshot_runtime_health(app: Flask) -> str | None:
+    """Persist a runtime health snapshot for trend analysis."""
+    report = runtime_health.build_report(app)
+    return persist_runtime_health_snapshot(app, report)
+
+
 def _register_optional_blueprint(
     app: Flask,
     module_path: str,
@@ -111,6 +128,29 @@ def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    config_audit = run_startup_config_audit(app)
+    app.extensions["startup_config_audit"] = config_audit
+    runtime_health.set_startup_config_audit(config_audit)
+
+    for warning in config_audit.get("warnings", []):
+        logger.warning("Startup config warning: %s", warning)
+    for error in config_audit.get("errors", []):
+        logger.error("Startup config issue: %s", error)
+    if config_audit.get("errors"):
+        send_operational_alert(
+            app,
+            event_type="startup_config_audit",
+            severity="high",
+            message="Startup config audit found errors.",
+            details={"errors": config_audit["errors"]},
+            dedupe_key="startup_config_audit_errors",
+        )
+    if config_audit.get("errors") and should_fail_fast_on_config_audit(app):
+        raise RuntimeError(
+            "Startup config audit failed with errors: "
+            + "; ".join(config_audit["errors"])
+        )
+
     # Initialize extensions
     db.init_app(app)
     bcrypt.init_app(app)
@@ -124,54 +164,11 @@ def create_app(config_class: type = Config) -> Flask:
     # Create tables and run lightweight migrations
     with app.app_context():
         db.create_all()
-
-        # Migration: add tenant_id / tenant_name to checklist_progress
-        from sqlalchemy import inspect as sa_inspect
-        from sqlalchemy import text
-
-        insp = sa_inspect(db.engine)
-        if insp.has_table("checklist_progress"):
-            existing_cols = {c["name"] for c in insp.get_columns("checklist_progress")}
-            if "tenant_id" not in existing_cols:
-                try:
-                    db.session.execute(
-                        text(
-                            "ALTER TABLE checklist_progress "
-                            "ADD COLUMN tenant_id VARCHAR(255)"
-                        )
-                    )
-                    db.session.commit()
-                    logger.info("Added tenant_id column to checklist_progress")
-                except Exception:
-                    db.session.rollback()
-            if "tenant_name" not in existing_cols:
-                try:
-                    db.session.execute(
-                        text(
-                            "ALTER TABLE checklist_progress "
-                            "ADD COLUMN tenant_name VARCHAR(255)"
-                        )
-                    )
-                    db.session.commit()
-                    logger.info("Added tenant_name column to checklist_progress")
-                except Exception:
-                    db.session.rollback()
-
-        # Migration: add bas_lodge_method to users
-        if insp.has_table("users"):
-            user_cols = {c["name"] for c in insp.get_columns("users")}
-            if "bas_lodge_method" not in user_cols:
-                try:
-                    db.session.execute(
-                        text(
-                            "ALTER TABLE users "
-                            "ADD COLUMN bas_lodge_method VARCHAR(10) DEFAULT 'self'"
-                        )
-                    )
-                    db.session.commit()
-                    logger.info("Added bas_lodge_method column to users")
-                except Exception:
-                    db.session.rollback()
+        migration_result = apply_lightweight_migrations()
+        for migration in migration_result["applied"]:
+            logger.info("Applied startup migration: %s", migration)
+        for failure in migration_result["failed"]:
+            logger.error("Startup migration failure: %s", failure)
 
     # Initialize R2 skill loader
     init_r2_loader(app)
@@ -247,7 +244,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(prepayment_tracker_bp)
     app.register_blueprint(fuel_tax_credits_bp)
 
-    start_background_scheduler(
+    scheduler_report = start_background_scheduler(
         app,
         jobs=[
             ManagedJob(
@@ -257,9 +254,28 @@ def create_app(config_class: type = Config) -> Flask:
                 interval_env_var="CLEANUP_CONVERSATIONS_MINUTES",
                 default_interval_minutes=60,
                 fallback_minute=0,
-            )
+                max_runtime_seconds=300,
+                max_retries=1,
+                retry_backoff_seconds=2.0,
+            ),
+            ManagedJob(
+                job_id="persist_runtime_health_snapshot",
+                func=lambda: snapshot_runtime_health(app),
+                cron_env_var="RUNTIME_HEALTH_SNAPSHOT_CRON",
+                interval_env_var="RUNTIME_HEALTH_SNAPSHOT_MINUTES",
+                default_interval_minutes=15,
+                fallback_minute=5,
+                max_runtime_seconds=60,
+                max_retries=0,
+                retry_backoff_seconds=1.0,
+            ),
         ],
     )
+    app.extensions["runtime_scheduler_state"] = {
+        "enabled": scheduler_report.enabled,
+        "started": scheduler_report.started,
+        "warnings": scheduler_report.warnings,
+    }
 
     @app.route("/health")
     def health_check():
@@ -274,10 +290,29 @@ def create_app(config_class: type = Config) -> Flask:
             }
         )
 
+    @app.route("/health/ready")
+    def readiness_check():
+        """Readiness endpoint that verifies DB, migrations, and startup config."""
+        report = build_readiness_report(
+            app,
+            app.extensions.get("startup_config_audit", {"warnings": [], "errors": []}),
+        )
+        return jsonify(report), (200 if report["ready"] else 503)
+
     @app.route("/health/runtime")
     def runtime_health_check():
         """Runtime operational health report."""
         return jsonify(runtime_health.build_report(app))
+
+    @app.route("/health/runtime/snapshots")
+    def runtime_health_snapshots():
+        """Latest persisted runtime health snapshots."""
+        try:
+            limit = int(request.args.get("limit", "25"))
+        except ValueError:
+            limit = 25
+        snapshots = list_runtime_health_snapshots(limit)
+        return jsonify({"count": len(snapshots), "snapshots": snapshots})
 
     # Register CLI commands for maintenance tasks
     @app.cli.command("cleanup-conversations")
@@ -285,6 +320,12 @@ def create_app(config_class: type = Config) -> Flask:
         """Remove expired conversations (30-day retention)."""
         count = cleanup_expired_conversations(app)
         print(f"Deleted {count} expired conversations")
+
+    @app.cli.command("snapshot-runtime-health")
+    def snapshot_runtime_health_command():
+        """Persist one runtime health snapshot now."""
+        snapshot_id = snapshot_runtime_health(app)
+        print(f"Snapshot created: {snapshot_id}")
 
     return app
 

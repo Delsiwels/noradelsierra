@@ -72,6 +72,45 @@ class Config:
         "You are a helpful AI assistant.",
     )
 
+    # Startup / readiness checks
+    STARTUP_CONFIG_AUDIT_FAIL_FAST = (
+        os.environ.get("STARTUP_CONFIG_AUDIT_FAIL_FAST", "false").lower() == "true"
+    )
+
+    # Background job runtime guardrails
+    BACKGROUND_JOB_MAX_RUNTIME_SECONDS = int(
+        os.environ.get("BACKGROUND_JOB_MAX_RUNTIME_SECONDS", "300")
+    )
+    BACKGROUND_JOB_MAX_RETRIES = int(os.environ.get("BACKGROUND_JOB_MAX_RETRIES", "1"))
+    BACKGROUND_JOB_RETRY_BACKOFF_SECONDS = float(
+        os.environ.get("BACKGROUND_JOB_RETRY_BACKOFF_SECONDS", "2.0")
+    )
+
+    # Operational alerts
+    OP_ALERTS_ENABLED = os.environ.get("OP_ALERTS_ENABLED", "false").lower() == "true"
+    OP_ALERT_WEBHOOK_URL = os.environ.get("OP_ALERT_WEBHOOK_URL")
+    OP_ALERT_SLACK_WEBHOOK_URL = os.environ.get("OP_ALERT_SLACK_WEBHOOK_URL")
+    OP_ALERT_EMAIL_TO = os.environ.get("OP_ALERT_EMAIL_TO")
+    OP_ALERT_EMAIL_FROM = os.environ.get("OP_ALERT_EMAIL_FROM", "noreply@finql.ai")
+    OP_ALERT_COOLDOWN_SECONDS = int(os.environ.get("OP_ALERT_COOLDOWN_SECONDS", "300"))
+
+    SMTP_HOST = os.environ.get("SMTP_HOST")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+    SMTP_USERNAME = os.environ.get("SMTP_USERNAME")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
+
+    # Runtime health snapshot persistence
+    RUNTIME_HEALTH_SNAPSHOT_ENABLED = (
+        os.environ.get("RUNTIME_HEALTH_SNAPSHOT_ENABLED", "true").lower() == "true"
+    )
+    RUNTIME_HEALTH_SNAPSHOT_RETENTION_DAYS = int(
+        os.environ.get("RUNTIME_HEALTH_SNAPSHOT_RETENTION_DAYS", "30")
+    )
+    RUNTIME_HEALTH_SNAPSHOT_MAX_ROWS = int(
+        os.environ.get("RUNTIME_HEALTH_SNAPSHOT_MAX_ROWS", "2000")
+    )
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""

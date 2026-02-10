@@ -186,9 +186,9 @@ class ChecklistProgress(db.Model):  # type: ignore[name-defined]
             "tenant_id": self.tenant_id,
             "tenant_name": self.tenant_name,
             "items": self.items or [],
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -499,3 +499,34 @@ class TokenUsage(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f"<TokenUsage {self.period_year}-{self.period_month:02d} ({self.total_tokens} tokens)>"
+
+
+class RuntimeHealthSnapshot(db.Model):  # type: ignore[name-defined]
+    """Persisted runtime health snapshot for operational trend analysis."""
+
+    __tablename__ = "runtime_health_snapshots"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    status = db.Column(db.String(20), nullable=False, default="healthy", index=True)
+    degraded_reasons = db.Column(db.JSON, default=list)
+    scheduler = db.Column(db.JSON, nullable=False, default=dict)
+    jobs = db.Column(db.JSON, nullable=False, default=dict)
+    queue = db.Column(db.JSON, nullable=False, default=dict)
+    startup_config_audit = db.Column(db.JSON, nullable=False, default=dict)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self) -> dict:
+        """Convert runtime snapshot to dictionary."""
+        return {
+            "id": self.id,
+            "status": self.status,
+            "degraded_reasons": self.degraded_reasons or [],
+            "scheduler": self.scheduler or {},
+            "jobs": self.jobs or {},
+            "queue": self.queue or {},
+            "startup_config_audit": self.startup_config_audit or {},
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self) -> str:
+        return f"<RuntimeHealthSnapshot {self.status} {self.created_at}>"
