@@ -1,6 +1,6 @@
 """Tests for runtime operations dashboard endpoints."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from flask_bcrypt import generate_password_hash
 
@@ -87,7 +87,7 @@ def test_runtime_ops_cleanup_action_returns_json(client, app):
             Conversation(
                 user_id=owner.id,
                 title="expired",
-                expires_at=datetime.utcnow() - timedelta(days=1),
+                expires_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(days=1),
             )
         )
         db.session.commit()

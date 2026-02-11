@@ -1,5 +1,7 @@
 """Tests for startup checks and readiness endpoints."""
 
+import uuid
+
 from flask import Flask
 
 from webapp.services.startup_checks import run_startup_config_audit
@@ -43,4 +45,21 @@ def test_invalid_cron_falls_back_without_boot_failure(monkeypatch):
     runtime_payload = client.get("/health/runtime").get_json()
 
     assert runtime_payload["scheduler"]["enabled"] is True
-    assert any("*/60" in warning for warning in runtime_payload["scheduler"]["warnings"])
+    assert any(
+        "*/60" in warning for warning in runtime_payload["scheduler"]["warnings"]
+    )
+
+
+def test_health_ready_reports_not_ready_when_migration_directory_missing(app):
+    app.config["ALEMBIC_SCRIPT_LOCATION"] = (
+        f"nonexistent-migrations-{uuid.uuid4()}"
+    )
+
+    client = app.test_client()
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    payload = response.get_json()
+    assert payload["ready"] is False
+    assert payload["checks"]["alembic"]["ok"] is False
+    assert payload["checks"]["alembic"]["available"] is False

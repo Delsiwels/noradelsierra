@@ -1,7 +1,7 @@
 """Database models for Custom Skills Infrastructure."""
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -14,9 +14,14 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
+def utcnow() -> datetime:
+    """Return a naive UTC datetime for existing DB columns."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
 def default_expires_at() -> datetime:
     """Generate default expiration date (30 days from now)."""
-    return datetime.utcnow() + timedelta(days=30)
+    return utcnow() + timedelta(days=30)
 
 
 class User(UserMixin, db.Model):  # type: ignore[name-defined]
@@ -38,7 +43,7 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     bas_frequency = db.Column(db.String(20), default="quarterly")  # quarterly, monthly
     bas_lodge_method = db.Column(db.String(10), default="self")  # self, agent
     bas_reminders_enabled = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     team = db.relationship("Team", foreign_keys=[team_id], backref="members")
 
@@ -74,7 +79,7 @@ class Team(db.Model):  # type: ignore[name-defined]
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(255), nullable=False)
     owner_id = db.Column(db.String(36), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self) -> dict:
         """Convert team to dictionary."""
@@ -105,7 +110,7 @@ class AccountantShare(db.Model):  # type: ignore[name-defined]
         db.String(36), db.ForeignKey("users.id"), nullable=False
     )
     access_level = db.Column(db.String(20), default="read_only")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
     expires_at = db.Column(db.DateTime, nullable=True)
 
     team = db.relationship("Team", backref="accountant_shares")
@@ -120,7 +125,7 @@ class AccountantShare(db.Model):  # type: ignore[name-defined]
         """Check if this share has expired."""
         if self.expires_at is None:
             return False
-        return datetime.utcnow() > self.expires_at  # type: ignore[no-any-return]
+        return utcnow() > self.expires_at  # type: ignore[no-any-return]
 
     def to_dict(self) -> dict:
         """Convert share to dictionary."""
@@ -157,10 +162,8 @@ class ChecklistProgress(db.Model):  # type: ignore[name-defined]
     tenant_name = db.Column(db.String(255), nullable=True)  # Cached org display name
     items = db.Column(db.JSON, nullable=False, default=list)
     completed_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     team = db.relationship("Team", backref="checklists")
     user = db.relationship("User")
@@ -213,7 +216,7 @@ class ChecklistComment(db.Model):  # type: ignore[name-defined]
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     content = db.Column(db.Text, nullable=False)
     assigned_to = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     checklist_progress = db.relationship("ChecklistProgress", backref="comments")
     author = db.relationship("User", foreign_keys=[user_id])
@@ -278,10 +281,8 @@ class CustomSkill(db.Model):  # type: ignore[name-defined]
     )  # SHA-256 hash of content for cache invalidation
 
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Constraints
     __table_args__ = (
@@ -347,10 +348,8 @@ class Conversation(db.Model):  # type: ignore[name-defined]
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     user_id = db.Column(db.String(36), nullable=False, index=True)
     title = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     expires_at = db.Column(db.DateTime, default=default_expires_at, index=True)
 
     # Relationship to messages
@@ -396,7 +395,7 @@ class Message(db.Model):  # type: ignore[name-defined]
     skills_used = db.Column(db.JSON, default=list)
     input_tokens = db.Column(db.Integer, default=0)
     output_tokens = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
 
     def to_dict(self) -> dict:
         """Convert message to dictionary."""
@@ -433,7 +432,7 @@ class SkillUsage(db.Model):  # type: ignore[name-defined]
     trigger = db.Column(db.String(255))
     confidence = db.Column(db.Float)
     conversation_id = db.Column(db.String(36))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
 
     def to_dict(self) -> dict:
         """Convert skill usage to dictionary."""
@@ -513,7 +512,7 @@ class RuntimeHealthSnapshot(db.Model):  # type: ignore[name-defined]
     jobs = db.Column(db.JSON, nullable=False, default=dict)
     queue = db.Column(db.JSON, nullable=False, default=dict)
     startup_config_audit = db.Column(db.JSON, nullable=False, default=dict)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
 
     def to_dict(self) -> dict:
         """Convert runtime snapshot to dictionary."""

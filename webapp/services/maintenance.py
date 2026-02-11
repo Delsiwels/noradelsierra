@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import Flask
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def cleanup_expired_conversations(app: Flask) -> int:
     """Delete expired conversations and return deleted row count."""
     with app.app_context():
-        now = datetime.utcnow()
+        now = datetime.now(UTC).replace(tzinfo=None)
         expired = Conversation.query.filter(Conversation.expires_at <= now).all()
         count = len(expired)
 
