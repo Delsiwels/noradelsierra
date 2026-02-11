@@ -9,8 +9,9 @@ Tests cover:
 - Authentication requirements
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 class TestChatEndpoint:
@@ -273,8 +274,8 @@ class TestChatErrorHandling:
 
     def test_chat_handles_value_error(self, client, app):
         """Test that ValueError is handled properly."""
-        from webapp.ai import init_ai_client, ChatService
         import webapp.ai.chat_service as chat_module
+        from webapp.ai import ChatService, init_ai_client
 
         init_ai_client(app)
 
@@ -297,8 +298,8 @@ class TestChatErrorHandling:
 
     def test_chat_handles_unexpected_error(self, client, app):
         """Test that unexpected errors are handled properly."""
-        from webapp.ai import init_ai_client, ChatService
         import webapp.ai.chat_service as chat_module
+        from webapp.ai import ChatService, init_ai_client
 
         init_ai_client(app)
 

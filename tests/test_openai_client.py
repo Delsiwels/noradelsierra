@@ -1,11 +1,12 @@
 """Tests for OpenAI client implementation."""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from webapp.ai.client import AIProviderError, APIKeyMissingError, RateLimitError
+from webapp.ai.models import AIResponse
 from webapp.ai.openai_client import OpenAIClient
-from webapp.ai.client import APIKeyMissingError, AIProviderError, RateLimitError
-from webapp.ai.models import AIResponse, StreamChunk
 
 
 class TestOpenAIClient:
@@ -99,7 +100,7 @@ class TestOpenAIClient:
         client = OpenAIClient(api_key="test-key")
         messages = [{"role": "user", "content": "Hello"}]
 
-        response = client.chat_sync(messages)
+        client.chat_sync(messages)
 
         # No system message prepended
         call_kwargs = mock_client.chat.completions.create.call_args.kwargs
@@ -109,7 +110,9 @@ class TestOpenAIClient:
     def test_chat_sync_rate_limit_error(self, mock_openai):
         """Test rate limit handling."""
         mock_client = MagicMock()
-        mock_client.chat.completions.create.side_effect = Exception("Rate limit exceeded")
+        mock_client.chat.completions.create.side_effect = Exception(
+            "Rate limit exceeded"
+        )
         mock_openai.return_value = mock_client
 
         client = OpenAIClient(api_key="test-key")
@@ -156,6 +159,7 @@ class TestOpenAIClient:
         client = OpenAIClient(api_key="test-key")
 
         import asyncio
+
         response = asyncio.run(client.chat([{"role": "user", "content": "Hello"}]))
 
         assert isinstance(response, AIResponse)
@@ -166,19 +170,27 @@ class TestOpenAIClient:
         """Test streaming chat response."""
         # Create mock stream chunks
         chunk1 = MagicMock()
-        chunk1.choices = [MagicMock(delta=MagicMock(content="Hello "), finish_reason=None)]
+        chunk1.choices = [
+            MagicMock(delta=MagicMock(content="Hello "), finish_reason=None)
+        ]
         chunk1.usage = None
 
         chunk2 = MagicMock()
-        chunk2.choices = [MagicMock(delta=MagicMock(content="world"), finish_reason=None)]
+        chunk2.choices = [
+            MagicMock(delta=MagicMock(content="world"), finish_reason=None)
+        ]
         chunk2.usage = None
 
         chunk3 = MagicMock()
-        chunk3.choices = [MagicMock(delta=MagicMock(content=None), finish_reason="stop")]
+        chunk3.choices = [
+            MagicMock(delta=MagicMock(content=None), finish_reason="stop")
+        ]
         chunk3.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
 
         mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = iter([chunk1, chunk2, chunk3])
+        mock_client.chat.completions.create.return_value = iter(
+            [chunk1, chunk2, chunk3]
+        )
         mock_openai.return_value = mock_client
 
         client = OpenAIClient(api_key="test-key")
@@ -202,10 +214,12 @@ class TestOpenAIClient:
 
         client = OpenAIClient(api_key="test-key")
 
-        list(client.stream_chat(
-            [{"role": "user", "content": "Hi"}],
-            system_prompt="Be helpful",
-        ))
+        list(
+            client.stream_chat(
+                [{"role": "user", "content": "Hi"}],
+                system_prompt="Be helpful",
+            )
+        )
 
         call_kwargs = mock_client.chat.completions.create.call_args.kwargs
         assert call_kwargs["messages"][0]["role"] == "system"

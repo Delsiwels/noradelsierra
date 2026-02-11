@@ -1,6 +1,5 @@
 """Tests for payroll review blueprint and service."""
 
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -184,7 +183,9 @@ class TestPayRunComparison:
         """Comparing with no posted pay run returns empty comparison."""
         from webapp.app_services.payroll_review_service import compare_pay_runs
 
-        draft = {"payslips": [{"EmployeeID": "emp1", "EarningsLines": [{"Amount": 5000}]}]}
+        draft = {
+            "payslips": [{"EmployeeID": "emp1", "EarningsLines": [{"Amount": 5000}]}]
+        }
 
         result = compare_pay_runs(draft, None)
         assert result == []
@@ -274,8 +275,18 @@ class TestLeaveFlags:
                 "FirstName": "Bob",
                 "LastName": "Jones",
                 "LeaveEarningsLines": [
-                    {"LeaveTypeID": "annual", "LeaveName": "Annual Leave", "NumberOfUnits": 8.0, "Amount": 400.00},
-                    {"LeaveTypeID": "sick", "LeaveName": "Sick Leave", "NumberOfUnits": 4.0, "Amount": 200.00},
+                    {
+                        "LeaveTypeID": "annual",
+                        "LeaveName": "Annual Leave",
+                        "NumberOfUnits": 8.0,
+                        "Amount": 400.00,
+                    },
+                    {
+                        "LeaveTypeID": "sick",
+                        "LeaveName": "Sick Leave",
+                        "NumberOfUnits": 4.0,
+                        "Amount": 200.00,
+                    },
                 ],
             }
         ]
@@ -286,7 +297,9 @@ class TestLeaveFlags:
 
     def test_build_leave_flags_low_balance_warning(self):
         """Should flag employees with low remaining balance."""
-        from webapp.app_services.payroll_review_service import build_leave_flags_response
+        from webapp.app_services.payroll_review_service import (
+            build_leave_flags_response,
+        )
 
         payslips = [
             {
@@ -294,14 +307,23 @@ class TestLeaveFlags:
                 "FirstName": "Sally",
                 "LastName": "Martin",
                 "LeaveEarningsLines": [
-                    {"LeaveTypeID": "leave1", "LeaveName": "Annual Leave", "NumberOfUnits": 60.0, "Amount": 3000.00}
+                    {
+                        "LeaveTypeID": "leave1",
+                        "LeaveName": "Annual Leave",
+                        "NumberOfUnits": 60.0,
+                        "Amount": 3000.00,
+                    }
                 ],
             }
         ]
 
         leave_balances = {
             "emp1": [
-                {"leave_type_id": "leave1", "leave_name": "Annual Leave", "balance": 80.0}
+                {
+                    "leave_type_id": "leave1",
+                    "leave_name": "Annual Leave",
+                    "balance": 80.0,
+                }
             ]
         }
 
@@ -313,7 +335,9 @@ class TestLeaveFlags:
 
     def test_build_leave_flags_ok_balance(self):
         """Should not flag employees with sufficient balance."""
-        from webapp.app_services.payroll_review_service import build_leave_flags_response
+        from webapp.app_services.payroll_review_service import (
+            build_leave_flags_response,
+        )
 
         payslips = [
             {
@@ -321,14 +345,23 @@ class TestLeaveFlags:
                 "FirstName": "John",
                 "LastName": "Good",
                 "LeaveEarningsLines": [
-                    {"LeaveTypeID": "leave1", "LeaveName": "Annual Leave", "NumberOfUnits": 16.0, "Amount": 800.00}
+                    {
+                        "LeaveTypeID": "leave1",
+                        "LeaveName": "Annual Leave",
+                        "NumberOfUnits": 16.0,
+                        "Amount": 800.00,
+                    }
                 ],
             }
         ]
 
         leave_balances = {
             "emp1": [
-                {"leave_type_id": "leave1", "leave_name": "Annual Leave", "balance": 80.0}
+                {
+                    "leave_type_id": "leave1",
+                    "leave_name": "Annual Leave",
+                    "balance": 80.0,
+                }
             ]
         }
 
@@ -557,9 +590,7 @@ class TestEmployeeCreation:
 
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "Employees": [{"EmployeeID": "new_emp_123"}]
-        }
+        mock_response.json.return_value = {"Employees": [{"EmployeeID": "new_emp_123"}]}
         mock_post.return_value = mock_response
 
         employees = [
@@ -666,7 +697,9 @@ class TestPayrollReviewAPI:
             {"pay_run_id": "draft1", "payment_date": "2026-02-14", "wages": 25000}
         ]
         mock_posted.return_value = {
-            "pay_run_id": "posted1", "payment_date": "2026-01-31", "wages": 24500
+            "pay_run_id": "posted1",
+            "payment_date": "2026-01-31",
+            "wages": 24500,
         }
 
         resp = xero_session.get("/payroll-review/api/pay-runs")
@@ -721,7 +754,10 @@ class TestPayrollReviewAPI:
         # May succeed (with file) or generate on-the-fly
         assert resp.status_code in (200, 500)
         if resp.status_code == 200:
-            assert "spreadsheet" in resp.content_type or "octet-stream" in resp.content_type
+            assert (
+                "spreadsheet" in resp.content_type
+                or "octet-stream" in resp.content_type
+            )
 
 
 # =============================================================================

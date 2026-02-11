@@ -1,7 +1,8 @@
 """Tests for public skills (tax_agent, accountant)."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from webapp.app import create_app
 from webapp.config import TestingConfig
@@ -40,7 +41,14 @@ class TestTaxAgentSkill:
     @pytest.fixture
     def skill_path(self):
         """Get path to tax_agent skill."""
-        return Path(__file__).parent.parent / "webapp" / "skills" / "public" / "tax_agent" / "SKILL.md"
+        return (
+            Path(__file__).parent.parent
+            / "webapp"
+            / "skills"
+            / "public"
+            / "tax_agent"
+            / "SKILL.md"
+        )
 
     @pytest.fixture
     def loader(self):
@@ -60,7 +68,7 @@ class TestTaxAgentSkill:
 
         assert skill.metadata.name == "tax_agent"
         assert "tax" in skill.description.lower()
-        assert skill.metadata.version == "1.0.0"
+        assert skill.metadata.version == "1.1.0"
         assert skill.metadata.tax_agent_approved is True
 
     def test_tax_agent_triggers(self, loader, skill_path):
@@ -93,7 +101,14 @@ class TestAccountantSkill:
     @pytest.fixture
     def skill_path(self):
         """Get path to accountant skill."""
-        return Path(__file__).parent.parent / "webapp" / "skills" / "public" / "accountant" / "SKILL.md"
+        return (
+            Path(__file__).parent.parent
+            / "webapp"
+            / "skills"
+            / "public"
+            / "accountant"
+            / "SKILL.md"
+        )
 
     @pytest.fixture
     def loader(self):
@@ -112,7 +127,10 @@ class TestAccountantSkill:
         skill = loader.load_from_path(skill_path)
 
         assert skill.metadata.name == "accountant"
-        assert "accountant" in skill.description.lower() or "financial" in skill.description.lower()
+        assert (
+            "accountant" in skill.description.lower()
+            or "financial" in skill.description.lower()
+        )
         assert skill.metadata.version == "1.0.0"
 
     def test_accountant_triggers(self, loader, skill_path):
@@ -121,7 +139,9 @@ class TestAccountantSkill:
 
         triggers = skill.triggers
         assert len(triggers) > 0
-        assert any("financial" in t.lower() or "accountant" in t.lower() for t in triggers)
+        assert any(
+            "financial" in t.lower() or "accountant" in t.lower() for t in triggers
+        )
 
     def test_accountant_content(self, loader, skill_path):
         """Test accountant skill content."""

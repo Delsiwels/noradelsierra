@@ -8,8 +8,9 @@ Tests cover:
 - Client singleton management
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 class TestAIResponse:
@@ -222,7 +223,7 @@ class TestClientExceptions:
 
     def test_rate_limit_error(self):
         """Test RateLimitError exception."""
-        from webapp.ai import RateLimitError, AIClientError
+        from webapp.ai import AIClientError, RateLimitError
 
         error = RateLimitError("Rate limited")
         assert isinstance(error, AIClientError)
@@ -230,14 +231,14 @@ class TestClientExceptions:
 
     def test_api_key_missing_error(self):
         """Test APIKeyMissingError exception."""
-        from webapp.ai import APIKeyMissingError, AIClientError
+        from webapp.ai import AIClientError, APIKeyMissingError
 
         error = APIKeyMissingError("No API key")
         assert isinstance(error, AIClientError)
 
     def test_ai_provider_error(self):
         """Test AIProviderError exception."""
-        from webapp.ai import AIProviderError, AIClientError
+        from webapp.ai import AIClientError, AIProviderError
 
         error = AIProviderError("Provider error")
         assert isinstance(error, AIClientError)
@@ -258,7 +259,7 @@ class TestClientSingleton:
     def test_init_ai_client_testing_mode(self, app):
         """Test that testing mode uses MockAIClient."""
         from webapp.ai import MockAIClient
-        from webapp.ai.client import _ai_client, init_ai_client
+        from webapp.ai.client import init_ai_client
 
         with app.app_context():
             client = init_ai_client(app)
@@ -280,6 +281,7 @@ class TestClientSingleton:
     def test_init_without_api_key_returns_none(self):
         """Test that missing API key returns None in non-testing mode."""
         from flask import Flask
+
         from webapp.ai.client import init_ai_client
 
         app = Flask(__name__)
@@ -294,6 +296,7 @@ class TestClientSingleton:
     def test_unknown_provider_returns_none(self):
         """Test that unknown provider returns None."""
         from flask import Flask
+
         from webapp.ai.client import init_ai_client
 
         app = Flask(__name__)

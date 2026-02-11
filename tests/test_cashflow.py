@@ -11,9 +11,6 @@ Tests cover:
 - Cash flow statement generation
 """
 
-import pytest
-
-
 SAMPLE_TRANSACTIONS = [
     {"date": "2026-01-05", "description": "Sales revenue", "amount": 45000},
     {"date": "2026-01-12", "description": "Wages", "amount": -18000},
@@ -157,7 +154,11 @@ class TestAnalyzeCashflow:
             "/api/cashflow/analyze",
             json={
                 "transactions": [
-                    {"description": "Sales revenue", "amount": 10000, "date": "2026-01-01"},
+                    {
+                        "description": "Sales revenue",
+                        "amount": 10000,
+                        "date": "2026-01-01",
+                    },
                     {"description": "Wages", "amount": -5000, "date": "2026-01-15"},
                 ],
             },
@@ -175,7 +176,11 @@ class TestAnalyzeCashflow:
             "/api/cashflow/analyze",
             json={
                 "transactions": [
-                    {"description": "Equipment purchase", "amount": -12000, "date": "2026-02-01"},
+                    {
+                        "description": "Equipment purchase",
+                        "amount": -12000,
+                        "date": "2026-02-01",
+                    },
                 ],
             },
             content_type="application/json",
@@ -191,8 +196,16 @@ class TestAnalyzeCashflow:
             "/api/cashflow/analyze",
             json={
                 "transactions": [
-                    {"description": "Loan received", "amount": 25000, "date": "2026-02-10"},
-                    {"description": "Owner drawings", "amount": -8000, "date": "2026-02-20"},
+                    {
+                        "description": "Loan received",
+                        "amount": 25000,
+                        "date": "2026-02-10",
+                    },
+                    {
+                        "description": "Owner drawings",
+                        "amount": -8000,
+                        "date": "2026-02-20",
+                    },
                 ],
             },
             content_type="application/json",
@@ -209,7 +222,11 @@ class TestAnalyzeCashflow:
             "/api/cashflow/analyze",
             json={
                 "transactions": [
-                    {"description": "Sales revenue", "amount": 10000, "date": "2026-01-01"},
+                    {
+                        "description": "Sales revenue",
+                        "amount": 10000,
+                        "date": "2026-01-01",
+                    },
                     {"description": "Wages", "amount": -3000, "date": "2026-01-15"},
                 ],
                 "opening_balance": 5000,
@@ -226,7 +243,11 @@ class TestAnalyzeCashflow:
             "/api/cashflow/analyze",
             json={
                 "transactions": [
-                    {"description": "Sales revenue", "amount": 1000, "date": "2026-01-01"},
+                    {
+                        "description": "Sales revenue",
+                        "amount": 1000,
+                        "date": "2026-01-01",
+                    },
                 ],
             },
             content_type="application/json",

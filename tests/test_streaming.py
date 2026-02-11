@@ -1,11 +1,9 @@
 """Tests for streaming functionality."""
 
 import json
-import pytest
-from unittest.mock import MagicMock, patch
 
-from webapp.ai.models import StreamChunk
 from webapp.ai.client import MockAIClient
+from webapp.ai.models import StreamChunk
 
 
 class TestStreamChunk:
@@ -79,10 +77,12 @@ class TestMockAIClientStreaming:
         """Test that streaming calls are recorded."""
         client = MockAIClient()
 
-        list(client.stream_chat(
-            [{"role": "user", "content": "Hi"}],
-            system_prompt="Be helpful",
-        ))
+        list(
+            client.stream_chat(
+                [{"role": "user", "content": "Hi"}],
+                system_prompt="Be helpful",
+            )
+        )
 
         assert len(client.call_history) == 1
         assert client.call_history[0]["streaming"] is True
@@ -142,7 +142,7 @@ class TestStreamingEndpoint:
         lines = data.strip().split("\n")
 
         # Find data lines
-        data_lines = [l for l in lines if l.startswith("data:")]
+        data_lines = [line for line in lines if line.startswith("data:")]
 
         # At least one should have done: true
         found_done = False
@@ -248,9 +248,11 @@ class TestChatServiceStreaming:
             {"role": "assistant", "content": "Hello!"},
         ]
 
-        chunks = list(service.send_message_stream(
-            "How are you?",
-            conversation_history=history,
-        ))
+        chunks = list(
+            service.send_message_stream(
+                "How are you?",
+                conversation_history=history,
+            )
+        )
 
         assert len(chunks) >= 1

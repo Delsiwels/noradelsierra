@@ -9,9 +9,9 @@ Tests cover:
 - Service singleton management
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import pytest
 
 # Test skill content
 VALID_SKILL_CONTENT = """---
@@ -78,7 +78,7 @@ class TestChatService:
     def test_send_message_with_skill_match(self, app, mock_ai_client):
         """Test message sending with skill matching."""
         from webapp.ai import ChatService
-        from webapp.skills.models import Skill, SkillMetadata, SkillMatch
+        from webapp.skills.models import Skill, SkillMatch, SkillMetadata
 
         # Create a mock skill
         mock_skill = Skill(
@@ -160,7 +160,7 @@ class TestChatService:
     def test_send_message_limits_skills(self, mock_ai_client):
         """Test that only top 3 skills are used."""
         from webapp.ai import ChatService
-        from webapp.skills.models import Skill, SkillMetadata, SkillMatch
+        from webapp.skills.models import Skill, SkillMatch, SkillMetadata
 
         # Create 5 mock skills
         mock_matches = []
@@ -175,7 +175,9 @@ class TestChatService:
                 path="test",
             )
             mock_matches.append(
-                SkillMatch(skill=skill, trigger=f"trigger {i}", confidence=0.9 - i * 0.1)
+                SkillMatch(
+                    skill=skill, trigger=f"trigger {i}", confidence=0.9 - i * 0.1
+                )
             )
 
         mock_injector = MagicMock()
@@ -208,7 +210,7 @@ class TestChatService:
     def test_preview_skills(self, mock_ai_client):
         """Test skill preview functionality."""
         from webapp.ai import ChatService
-        from webapp.skills.models import Skill, SkillMetadata, SkillMatch
+        from webapp.skills.models import Skill, SkillMatch, SkillMetadata
 
         mock_skill = Skill(
             metadata=SkillMetadata(
@@ -310,7 +312,7 @@ class TestChatServiceSingleton:
 
     def test_init_chat_service(self, app):
         """Test chat service initialization."""
-        from webapp.ai import init_chat_service, get_chat_service, ChatService
+        from webapp.ai import ChatService, init_chat_service
         from webapp.ai.client import init_ai_client
 
         with app.app_context():
@@ -324,7 +326,7 @@ class TestChatServiceSingleton:
 
     def test_get_chat_service_returns_singleton(self, app):
         """Test that get_chat_service returns the singleton."""
-        from webapp.ai import init_chat_service, get_chat_service
+        from webapp.ai import get_chat_service, init_chat_service
         from webapp.ai.client import init_ai_client
 
         with app.app_context():
@@ -338,8 +340,8 @@ class TestChatServiceSingleton:
 
     def test_init_without_ai_client_returns_none(self, app):
         """Test that missing AI client returns None."""
-        from webapp.ai.chat_service import init_chat_service, _chat_service
         import webapp.ai.client as client_module
+        from webapp.ai.chat_service import init_chat_service
 
         with app.app_context():
             # Ensure no AI client

@@ -1,7 +1,5 @@
 """Tests for utility functions."""
 
-import pytest
-
 from webapp.utils import hash_password, paginate, sanitize_input, validate_email
 
 
