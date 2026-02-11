@@ -491,7 +491,7 @@ def api_get_conversation(conversation_id):
         - conversation: Conversation with messages
     """
     try:
-        from webapp.models import Conversation
+        from webapp.models import Conversation, db
 
         user = get_current_user()
         user_id = user.id if user else None
@@ -502,7 +502,7 @@ def api_get_conversation(conversation_id):
         if user_id is None and not current_app.config.get("TESTING"):
             return jsonify({"error": "Authentication required"}), 401
 
-        conversation = Conversation.query.get(conversation_id)
+        conversation = db.session.get(Conversation, conversation_id)
 
         if not conversation:
             return jsonify({"error": "Conversation not found"}), 404
@@ -548,7 +548,7 @@ def api_delete_conversation(conversation_id):
         if user_id is None and not current_app.config.get("TESTING"):
             return jsonify({"error": "Authentication required"}), 401
 
-        conversation = Conversation.query.get(conversation_id)
+        conversation = db.session.get(Conversation, conversation_id)
 
         if not conversation:
             return jsonify({"error": "Conversation not found"}), 404

@@ -10,9 +10,10 @@ Tests cover:
 - API endpoints
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
+import pytest
 
 # Test SKILL.md content
 VALID_SKILL_CONTENT = """---
@@ -104,7 +105,9 @@ class TestSkillLoader:
         from webapp.skills import SkillLoader
 
         loader = SkillLoader()
-        skill = loader.load_from_content(INVALID_SKILL_CONTENT_NO_FRONTMATTER, path="test")
+        skill = loader.load_from_content(
+            INVALID_SKILL_CONTENT_NO_FRONTMATTER, path="test"
+        )
 
         assert skill is None
 
@@ -303,7 +306,7 @@ class TestCustomSkillService:
 
     def test_create_skill_private(self, app, service):
         """Test creating a private skill."""
-        from webapp.models import db, CustomSkill
+        from webapp.models import CustomSkill, db
 
         with app.app_context():
             db.create_all()
@@ -321,7 +324,7 @@ class TestCustomSkillService:
             assert skill.user_id == "user123"
 
             # Verify in database
-            db_skill = CustomSkill.query.get(skill.id)
+            db_skill = db.session.get(CustomSkill, skill.id)
             assert db_skill is not None
             assert db_skill.name == "test_skill"
 
@@ -350,8 +353,8 @@ class TestCustomSkillService:
 
     def test_create_skill_validation_error(self, app, service):
         """Test creation fails with invalid content."""
-        from webapp.skills.custom_skill_service import ValidationError
         from webapp.models import db
+        from webapp.skills.custom_skill_service import ValidationError
 
         with app.app_context():
             db.create_all()
@@ -368,8 +371,8 @@ class TestCustomSkillService:
 
     def test_create_skill_duplicate_error(self, app, service):
         """Test creation fails for duplicate name."""
-        from webapp.skills.custom_skill_service import DuplicateSkillError
         from webapp.models import db
+        from webapp.skills.custom_skill_service import DuplicateSkillError
 
         with app.app_context():
             db.create_all()
@@ -395,7 +398,7 @@ class TestCustomSkillService:
 
     def test_delete_skill(self, app, service):
         """Test deleting a skill."""
-        from webapp.models import db, CustomSkill
+        from webapp.models import CustomSkill, db
 
         with app.app_context():
             db.create_all()
@@ -415,15 +418,15 @@ class TestCustomSkillService:
             assert result is True
 
             # Verify deleted
-            db_skill = CustomSkill.query.get(skill_id)
+            db_skill = db.session.get(CustomSkill, skill_id)
             assert db_skill is None
 
             db.drop_all()
 
     def test_delete_skill_permission_denied(self, app, service):
         """Test delete fails for wrong user."""
-        from webapp.skills.custom_skill_service import PermissionDeniedError
         from webapp.models import db
+        from webapp.skills.custom_skill_service import PermissionDeniedError
 
         with app.app_context():
             db.create_all()
@@ -457,8 +460,8 @@ class TestSkillRegistry:
 
     def test_discover_all_skills_empty(self, app):
         """Test discovering skills when database is empty."""
-        from webapp.skills.skill_registry import SkillRegistry
         from webapp.models import db
+        from webapp.skills.skill_registry import SkillRegistry
 
         with app.app_context():
             db.create_all()
@@ -481,19 +484,14 @@ class TestSkillRegistry:
 
     def test_get_skill_with_priority(self, app):
         """Test priority resolution: private > shared > public."""
-        from webapp.skills.skill_registry import SkillRegistry
+        from webapp.models import db
         from webapp.skills.custom_skill_service import CustomSkillService
         from webapp.skills.r2_skill_loader import R2SkillLoader
-        from webapp.models import db
 
         # Create skill content with same name but different description
         private_content = VALID_SKILL_CONTENT.replace(
             "A test skill for unit testing", "Private version"
         )
-        shared_content = VALID_SKILL_CONTENT.replace(
-            "A test skill for unit testing", "Shared version"
-        )
-
         with app.app_context():
             db.create_all()
 
@@ -555,8 +553,9 @@ class TestR2SkillLoader:
 
     def test_disabled_storage_raises_error(self):
         """Test operations raise error when storage is disabled."""
-        from webapp.skills.r2_skill_loader import R2SkillLoader, R2StorageDisabledError
         from flask import Flask
+
+        from webapp.skills.r2_skill_loader import R2SkillLoader, R2StorageDisabledError
 
         app = Flask(__name__)
         app.config["R2_STORAGE_ENABLED"] = False
@@ -590,6 +589,7 @@ class TestSkillsBlueprint:
             @login_manager.user_loader
             def load_user(user_id):
                 return None
+
         except ImportError:
             pass
 

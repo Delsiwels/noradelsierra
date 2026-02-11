@@ -259,9 +259,9 @@ def get_reminders_for_user(
     Returns:
         List of reminder dicts
     """
-    from webapp.models import User
+    from webapp.models import User, db
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user or not user.bas_reminders_enabled:
         return []
 
@@ -284,9 +284,9 @@ def get_bas_context_for_prompt(
 
     Returns context string if deadline is within 14 days, else None.
     """
-    from webapp.models import User
+    from webapp.models import User, db
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return None
 

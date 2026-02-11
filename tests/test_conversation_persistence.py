@@ -211,7 +211,7 @@ class TestMessageModel:
             db.session.delete(conv)
             db.session.commit()
 
-            assert Message.query.get(msg_id) is None
+            assert db.session.get(Message, msg_id) is None
 
 
 class TestConversationEndpoints:

@@ -192,9 +192,9 @@ def export_conversation(conversation_id: str, business_name: str = "") -> bytes:
     Returns:
         PDF file as bytes
     """
-    from webapp.models import Conversation
+    from webapp.models import Conversation, db
 
-    conversation = Conversation.query.get(conversation_id)
+    conversation = db.session.get(Conversation, conversation_id)
     if not conversation:
         raise ValueError(f"Conversation {conversation_id} not found")
 
@@ -317,11 +317,11 @@ def export_bulk_conversations(
     Returns:
         PDF file as bytes
     """
-    from webapp.models import Conversation, Message
+    from webapp.models import Conversation, Message, db
 
     all_sections = []
     for cid in conversation_ids:
-        conversation = Conversation.query.get(cid)
+        conversation = db.session.get(Conversation, cid)
         if not conversation:
             continue
 

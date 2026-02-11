@@ -170,8 +170,9 @@ class ChatService:
         from webapp.models import Conversation, Message, db
 
         # Get or create conversation
+        conversation = None
         if conversation_id:
-            conversation = Conversation.query.get(conversation_id)
+            conversation = db.session.get(Conversation, conversation_id)
             if not conversation or conversation.user_id != user_id:
                 conversation = None
 

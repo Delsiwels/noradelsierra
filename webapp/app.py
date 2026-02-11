@@ -51,7 +51,7 @@ migrate = Migrate()
 @login_manager.user_loader
 def load_user(user_id: str):
     """Load user by ID for Flask-Login."""
-    return User.query.get(user_id)
+    return db.session.get(User, user_id)
 
 
 @login_manager.unauthorized_handler

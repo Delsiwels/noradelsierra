@@ -14,7 +14,7 @@ import logging
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user, login_required
 
-from webapp.models import AccountantShare, Conversation, User
+from webapp.models import AccountantShare, Conversation, User, db
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +28,13 @@ def _can_access_conversation(conversation, user):
 
     # Check if user is on the same team
     if user.team_id:
-        conv_owner = User.query.get(conversation.user_id)
+        conv_owner = db.session.get(User, conversation.user_id)
         if conv_owner and conv_owner.team_id == user.team_id:
             return True
 
     # Check if accountant with shared access
     if user.role == "accountant":
-        conv_owner = User.query.get(conversation.user_id)
+        conv_owner = db.session.get(User, conversation.user_id)
         if conv_owner and conv_owner.team_id:
             share = AccountantShare.query.filter_by(
                 team_id=conv_owner.team_id,
@@ -56,7 +56,7 @@ def api_export_conversation_pdf(conversation_id: str):
         - business_name: Optional business name for header
     """
     try:
-        conversation = Conversation.query.get(conversation_id)
+        conversation = db.session.get(Conversation, conversation_id)
         if not conversation:
             return jsonify({"error": "Conversation not found"}), 404
 
@@ -160,7 +160,7 @@ def api_export_bulk_pdf():
         # Verify access to all conversations
         accessible_ids = []
         for cid in conversation_ids:
-            conversation = Conversation.query.get(cid)
+            conversation = db.session.get(Conversation, cid)
             if conversation and _can_access_conversation(conversation, current_user):
                 accessible_ids.append(cid)
 

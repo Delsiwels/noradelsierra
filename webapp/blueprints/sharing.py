@@ -170,7 +170,7 @@ def api_revoke_invite(share_id: str):
         if error:
             return error
 
-        share = AccountantShare.query.get(share_id)
+        share = db.session.get(AccountantShare, share_id)
         if not share:
             return jsonify({"error": "Share not found"}), 404
 
@@ -201,7 +201,7 @@ def api_shared_with_me():
         for share in shares:
             if share.is_expired():
                 continue
-            team = Team.query.get(share.team_id)
+            team = db.session.get(Team, share.team_id)
             if team:
                 result.append(
                     {

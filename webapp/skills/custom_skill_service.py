@@ -262,7 +262,7 @@ class CustomSkillService:
         """
         from webapp.models import CustomSkill, db
 
-        custom_skill: CustomSkill | None = CustomSkill.query.get(skill_id)
+        custom_skill: CustomSkill | None = db.session.get(CustomSkill, skill_id)
         if not custom_skill or not custom_skill.is_active:
             raise SkillNotFoundError(f"Skill {skill_id} not found")
 
@@ -342,7 +342,7 @@ class CustomSkillService:
         """
         from webapp.models import CustomSkill, db
 
-        custom_skill = CustomSkill.query.get(skill_id)
+        custom_skill = db.session.get(CustomSkill, skill_id)
         if not custom_skill:
             raise SkillNotFoundError(f"Skill {skill_id} not found")
 
@@ -398,10 +398,10 @@ class CustomSkillService:
             DuplicateSkillError: If skill name already exists in team
             CustomSkillServiceError: If promotion fails
         """
-        from webapp.models import CustomSkill
+        from webapp.models import CustomSkill, db
 
         # Get the private skill
-        private_skill = CustomSkill.query.get(skill_id)
+        private_skill = db.session.get(CustomSkill, skill_id)
         if not private_skill:
             raise SkillNotFoundError(f"Skill {skill_id} not found")
 
@@ -468,9 +468,9 @@ tags: {private_skill.tags or []}
         Returns:
             CustomSkill instance or None if not found
         """
-        from webapp.models import CustomSkill
+        from webapp.models import CustomSkill, db
 
-        result: CustomSkill | None = CustomSkill.query.get(skill_id)
+        result: CustomSkill | None = db.session.get(CustomSkill, skill_id)
         return result
 
     def get_skill_content(self, skill_id: str) -> str | None:
@@ -483,9 +483,9 @@ tags: {private_skill.tags or []}
         Returns:
             SKILL.md content or None if not found
         """
-        from webapp.models import CustomSkill
+        from webapp.models import CustomSkill, db
 
-        custom_skill = CustomSkill.query.get(skill_id)
+        custom_skill = db.session.get(CustomSkill, skill_id)
         if not custom_skill:
             return None
 
