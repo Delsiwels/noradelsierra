@@ -7,12 +7,12 @@ Tracks and enforces token usage limits per user/team.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from flask import current_app
 
 from webapp.models import TokenUsage, db
+from webapp.time_utils import utcnow
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -79,7 +79,7 @@ class TokenTracker:
 
     def _get_current_period(self) -> tuple[int, int]:
         """Get current year and month."""
-        now = datetime.utcnow()
+        now = utcnow()
         return now.year, now.month
 
     def _get_or_create_usage(

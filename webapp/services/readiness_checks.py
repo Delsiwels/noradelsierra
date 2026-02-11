@@ -7,9 +7,10 @@ Australian financial year: July 1 - June 30.
 
 import html
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date
 
 from webapp.models import ChecklistComment, ChecklistProgress, db
+from webapp.time_utils import utcnow
 
 MONTH_END_CHECKLIST = [
     {
@@ -295,7 +296,7 @@ def save_checklist_progress(
     # Check if all items completed
     all_completed = all(item.get("completed", False) for item in items)
     if all_completed and not progress.completed_at:
-        progress.completed_at = datetime.utcnow()
+        progress.completed_at = utcnow()
     elif not all_completed:
         progress.completed_at = None
 

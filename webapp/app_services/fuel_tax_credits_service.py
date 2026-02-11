@@ -5,11 +5,12 @@ Calculate FTC claims for eligible fuel purchases.
 """
 
 import logging
-from datetime import datetime
 from io import BytesIO
 from typing import Any
 
 import requests
+
+from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,7 @@ def calculate_fuel_tax_credits(
                 },
             },
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -111,7 +112,7 @@ def calculate_fuel_tax_credits(
             "error": str(e),
             "data": None,
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 

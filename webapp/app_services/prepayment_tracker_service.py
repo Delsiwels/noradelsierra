@@ -11,6 +11,8 @@ from typing import Any
 
 import requests
 
+from webapp.time_utils import utcnow_iso
+
 logger = logging.getLogger(__name__)
 
 XERO_API_URL = "https://api.xero.com/api.xro/2.0"
@@ -52,7 +54,7 @@ def generate_prepayment_schedule(
                 "totals": totals,
             },
             "as_at_date": as_at_date,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -62,7 +64,7 @@ def generate_prepayment_schedule(
             "error": str(e),
             "data": None,
             "as_at_date": as_at_date,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 
@@ -147,12 +149,16 @@ def _fetch_prepayment_journals(
                         "date": journal_date,
                         "account_code": line.get("AccountCode"),
                         "account_name": line.get("AccountName"),
-                        "debit": float(line.get("GrossAmount", 0) or 0)
-                        if float(line.get("GrossAmount", 0) or 0) > 0
-                        else 0,
-                        "credit": abs(float(line.get("GrossAmount", 0) or 0))
-                        if float(line.get("GrossAmount", 0) or 0) < 0
-                        else 0,
+                        "debit": (
+                            float(line.get("GrossAmount", 0) or 0)
+                            if float(line.get("GrossAmount", 0) or 0) > 0
+                            else 0
+                        ),
+                        "credit": (
+                            abs(float(line.get("GrossAmount", 0) or 0))
+                            if float(line.get("GrossAmount", 0) or 0) < 0
+                            else 0
+                        ),
                         "description": line.get("Description", ""),
                     }
                 )

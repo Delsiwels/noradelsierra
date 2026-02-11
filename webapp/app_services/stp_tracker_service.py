@@ -11,6 +11,8 @@ from typing import Any
 
 import requests
 
+from webapp.time_utils import utcnow_iso
+
 logger = logging.getLogger(__name__)
 
 XERO_PAYROLL_AU_URL = "https://api.xero.com/payroll.xro/1.0"
@@ -54,7 +56,7 @@ def generate_stp_summary(
                 "pay_runs": pay_runs,
             },
             "financial_year": f"FY{financial_year - 1}-{str(financial_year)[-2:]}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -64,7 +66,7 @@ def generate_stp_summary(
             "error": str(e),
             "data": None,
             "financial_year": f"FY{financial_year - 1}-{str(financial_year)[-2:]}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 

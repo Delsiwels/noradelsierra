@@ -1,17 +1,17 @@
 """Tests for token usage tracking."""
 
 import pytest
-from datetime import datetime
 
-from webapp.app import create_app
-from webapp.config import TestingConfig
-from webapp.models import TokenUsage, db
 from webapp.ai.token_tracker import (
-    TokenTracker,
     TokenLimitExceededError,
+    TokenTracker,
     get_token_tracker,
     init_token_tracker,
 )
+from webapp.app import create_app
+from webapp.config import TestingConfig
+from webapp.models import TokenUsage, db
+from webapp.time_utils import utcnow
 
 
 class TestTokenTracker:
@@ -161,7 +161,7 @@ class TestTokenTracker:
             tracker.record_usage("user-123", None, 100, 100)
 
             # Check current period
-            now = datetime.utcnow()
+            now = utcnow()
             usage = TokenUsage.query.filter_by(
                 user_id="user-123",
                 period_year=now.year,

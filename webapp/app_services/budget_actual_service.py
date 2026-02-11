@@ -5,11 +5,12 @@ Compare budgeted vs actual performance with variance analysis.
 """
 
 import logging
-from datetime import datetime
 from io import BytesIO
 from typing import Any
 
 import requests
+
+from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
 
@@ -60,12 +61,12 @@ def generate_budget_vs_actual(
                 "comparison": comparison,
                 "summary": summary,
                 "actual": actual_data,
-                "budget_source": "manual"
-                if budget_data
-                else ("xero" if xero_budget else "none"),
+                "budget_source": (
+                    "manual" if budget_data else ("xero" if xero_budget else "none")
+                ),
             },
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -75,7 +76,7 @@ def generate_budget_vs_actual(
             "error": str(e),
             "data": None,
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 

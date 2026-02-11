@@ -1,11 +1,13 @@
 """Tests for conversation persistence."""
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from webapp.app import create_app, cleanup_expired_conversations
+import pytest
+
+from webapp.app import cleanup_expired_conversations, create_app
 from webapp.config import TestingConfig
 from webapp.models import Conversation, Message, db
+from webapp.time_utils import utcnow
 
 
 class TestConversationModel:
@@ -45,7 +47,7 @@ class TestConversationModel:
             db.session.commit()
 
             # Should expire in ~30 days
-            now = datetime.utcnow()
+            now = utcnow()
             delta = conv.expires_at - now
             assert 29 <= delta.days <= 30
 
@@ -312,12 +314,12 @@ class TestConversationCleanup:
         with app.app_context():
             # Create expired conversation
             expired = Conversation(user_id="user-1")
-            expired.expires_at = datetime.utcnow() - timedelta(days=1)
+            expired.expires_at = utcnow() - timedelta(days=1)
             db.session.add(expired)
 
             # Create valid conversation
             valid = Conversation(user_id="user-2")
-            valid.expires_at = datetime.utcnow() + timedelta(days=10)
+            valid.expires_at = utcnow() + timedelta(days=10)
             db.session.add(valid)
 
             db.session.commit()
@@ -334,7 +336,7 @@ class TestConversationCleanup:
         """Test cleanup when no expired conversations."""
         with app.app_context():
             conv = Conversation(user_id="user-1")
-            conv.expires_at = datetime.utcnow() + timedelta(days=30)
+            conv.expires_at = utcnow() + timedelta(days=30)
             db.session.add(conv)
             db.session.commit()
 
@@ -346,7 +348,7 @@ class TestConversationCleanup:
         """Test that cleanup deletes associated messages."""
         with app.app_context():
             conv = Conversation(user_id="user-1")
-            conv.expires_at = datetime.utcnow() - timedelta(days=1)
+            conv.expires_at = utcnow() - timedelta(days=1)
             db.session.add(conv)
             db.session.flush()
 

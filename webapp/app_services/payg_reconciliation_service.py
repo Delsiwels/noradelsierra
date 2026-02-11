@@ -12,6 +12,8 @@ from typing import Any
 
 import requests
 
+from webapp.time_utils import utcnow_iso
+
 logger = logging.getLogger(__name__)
 
 # Xero API base URLs
@@ -68,7 +70,7 @@ def generate_payg_reconciliation(
             },
             "warnings": _generate_warnings(variance, pay_runs),
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -79,7 +81,7 @@ def generate_payg_reconciliation(
             "data": None,
             "warnings": [],
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 

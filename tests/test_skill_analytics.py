@@ -1,7 +1,8 @@
 """Tests for skill analytics service."""
 
+from datetime import timedelta
+
 import pytest
-from datetime import datetime, timedelta
 
 from webapp.app import create_app
 from webapp.config import TestingConfig
@@ -11,6 +12,7 @@ from webapp.skills.analytics_service import (
     get_analytics_service,
     init_analytics_service,
 )
+from webapp.time_utils import utcnow
 
 
 class TestSkillAnalyticsService:
@@ -104,7 +106,7 @@ class TestSkillAnalyticsService:
                 skill_source="public",
                 user_id="user-1",
             )
-            old_usage.created_at = datetime.utcnow() - timedelta(days=60)
+            old_usage.created_at = utcnow() - timedelta(days=60)
             db.session.add(old_usage)
 
             # Create recent usage

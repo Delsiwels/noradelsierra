@@ -12,6 +12,8 @@ from typing import Any
 
 import requests
 
+from webapp.time_utils import utcnow_iso
+
 logger = logging.getLogger(__name__)
 
 XERO_PAYROLL_AU_URL = "https://api.xero.com/payroll.xro/1.0"
@@ -126,7 +128,7 @@ def calculate_payroll_tax(
                 "pay_runs": pay_runs,
             },
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -136,7 +138,7 @@ def calculate_payroll_tax(
             "error": str(e),
             "data": None,
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 

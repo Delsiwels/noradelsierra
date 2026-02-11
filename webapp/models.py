@@ -1,10 +1,12 @@
 """Database models for Custom Skills Infrastructure."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+
+from webapp.time_utils import utcnow
 
 db = SQLAlchemy()
 
@@ -12,11 +14,6 @@ db = SQLAlchemy()
 def generate_uuid() -> str:
     """Generate a UUID string."""
     return str(uuid.uuid4())
-
-
-def utcnow() -> datetime:
-    """Return a naive UTC datetime for existing DB columns."""
-    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def default_expires_at() -> datetime:

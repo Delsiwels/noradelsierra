@@ -7,12 +7,13 @@ Tracks and reports skill usage statistics.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func
 
 from webapp.models import SkillUsage, db
+from webapp.time_utils import utcnow
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -75,7 +76,9 @@ class SkillAnalyticsService:
         db.session.add(usage)
         db.session.commit()
 
-        logger.debug(f"Logged skill usage: {skill_name} ({skill_source}) by user {user_id}")
+        logger.debug(
+            f"Logged skill usage: {skill_name} ({skill_source}) by user {user_id}"
+        )
 
         return usage
 
@@ -98,7 +101,7 @@ class SkillAnalyticsService:
         Returns:
             List of dicts with skill_name, skill_source, usage_count, avg_confidence
         """
-        since = datetime.utcnow() - timedelta(days=period_days)
+        since = utcnow() - timedelta(days=period_days)
 
         query = db.session.query(
             SkillUsage.skill_name,
@@ -142,15 +145,18 @@ class SkillAnalyticsService:
         total_usages = SkillUsage.query.filter_by(user_id=user_id).count()
 
         # Distinct skills used
-        skills_used = db.session.query(
-            func.count(func.distinct(SkillUsage.skill_name))
-        ).filter(SkillUsage.user_id == user_id).scalar() or 0
+        skills_used = (
+            db.session.query(func.count(func.distinct(SkillUsage.skill_name)))
+            .filter(SkillUsage.user_id == user_id)
+            .scalar()
+            or 0
+        )
 
         # Top skills for this user
         top_skills = self.get_top_skills(period_days=90, limit=5, user_id=user_id)
 
         # Recent activity (last 7 days)
-        week_ago = datetime.utcnow() - timedelta(days=7)
+        week_ago = utcnow() - timedelta(days=7)
         recent_count = SkillUsage.query.filter(
             SkillUsage.user_id == user_id,
             SkillUsage.created_at >= week_ago,
@@ -158,10 +164,14 @@ class SkillAnalyticsService:
 
         # Usage by source
         by_source = {}
-        source_query = db.session.query(
-            SkillUsage.skill_source,
-            func.count(SkillUsage.id).label("count"),
-        ).filter(SkillUsage.user_id == user_id).group_by(SkillUsage.skill_source)
+        source_query = (
+            db.session.query(
+                SkillUsage.skill_source,
+                func.count(SkillUsage.id).label("count"),
+            )
+            .filter(SkillUsage.user_id == user_id)
+            .group_by(SkillUsage.skill_source)
+        )
 
         for row in source_query.all():
             by_source[row.skill_source] = row.count
@@ -191,37 +201,53 @@ class SkillAnalyticsService:
         total_usages = SkillUsage.query.filter_by(skill_name=skill_name).count()
 
         # Unique users
-        unique_users = db.session.query(
-            func.count(func.distinct(SkillUsage.user_id))
-        ).filter(SkillUsage.skill_name == skill_name).scalar() or 0
+        unique_users = (
+            db.session.query(func.count(func.distinct(SkillUsage.user_id)))
+            .filter(SkillUsage.skill_name == skill_name)
+            .scalar()
+            or 0
+        )
 
         # Average confidence
-        avg_confidence = db.session.query(
-            func.avg(SkillUsage.confidence)
-        ).filter(SkillUsage.skill_name == skill_name).scalar() or 0
+        avg_confidence = (
+            db.session.query(func.avg(SkillUsage.confidence))
+            .filter(SkillUsage.skill_name == skill_name)
+            .scalar()
+            or 0
+        )
 
         # Usage trend (daily for last 30 days)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        daily_usage = db.session.query(
-            func.date(SkillUsage.created_at).label("date"),
-            func.count(SkillUsage.id).label("count"),
-        ).filter(
-            SkillUsage.skill_name == skill_name,
-            SkillUsage.created_at >= thirty_days_ago,
-        ).group_by(func.date(SkillUsage.created_at)).all()
+        thirty_days_ago = utcnow() - timedelta(days=30)
+        daily_usage = (
+            db.session.query(
+                func.date(SkillUsage.created_at).label("date"),
+                func.count(SkillUsage.id).label("count"),
+            )
+            .filter(
+                SkillUsage.skill_name == skill_name,
+                SkillUsage.created_at >= thirty_days_ago,
+            )
+            .group_by(func.date(SkillUsage.created_at))
+            .all()
+        )
 
         trend = [{"date": str(d.date), "count": d.count} for d in daily_usage]
 
         # Top triggers
-        top_triggers = db.session.query(
-            SkillUsage.trigger,
-            func.count(SkillUsage.id).label("count"),
-        ).filter(
-            SkillUsage.skill_name == skill_name,
-            SkillUsage.trigger.isnot(None),
-        ).group_by(SkillUsage.trigger).order_by(
-            func.count(SkillUsage.id).desc()
-        ).limit(5).all()
+        top_triggers = (
+            db.session.query(
+                SkillUsage.trigger,
+                func.count(SkillUsage.id).label("count"),
+            )
+            .filter(
+                SkillUsage.skill_name == skill_name,
+                SkillUsage.trigger.isnot(None),
+            )
+            .group_by(SkillUsage.trigger)
+            .order_by(func.count(SkillUsage.id).desc())
+            .limit(5)
+            .all()
+        )
 
         triggers = [{"trigger": t.trigger, "count": t.count} for t in top_triggers]
 
@@ -244,31 +270,37 @@ class SkillAnalyticsService:
         Returns:
             Dict with total_usages, active_skills, active_users, by_source
         """
-        since = datetime.utcnow() - timedelta(days=period_days)
+        since = utcnow() - timedelta(days=period_days)
 
         # Total usages in period
-        total_usages = SkillUsage.query.filter(
-            SkillUsage.created_at >= since
-        ).count()
+        total_usages = SkillUsage.query.filter(SkillUsage.created_at >= since).count()
 
         # Active skills
-        active_skills = db.session.query(
-            func.count(func.distinct(SkillUsage.skill_name))
-        ).filter(SkillUsage.created_at >= since).scalar() or 0
+        active_skills = (
+            db.session.query(func.count(func.distinct(SkillUsage.skill_name)))
+            .filter(SkillUsage.created_at >= since)
+            .scalar()
+            or 0
+        )
 
         # Active users
-        active_users = db.session.query(
-            func.count(func.distinct(SkillUsage.user_id))
-        ).filter(SkillUsage.created_at >= since).scalar() or 0
+        active_users = (
+            db.session.query(func.count(func.distinct(SkillUsage.user_id)))
+            .filter(SkillUsage.created_at >= since)
+            .scalar()
+            or 0
+        )
 
         # Usage by source
         by_source = {}
-        source_query = db.session.query(
-            SkillUsage.skill_source,
-            func.count(SkillUsage.id).label("count"),
-        ).filter(
-            SkillUsage.created_at >= since
-        ).group_by(SkillUsage.skill_source)
+        source_query = (
+            db.session.query(
+                SkillUsage.skill_source,
+                func.count(SkillUsage.id).label("count"),
+            )
+            .filter(SkillUsage.created_at >= since)
+            .group_by(SkillUsage.skill_source)
+        )
 
         for row in source_query.all():
             by_source[row.skill_source] = row.count

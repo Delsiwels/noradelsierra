@@ -12,6 +12,8 @@ from typing import Any
 
 import requests
 
+from webapp.time_utils import utcnow_iso
+
 logger = logging.getLogger(__name__)
 
 XERO_API_URL = "https://api.xero.com/api.xro/2.0"
@@ -74,7 +76,7 @@ def generate_depreciation_schedule(
                 "depreciation_journals": depreciation_journals,
             },
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -84,7 +86,7 @@ def generate_depreciation_schedule(
             "error": str(e),
             "data": None,
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 
@@ -283,12 +285,16 @@ def _fetch_depreciation_journals(
                         {
                             "account_code": line.get("AccountCode"),
                             "account_name": line.get("AccountName"),
-                            "debit": float(line.get("GrossAmount", 0) or 0)
-                            if float(line.get("GrossAmount", 0) or 0) > 0
-                            else 0,
-                            "credit": abs(float(line.get("GrossAmount", 0) or 0))
-                            if float(line.get("GrossAmount", 0) or 0) < 0
-                            else 0,
+                            "debit": (
+                                float(line.get("GrossAmount", 0) or 0)
+                                if float(line.get("GrossAmount", 0) or 0) > 0
+                                else 0
+                            ),
+                            "credit": (
+                                abs(float(line.get("GrossAmount", 0) or 0))
+                                if float(line.get("GrossAmount", 0) or 0) < 0
+                                else 0
+                            ),
                         }
                     )
 

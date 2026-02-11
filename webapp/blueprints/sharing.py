@@ -13,13 +13,14 @@ Endpoints:
 """
 
 import logging
-from datetime import datetime
+from datetime import timedelta
 
 from flask import Blueprint, jsonify, render_template, request
 from flask_bcrypt import generate_password_hash
 from flask_login import current_user, login_required
 
 from webapp.models import AccountantShare, Team, User, db
+from webapp.time_utils import utcnow
 from webapp.utils import sanitize_input, validate_email
 
 logger = logging.getLogger(__name__)
@@ -118,9 +119,7 @@ def api_invite_accountant():
 
         expires_at = None
         if expires_days and int(expires_days) > 0:
-            from datetime import timedelta
-
-            expires_at = datetime.utcnow() + timedelta(days=int(expires_days))
+            expires_at = utcnow() + timedelta(days=int(expires_days))
 
         share = AccountantShare(
             team_id=team_id,
@@ -209,12 +208,12 @@ def api_shared_with_me():
                         "share_id": share.id,
                         "team": team.to_dict(),
                         "access_level": share.access_level,
-                        "shared_at": share.created_at.isoformat()
-                        if share.created_at
-                        else None,
-                        "expires_at": share.expires_at.isoformat()
-                        if share.expires_at
-                        else None,
+                        "shared_at": (
+                            share.created_at.isoformat() if share.created_at else None
+                        ),
+                        "expires_at": (
+                            share.expires_at.isoformat() if share.expires_at else None
+                        ),
                     }
                 )
 

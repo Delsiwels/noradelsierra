@@ -12,6 +12,8 @@ from typing import Any
 
 import requests
 
+from webapp.time_utils import utcnow_iso
+
 logger = logging.getLogger(__name__)
 
 XERO_API_URL = "https://api.xero.com/api.xro/2.0"
@@ -65,7 +67,7 @@ def calculate_payg_instalment(
                 "method": method,
             },
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -75,7 +77,7 @@ def calculate_payg_instalment(
             "error": str(e),
             "data": None,
             "period": {"from_date": from_date, "to_date": to_date},
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 

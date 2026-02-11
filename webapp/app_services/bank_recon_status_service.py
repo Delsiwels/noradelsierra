@@ -6,11 +6,12 @@ unreconciled transactions.
 """
 
 import logging
-from datetime import datetime
 from io import BytesIO
 from typing import Any
 
 import requests
+
+from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ def generate_bank_recon_status(
                 "overall_status": _determine_overall_status(bank_accounts),
             },
             "as_at_date": as_at_date,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -81,7 +82,7 @@ def generate_bank_recon_status(
             "error": str(e),
             "data": None,
             "as_at_date": as_at_date,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 

@@ -10,6 +10,8 @@ from datetime import datetime
 
 from flask import render_template_string
 
+from webapp.time_utils import utcnow
+
 logger = logging.getLogger(__name__)
 
 # PDF templates are rendered via Jinja2 then converted to PDF
@@ -207,7 +209,7 @@ def export_conversation(conversation_id: str, business_name: str = "") -> bytes:
         css=PDF_BASE_CSS,
         title=conversation.title or "Conversation Export",
         business_name=business_name,
-        export_date=datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+        export_date=utcnow().strftime("%d %b %Y %H:%M UTC"),
         conversation_id=conversation.id,
         messages=messages,
     )
@@ -286,7 +288,7 @@ def export_compliance_summary(
         business_name=business_name,
         date_from=date_from or "Beginning",
         date_to=date_to or "Present",
-        export_date=datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+        export_date=utcnow().strftime("%d %b %Y %H:%M UTC"),
         conversations=conversations_data,
         total_tokens=total_tokens,
     )
@@ -371,7 +373,7 @@ def export_bulk_conversations(
         bulk_template,
         css=PDF_BASE_CSS,
         business_name=business_name,
-        export_date=datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+        export_date=utcnow().strftime("%d %b %Y %H:%M UTC"),
         sections=all_sections,
     )
 

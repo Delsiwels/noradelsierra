@@ -6,11 +6,12 @@ and accounts payable.
 """
 
 import logging
-from datetime import datetime
 from io import BytesIO
 from typing import Any
 
 import requests
+
+from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ def generate_aging_dashboard(
                 "ap_alerts": ap_alerts,
             },
             "as_at_date": as_at_date,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
     except Exception as e:
@@ -69,7 +70,7 @@ def generate_aging_dashboard(
             "error": str(e),
             "data": None,
             "as_at_date": as_at_date,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow_iso(),
         }
 
 
@@ -191,9 +192,11 @@ def _parse_contact_row(row: dict) -> dict | None:
 
         return {
             "contact_name": contact_name,
-            "contact_id": cells[0].get("Attributes", [{}])[0].get("Value")
-            if cells[0].get("Attributes")
-            else None,
+            "contact_id": (
+                cells[0].get("Attributes", [{}])[0].get("Value")
+                if cells[0].get("Attributes")
+                else None
+            ),
             "current": current,
             "days_30": days_30,
             "days_60": days_60,
