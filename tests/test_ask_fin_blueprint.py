@@ -188,6 +188,30 @@ def test_review_journal_returns_ai_review_when_service_available(client, monkeyp
     assert payload["skills_used"] == ["tax_agent"]
 
 
+def test_review_journal_returns_503_when_ai_review_fails(client, monkeypatch):
+    _register(client)
+
+    class _FailingService:
+        def send_message(self, **_kwargs):
+            raise RuntimeError("provider unavailable")
+
+    monkeypatch.setattr(
+        "webapp.blueprints.ask_fin.get_chat_service",
+        lambda: _FailingService(),
+    )
+
+    response = client.post(
+        "/api/ask-fin/review-journal",
+        data={"file": (io.BytesIO(VALID_CSV.encode("utf-8")), "journals.csv")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 503
+    payload = response.get_json()
+    assert "journal_summary" in payload
+    assert payload["error"] == "AI review generation failed."
+
+
 def test_review_journal_rejects_oversized_file(client):
     _register(client)
     too_large = b"x" * (MAX_FILE_SIZE + 1)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from flask import Blueprint, jsonify, render_template, request
 from flask_login import current_user, login_required
 
@@ -13,6 +15,7 @@ from webapp.services.journal_parser import (
 )
 
 ask_fin_bp = Blueprint("ask_fin", __name__)
+logger = logging.getLogger(__name__)
 
 
 @ask_fin_bp.route("/ask-fin/tax-agent", methods=["GET"])
@@ -77,6 +80,7 @@ def review_journal():
             persist=False,
         )
     except Exception:
+        logger.exception("Ask Fin AI review generation failed")
         return (
             jsonify(
                 {
