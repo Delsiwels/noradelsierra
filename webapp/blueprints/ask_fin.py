@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 from webapp.ai import get_chat_service
@@ -20,22 +20,7 @@ ask_fin_bp = Blueprint("ask_fin", __name__)
 def tax_agent_page():
     """Render a lightweight Ask Fin page for journal review."""
     display_name = getattr(current_user, "name", "") or "User"
-    return f"""
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Ask Fin Tax Agent</title>
-  </head>
-  <body>
-    <nav>Ask Fin</nav>
-    <main>
-      <h1>Tax Agent</h1>
-      <p>Welcome, {display_name}. Upload a CSV journal for review.</p>
-    </main>
-  </body>
-</html>
-"""
+    return render_template("ask_fin_tax_agent.html", display_name=display_name)
 
 
 @ask_fin_bp.route("/api/ask-fin/review-journal", methods=["POST"])

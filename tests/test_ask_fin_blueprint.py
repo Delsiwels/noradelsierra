@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import io
+import uuid
 
 import pytest
+from flask_bcrypt import generate_password_hash
 
 from webapp.config import TestingConfig
+from webapp.models import Team, User, db
 from webapp.services.journal_parser import (
     MAX_FILE_SIZE,
     format_entries_for_review,
@@ -23,7 +26,6 @@ Date,Account,Description,Debit,Credit,GST Code
 @pytest.fixture
 def app():
     from webapp.app import create_app
-    from webapp.models import db
 
     app = create_app(TestingConfig)
     app.config["TESTING"] = True
@@ -89,6 +91,37 @@ def test_tax_agent_page_renders_for_authenticated_user(client):
     assert response.status_code == 200
     assert b"Ask Fin" in response.data
     assert b"Tax Agent" in response.data
+
+
+def test_tax_agent_page_escapes_display_name(client, app):
+    user_id = str(uuid.uuid4())
+    team_id = str(uuid.uuid4())
+    raw_name = "<script>alert('xss')</script>"
+
+    with app.app_context():
+        team = Team(id=team_id, name="Security Team", owner_id=user_id)
+        user = User(
+            id=user_id,
+            email="xss@test.com",
+            password_hash=generate_password_hash("password123").decode("utf-8"),
+            name=raw_name,
+            role="owner",
+            team_id=team_id,
+        )
+        db.session.add(team)
+        db.session.add(user)
+        db.session.commit()
+
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": "xss@test.com", "password": "password123"},
+    )
+    assert login_response.status_code == 200
+
+    response = client.get("/ask-fin/tax-agent")
+    assert response.status_code == 200
+    assert b"&lt;script&gt;alert" in response.data
+    assert b"<script>alert" not in response.data
 
 
 def test_review_journal_rejects_missing_upload(client):
