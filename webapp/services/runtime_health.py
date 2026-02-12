@@ -123,10 +123,12 @@ class RuntimeHealthRegistry:
                 "scheduler": deepcopy(self._scheduler),
                 "jobs": deepcopy(self._jobs),
                 "queue": {},
+                "optional_blueprints": {},
             }
 
         if app is not None:
             report["queue"] = self._collect_queue_summary(app)
+            report["optional_blueprints"] = self._collect_optional_blueprints(app)
         report["alerting"] = get_operational_alert_telemetry()
         return report
 
@@ -143,6 +145,16 @@ class RuntimeHealthRegistry:
             "dead_letter_queue_size": _safe_queue_size(dead_letter_queue),
             "detected_extensions": detected_queue_extensions,
         }
+
+    def _collect_optional_blueprints(self, app: Flask) -> dict[str, bool]:
+        optional = app.extensions.get("optional_blueprints")
+        if not isinstance(optional, dict):
+            return {}
+
+        result: dict[str, bool] = {}
+        for key, value in optional.items():
+            result[str(key)] = bool(value)
+        return result
 
     def _derive_status_locked(self) -> tuple[str, list[str]]:
         degraded_reasons: list[str] = []

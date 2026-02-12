@@ -38,3 +38,19 @@ def test_queue_summary_uses_app_extensions():
     assert report["queue"]["available"] is True
     assert report["queue"]["task_queue_size"] == 3
     assert report["queue"]["dead_letter_queue_size"] == 0
+
+
+def test_optional_blueprints_are_reported_from_app_extensions():
+    app = Flask(__name__)
+    app.extensions["optional_blueprints"] = {
+        "webapp.blueprints.ask_fin.ask_fin_bp": True,
+        "webapp.blueprints.sample.sample_bp": False,
+    }
+
+    registry = RuntimeHealthRegistry()
+    report = registry.build_report(app)
+
+    assert report["optional_blueprints"] == {
+        "webapp.blueprints.ask_fin.ask_fin_bp": True,
+        "webapp.blueprints.sample.sample_bp": False,
+    }

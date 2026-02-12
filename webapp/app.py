@@ -191,7 +191,14 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.register_blueprint(connections_bp)
 
-    _register_optional_blueprint(app, "webapp.blueprints.ask_fin", "ask_fin_bp")
+    optional_blueprints = {
+        "webapp.blueprints.ask_fin.ask_fin_bp": _register_optional_blueprint(
+            app,
+            "webapp.blueprints.ask_fin",
+            "ask_fin_bp",
+        )
+    }
+    app.extensions["optional_blueprints"] = optional_blueprints
 
     from webapp.blueprints.payroll_review import payroll_review_bp
 

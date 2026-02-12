@@ -50,10 +50,16 @@ def test_invalid_cron_falls_back_without_boot_failure(monkeypatch):
     )
 
 
+def test_runtime_health_includes_optional_blueprint_status(client):
+    payload = client.get("/health/runtime").get_json()
+    optional = payload["optional_blueprints"]
+
+    assert "webapp.blueprints.ask_fin.ask_fin_bp" in optional
+    assert isinstance(optional["webapp.blueprints.ask_fin.ask_fin_bp"], bool)
+
+
 def test_health_ready_reports_not_ready_when_migration_directory_missing(app):
-    app.config["ALEMBIC_SCRIPT_LOCATION"] = (
-        f"nonexistent-migrations-{uuid.uuid4()}"
-    )
+    app.config["ALEMBIC_SCRIPT_LOCATION"] = f"nonexistent-migrations-{uuid.uuid4()}"
 
     client = app.test_client()
     response = client.get("/health/ready")
