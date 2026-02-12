@@ -72,12 +72,22 @@ def _register_optional_blueprint(
         app.register_blueprint(blueprint)
         return True
     except ModuleNotFoundError as exc:
-        logger.warning(
-            "Skipping optional blueprint %s.%s (%s)",
-            module_path,
-            blueprint_name,
-            exc,
-        )
+        # Only skip when the optional blueprint module itself is unavailable.
+        # If one of its dependencies is missing, log it as an implementation issue.
+        if exc.name == module_path:
+            logger.warning(
+                "Skipping optional blueprint %s.%s (%s)",
+                module_path,
+                blueprint_name,
+                exc,
+            )
+        else:
+            logger.exception(
+                "Failed to register optional blueprint %s.%s: missing dependency '%s'",
+                module_path,
+                blueprint_name,
+                exc.name,
+            )
     except AttributeError:
         logger.warning(
             "Skipping optional blueprint %s: missing symbol '%s'",
