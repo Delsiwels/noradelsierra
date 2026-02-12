@@ -61,10 +61,41 @@ def review_journal():
             503,
         )
 
+    user_id = getattr(current_user, "id", None)
+    team_id = getattr(current_user, "team_id", None)
+    review_prompt = (
+        "Review this uploaded journal for account coding and GST issues. "
+        "Highlight rows with potential misclassification and provide concise fixes.\n\n"
+        f"{review_input}"
+    )
+
+    try:
+        ai_response = service.send_message(
+            user_message=review_prompt,
+            user_id=user_id,
+            team_id=team_id,
+            persist=False,
+        )
+    except Exception:
+        return (
+            jsonify(
+                {
+                    "error": "AI review generation failed.",
+                    "journal_summary": review_input,
+                    "warnings": parsed.warnings,
+                }
+            ),
+            503,
+        )
+
     return jsonify(
         {
             "success": True,
             "journal_summary": review_input,
+            "review": ai_response.content,
+            "skills_used": ai_response.skills_used,
+            "model": ai_response.model,
+            "usage": ai_response.usage,
             "warnings": parsed.warnings,
         }
     )

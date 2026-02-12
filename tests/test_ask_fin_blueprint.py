@@ -8,6 +8,7 @@ import uuid
 import pytest
 from flask_bcrypt import generate_password_hash
 
+from webapp.ai.models import ChatResponse
 from webapp.config import TestingConfig
 from webapp.models import Team, User, db
 from webapp.services.journal_parser import (
@@ -156,6 +157,35 @@ def test_review_journal_returns_parsed_summary(client):
     payload = response.get_json()
     assert "journal_summary" in payload
     assert "journal entries" in payload["journal_summary"]
+
+
+def test_review_journal_returns_ai_review_when_service_available(client, monkeypatch):
+    _register(client)
+
+    class _StubService:
+        def send_message(self, **_kwargs):
+            return ChatResponse(
+                content="Detected one GST coding issue on row 2.",
+                skills_used=["tax_agent"],
+                model="stub-model",
+                usage={"input": 10, "output": 15},
+            )
+
+    monkeypatch.setattr(
+        "webapp.blueprints.ask_fin.get_chat_service", lambda: _StubService()
+    )
+
+    response = client.post(
+        "/api/ask-fin/review-journal",
+        data={"file": (io.BytesIO(VALID_CSV.encode("utf-8")), "journals.csv")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["review"] == "Detected one GST coding issue on row 2."
+    assert payload["model"] == "stub-model"
+    assert payload["skills_used"] == ["tax_agent"]
 
 
 def test_review_journal_rejects_oversized_file(client):
