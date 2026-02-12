@@ -6,7 +6,11 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
 from webapp.ai import get_chat_service
-from webapp.services.journal_parser import format_entries_for_review, parse_journal_csv
+from webapp.services.journal_parser import (
+    MAX_FILE_SIZE,
+    format_entries_for_review,
+    parse_journal_csv,
+)
 
 ask_fin_bp = Blueprint("ask_fin", __name__)
 
@@ -46,9 +50,11 @@ def review_journal():
     if not filename.endswith(".csv"):
         return jsonify({"error": "CSV file is required."}), 400
 
-    payload = uploaded.read()
+    payload = uploaded.stream.read(MAX_FILE_SIZE + 1)
     if not payload:
         return jsonify({"error": "Uploaded CSV is empty."}), 400
+    if len(payload) > MAX_FILE_SIZE:
+        return jsonify({"error": "Uploaded file is too large."}), 400
 
     parsed = parse_journal_csv(payload)
     if parsed.error:

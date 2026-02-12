@@ -7,7 +7,11 @@ import io
 import pytest
 
 from webapp.config import TestingConfig
-from webapp.services.journal_parser import format_entries_for_review, parse_journal_csv
+from webapp.services.journal_parser import (
+    MAX_FILE_SIZE,
+    format_entries_for_review,
+    parse_journal_csv,
+)
 
 VALID_CSV = """\
 Date,Account,Description,Debit,Credit,GST Code
@@ -119,3 +123,16 @@ def test_review_journal_returns_parsed_summary(client):
     payload = response.get_json()
     assert "journal_summary" in payload
     assert "journal entries" in payload["journal_summary"]
+
+
+def test_review_journal_rejects_oversized_file(client):
+    _register(client)
+    too_large = b"x" * (MAX_FILE_SIZE + 1)
+    response = client.post(
+        "/api/ask-fin/review-journal",
+        data={"file": (io.BytesIO(too_large), "too-large.csv")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    assert "too large" in response.get_json()["error"].lower()
