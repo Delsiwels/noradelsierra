@@ -13,6 +13,7 @@ from webapp.config import TestingConfig
 from webapp.models import Team, User, db
 from webapp.services.journal_parser import (
     MAX_FILE_SIZE,
+    MAX_ROWS,
     format_entries_for_review,
     parse_journal_csv,
 )
@@ -70,6 +71,26 @@ def test_parse_journal_csv_missing_required_column():
     assert parsed.error is not None
     assert "Missing required columns" in parsed.error
     assert "Date" in parsed.error
+
+
+def test_parse_journal_csv_truncates_excess_rows():
+    header = "Date,Account,Debit,Credit\n"
+    rows = "".join(
+        f"2026-01-01,Account {index},100,100\n" for index in range(MAX_ROWS + 100)
+    )
+    parsed = parse_journal_csv(header + rows)
+
+    assert parsed.error is None
+    assert parsed.row_count == MAX_ROWS
+    assert parsed.warnings
+
+
+def test_parse_journal_csv_rejects_oversized_bytes():
+    payload = b"x" * (MAX_FILE_SIZE + 1)
+    parsed = parse_journal_csv(payload)
+
+    assert parsed.error is not None
+    assert "too large" in parsed.error.lower()
 
 
 def test_format_entries_marks_unbalanced_batches():
