@@ -59,6 +59,21 @@ class Config:
         os.environ.get("CONVERSATION_RETENTION_DAYS", "30")
     )
 
+    # Xero OAuth
+    XERO_CLIENT_ID = os.environ.get("XERO_CLIENT_ID")
+    XERO_REDIRECT_URI = os.environ.get("XERO_REDIRECT_URI")
+    XERO_OAUTH_AUTHORIZE_URL = os.environ.get(
+        "XERO_OAUTH_AUTHORIZE_URL",
+        "https://login.xero.com/identity/connect/authorize",
+    )
+    XERO_SCOPES = os.environ.get(
+        "XERO_SCOPES",
+        (
+            "openid profile email offline_access "
+            "accounting.transactions accounting.contacts accounting.settings"
+        ),
+    )
+
     # Session config
     PERMANENT_SESSION_LIFETIME = int(
         os.environ.get("PERMANENT_SESSION_LIFETIME", "86400")

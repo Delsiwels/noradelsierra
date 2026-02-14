@@ -11,14 +11,29 @@ Endpoints:
 """
 
 import logging
+import secrets
+from base64 import urlsafe_b64encode
 from datetime import UTC, datetime
+from hashlib import sha256
+from urllib.parse import urlencode
 
-from flask import Blueprint, jsonify, redirect, request, session
+from flask import Blueprint, current_app, jsonify, redirect, request, session
 from flask_login import current_user, login_required
 
 connections_bp = Blueprint("connections", __name__)
 
 logger = logging.getLogger(__name__)
+
+
+def _build_pkce_pair() -> tuple[str, str]:
+    """Generate PKCE verifier and S256 challenge."""
+    verifier = secrets.token_urlsafe(64)[:128]
+    challenge = (
+        urlsafe_b64encode(sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
+    return verifier, challenge
 
 
 def _get_xero_session() -> dict:
@@ -178,10 +193,35 @@ def xero_login():
     """
     Initiate Xero OAuth connection flow.
 
-    This is a placeholder that redirects to the dashboard.
-    Replace with actual OAuth redirect once Xero app credentials
-    are configured.
+    Redirects to Xero authorize URL when OAuth config is present.
+    Falls back to dashboard when credentials are missing.
     """
-    # TODO: Implement real Xero OAuth2 PKCE flow
-    # For now, redirect back to dashboard
-    return redirect("/dashboard")
+    client_id = current_app.config.get("XERO_CLIENT_ID")
+    redirect_uri = current_app.config.get("XERO_REDIRECT_URI")
+    authorize_url = current_app.config.get("XERO_OAUTH_AUTHORIZE_URL")
+    scopes = current_app.config.get("XERO_SCOPES", "")
+
+    if not client_id or not redirect_uri or not authorize_url:
+        logger.info(
+            "Xero OAuth config missing for user %s; redirecting to dashboard",
+            current_user.id,
+        )
+        return redirect("/dashboard")
+
+    state = secrets.token_urlsafe(24)
+    verifier, code_challenge = _build_pkce_pair()
+    session["xero_oauth_state"] = state
+    session["xero_pkce_verifier"] = verifier
+    session.modified = True
+
+    params = {
+        "response_type": "code",
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "scope": scopes,
+        "state": state,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+    }
+
+    return redirect(f"{authorize_url}?{urlencode(params)}")

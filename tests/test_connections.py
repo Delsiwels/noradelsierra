@@ -1,5 +1,7 @@
 """Tests for Xero connections blueprint."""
 
+from urllib.parse import parse_qs, urlparse
+
 import pytest
 
 
@@ -213,3 +215,36 @@ class TestXeroLogin:
         res = client.get("/xero/login")
         assert res.status_code == 302
         assert "/dashboard" in res.headers["Location"]
+
+    def test_redirects_to_xero_authorize_when_configured(self, client):
+        """Configured OAuth values produce an authorize redirect with PKCE."""
+        _register_and_login(client)
+        client.application.config["XERO_CLIENT_ID"] = "client-123"
+        client.application.config["XERO_REDIRECT_URI"] = (
+            "https://finql.ai/xero/callback"
+        )
+        client.application.config["XERO_OAUTH_AUTHORIZE_URL"] = (
+            "https://login.xero.com/identity/connect/authorize"
+        )
+        client.application.config["XERO_SCOPES"] = "openid profile offline_access"
+
+        res = client.get("/xero/login")
+        assert res.status_code == 302
+
+        parsed = urlparse(res.headers["Location"])
+        assert parsed.scheme == "https"
+        assert parsed.netloc == "login.xero.com"
+        assert parsed.path == "/identity/connect/authorize"
+
+        qs = parse_qs(parsed.query)
+        assert qs["response_type"] == ["code"]
+        assert qs["client_id"] == ["client-123"]
+        assert qs["redirect_uri"] == ["https://finql.ai/xero/callback"]
+        assert qs["scope"] == ["openid profile offline_access"]
+        assert qs["code_challenge_method"] == ["S256"]
+        assert "state" in qs
+        assert "code_challenge" in qs
+
+        with client.session_transaction() as sess:
+            assert sess.get("xero_oauth_state")
+            assert sess.get("xero_pkce_verifier")
