@@ -258,7 +258,9 @@ async function generateReconciliation() {
     btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/payg-reconciliation/api/generate?from_date=${fromDate}&to_date=${toDate}`);
+        const resp = await fetch(
+            `/payg-reconciliation/api/generate?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`
+        );
         const data = await resp.json();
 
         if (!resp.ok) {
@@ -346,11 +348,12 @@ function renderResults(data) {
         warnings.forEach(warning => {
             const div = document.createElement('div');
             div.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start';
+            const warningText = escapeHtml(warning);
             div.innerHTML = `
                 <svg class="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                 </svg>
-                <span class="text-sm text-yellow-800">${warning}</span>
+                <span class="text-sm text-yellow-800">${warningText}</span>
             `;
             warningsList.appendChild(div);
         });
@@ -370,14 +373,18 @@ function renderResults(data) {
     } else {
         payRuns.forEach(pr => {
             const tr = document.createElement('tr');
+            const paymentDate = escapeHtml(pr.payment_date);
+            const periodStart = escapeHtml(pr.period_start ?? '');
+            const periodEnd = escapeHtml(pr.period_end ?? '');
+            const payRunStatus = escapeHtml(pr.status ?? 'Unknown');
             if (pr.status === 'DRAFT') {
                 tr.className = 'bg-yellow-50';
             }
             tr.innerHTML = `
-                <td class="px-4 py-3 text-sm text-gray-900">${pr.payment_date}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${pr.period_start || ''} - ${pr.period_end || ''}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">${paymentDate}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${periodStart} - ${periodEnd}</td>
                 <td class="px-4 py-3 text-sm">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${pr.status === 'POSTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${pr.status}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${pr.status === 'POSTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${payRunStatus}</span>
                 </td>
                 <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(pr.gross_wages)}</td>
                 <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(pr.payg_withheld)}</td>
@@ -450,7 +457,7 @@ function downloadExcel() {
         return;
     }
 
-    window.location.href = `/payg-reconciliation/api/download?from_date=${fromDate}&to_date=${toDate}`;
+    window.location.href = `/payg-reconciliation/api/download?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`;
 }
 
 function formatCurrency(amount) {
@@ -458,6 +465,15 @@ function formatCurrency(amount) {
     const abs = Math.abs(amount);
     const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 </script>
 {% endblock %}
