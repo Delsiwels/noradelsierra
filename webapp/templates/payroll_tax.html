@@ -164,11 +164,12 @@ function renderStateRates() {
     const tbody = document.getElementById('stateRatesBody');
     Object.entries(stateRates).forEach(([state, info]) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="px-3 py-2 font-medium text-gray-900">${state}</td>
-            <td class="px-3 py-2 text-right text-gray-600">${formatCurrency(info.annual_threshold)}</td>
-            <td class="px-3 py-2 text-right text-gray-600">${info.rate}%</td>
-        `;
+        tr.appendChild(createTextCell('px-3 py-2 font-medium text-gray-900', state));
+        tr.appendChild(createTextCell(
+            'px-3 py-2 text-right text-gray-600',
+            formatCurrency(info.annual_threshold)
+        ));
+        tr.appendChild(createTextCell('px-3 py-2 text-right text-gray-600', `${info.rate}%`));
         tbody.appendChild(tr);
     });
 }
@@ -210,7 +211,12 @@ async function generateTax() {
     btn.disabled = true; btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/payroll-tax/api/generate?from_date=${fromDate}&to_date=${toDate}&state=${state}`);
+        const params = new URLSearchParams({
+            from_date: fromDate,
+            to_date: toDate,
+            state: state,
+        });
+        const resp = await fetch(`/payroll-tax/api/generate?${params.toString()}`);
         const data = await resp.json();
         if (!resp.ok) {
             if (resp.status === 400 && data.error === 'Xero not connected') {
@@ -256,12 +262,24 @@ function downloadExcel() {
     const toDate = document.getElementById('toDate').value;
     const state = document.getElementById('stateSelect').value;
     if (!fromDate || !toDate) { alert('Select dates first'); return; }
-    window.location.href = `/payroll-tax/api/download?from_date=${fromDate}&to_date=${toDate}&state=${state}`;
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+        state: state,
+    });
+    window.location.href = `/payroll-tax/api/download?${params.toString()}`;
 }
 
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function createTextCell(className, value) {
+    const td = document.createElement('td');
+    td.className = className;
+    td.textContent = String(value ?? '');
+    return td;
 }
 </script>
 {% endblock %}

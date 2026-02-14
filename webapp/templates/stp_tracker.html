@@ -118,7 +118,7 @@ async function generateSummary() {
     btn.disabled = true; btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/stp-tracker/api/generate?financial_year=${fy}`);
+        const resp = await fetch(`/stp-tracker/api/generate?financial_year=${encodeURIComponent(fy)}`);
         const data = await resp.json();
         if (!resp.ok) {
             if (resp.status === 400 && data.error === 'Xero not connected') {
@@ -149,10 +149,12 @@ function renderResults(data) {
     const tbody = document.getElementById('quartersTableBody');
     tbody.innerHTML = '';
     (data.data.quarters || []).forEach(q => {
+        const quarterLabel = escapeHtml(q.quarter);
+        const periodLabel = escapeHtml(q.period);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${q.quarter}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${q.period}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${quarterLabel}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${periodLabel}</td>
             <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(q.gross_wages)}</td>
             <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(q.payg_withheld)}</td>
             <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(q.super)}</td>
@@ -165,12 +167,21 @@ function renderResults(data) {
 
 function downloadExcel() {
     const fy = document.getElementById('financialYear').value;
-    window.location.href = `/stp-tracker/api/download?financial_year=${fy}`;
+    window.location.href = `/stp-tracker/api/download?financial_year=${encodeURIComponent(fy)}`;
 }
 
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 </script>
 {% endblock %}
