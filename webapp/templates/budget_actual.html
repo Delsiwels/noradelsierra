@@ -126,7 +126,11 @@ async function generateReport() {
     btn.disabled = true; btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/budget-actual/api/generate?from_date=${fromDate}&to_date=${toDate}`);
+        const params = new URLSearchParams({
+            from_date: fromDate,
+            to_date: toDate,
+        });
+        const resp = await fetch(`/budget-actual/api/generate?${params.toString()}`);
         const data = await resp.json();
         if (!resp.ok) {
             if (resp.status === 400 && data.error === 'Xero not connected') {
@@ -177,28 +181,20 @@ function renderTable(comparison) {
 
     filtered.forEach(item => {
         const tr = document.createElement('tr');
+        tr.appendChild(createTextCell('px-4 py-3 text-sm font-medium text-gray-900', item.account));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(item.budget)));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(item.actual)));
+        tr.appendChild(createTextCell(
+            `px-4 py-3 text-sm text-right ${item.variance >= 0 ? 'text-green-600' : 'text-red-600'}`,
+            formatCurrency(item.variance)
+        ));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', `${item.variance_pct}%`));
+        tr.appendChild(createStatusCell(item.status));
 
-        let statusBadge = '';
-        switch(item.status) {
-            case 'favorable':
-                statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Favorable</span>';
-                break;
-            case 'unfavorable':
-                tr.className = 'bg-red-50';
-                statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Unfavorable</span>';
-                break;
-            default:
-                statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">No Budget</span>';
+        if (item.status === 'unfavorable') {
+            tr.classList.add('bg-red-50');
         }
 
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.account}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.budget)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(item.actual)}</td>
-            <td class="px-4 py-3 text-sm text-right ${item.variance >= 0 ? 'text-green-600' : 'text-red-600'}">${formatCurrency(item.variance)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${item.variance_pct}%</td>
-            <td class="px-4 py-3 text-center">${statusBadge}</td>
-        `;
         tbody.appendChild(tr);
     });
 }
@@ -209,18 +205,58 @@ function filterSection(section) {
         btn.className = 'px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-full';
     });
     document.getElementById('filter-' + section).className = 'px-3 py-1 text-xs font-medium bg-gray-100 rounded-full hover:bg-gray-200';
+    if (!currentData || !currentData.data) {
+        return;
+    }
     renderTable(currentData.data.comparison || []);
 }
 
 function downloadExcel() {
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
-    window.location.href = `/budget-actual/api/download?from_date=${fromDate}&to_date=${toDate}`;
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+    });
+    window.location.href = `/budget-actual/api/download?${params.toString()}`;
 }
 
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function createTextCell(className, value) {
+    const td = document.createElement('td');
+    td.className = className;
+    td.textContent = String(value ?? '');
+    return td;
+}
+
+function createStatusCell(status) {
+    const td = document.createElement('td');
+    td.className = 'px-4 py-3 text-center';
+
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+
+    switch (status) {
+        case 'favorable':
+            badge.classList.add('bg-green-100', 'text-green-800');
+            badge.textContent = 'Favorable';
+            break;
+        case 'unfavorable':
+            badge.classList.add('bg-red-100', 'text-red-800');
+            badge.textContent = 'Unfavorable';
+            break;
+        default:
+            badge.classList.add('bg-gray-100', 'text-gray-600');
+            badge.textContent = 'No Budget';
+            break;
+    }
+
+    td.appendChild(badge);
+    return td;
 }
 </script>
 {% endblock %}
