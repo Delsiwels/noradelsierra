@@ -309,6 +309,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
     )
 
     result = data.get("data", {})
+    as_at_date = str(data.get("as_at_date", ""))
 
     # Receivables sheet
     ws_ar = wb.active
@@ -318,7 +319,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
         result.get("receivables", []),
         result.get("ar_summary", {}),
         "Aged Receivables",
-        data.get("as_at_date"),
+        as_at_date,
         header_fill,
         header_font,
         alert_fill,
@@ -332,7 +333,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
         result.get("payables", []),
         result.get("ap_summary", {}),
         "Aged Payables",
-        data.get("as_at_date"),
+        as_at_date,
         header_fill,
         header_font,
         alert_fill,

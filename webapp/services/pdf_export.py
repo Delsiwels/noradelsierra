@@ -192,17 +192,18 @@ def export_conversation(conversation_id: str, business_name: str = "") -> bytes:
     Returns:
         PDF file as bytes
     """
-    from webapp.models import Conversation, db
+    from webapp.models import Conversation, Message, db
 
     conversation = db.session.get(Conversation, conversation_id)
     if not conversation:
         raise ValueError(f"Conversation {conversation_id} not found")
 
-    messages = []
-    for msg in conversation.messages.order_by(
-        __import__("webapp.models", fromlist=["Message"]).Message.created_at
-    ):
-        messages.append(msg.to_dict())
+    messages = [
+        msg.to_dict()
+        for msg in Message.query.filter_by(conversation_id=conversation.id)
+        .order_by(Message.created_at)
+        .all()
+    ]
 
     html = render_template_string(
         CONVERSATION_TEMPLATE,
@@ -325,9 +326,12 @@ def export_bulk_conversations(
         if not conversation:
             continue
 
-        messages = []
-        for msg in conversation.messages.order_by(Message.created_at):
-            messages.append(msg.to_dict())
+        messages = [
+            msg.to_dict()
+            for msg in Message.query.filter_by(conversation_id=conversation.id)
+            .order_by(Message.created_at)
+            .all()
+        ]
 
         all_sections.append(
             {

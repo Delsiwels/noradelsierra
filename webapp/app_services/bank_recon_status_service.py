@@ -44,9 +44,12 @@ def generate_bank_recon_status(
         # Fetch unreconciled transactions for each account
         for account in bank_accounts:
             account_id = account.get("account_id")
-            unreconciled = _fetch_unreconciled_transactions(
-                access_token, tenant_id, account_id
-            )
+            if isinstance(account_id, str) and account_id:
+                unreconciled = _fetch_unreconciled_transactions(
+                    access_token, tenant_id, account_id
+                )
+            else:
+                unreconciled = []
             account["unreconciled_items"] = unreconciled
             account["unreconciled_count"] = len(unreconciled)
             account["unreconciled_amount"] = sum(
@@ -54,7 +57,12 @@ def generate_bank_recon_status(
             )
 
             # Update balance from bank summary if available
-            summary_balance = bank_summary.get(account.get("code"))
+            account_code = account.get("code")
+            summary_balance = (
+                bank_summary.get(account_code)
+                if isinstance(account_code, str)
+                else None
+            )
             if summary_balance is not None:
                 account["statement_balance"] = summary_balance
 

@@ -356,6 +356,7 @@ class Conversation(db.Model):  # type: ignore[name-defined]
 
     def to_dict(self, include_messages: bool = False) -> dict:
         """Convert conversation to dictionary."""
+        message_query = Message.query.filter_by(conversation_id=self.id)
         data: dict = {
             "id": self.id,
             "user_id": self.user_id,
@@ -363,11 +364,11 @@ class Conversation(db.Model):  # type: ignore[name-defined]
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "message_count": self.messages.count() if self.messages else 0,
+            "message_count": message_query.count(),
         }
         if include_messages:
             data["messages"] = [
-                m.to_dict() for m in self.messages.order_by(Message.created_at)
+                m.to_dict() for m in message_query.order_by(Message.created_at).all()
             ]
         return data
 

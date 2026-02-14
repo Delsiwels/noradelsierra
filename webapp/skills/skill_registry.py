@@ -230,18 +230,18 @@ class SkillRegistry:
             source = "private" if user_id else "shared"
             owner_id = user_id or team_id
 
-            skill = self.loader.load_from_content(
+            loaded_skill = self.loader.load_from_content(
                 content,
                 path=f"r2://{custom_skill.storage_key}",
                 source=source,
                 owner_id=owner_id,
             )
 
-            if skill:
+            if loaded_skill:
                 # Update R2 cache
-                self._r2_cache[cache_key] = (skill, time.time())
+                self._r2_cache[cache_key] = (loaded_skill, time.time())
 
-            return skill
+            return loaded_skill
 
         except R2StorageDisabledError:
             logger.debug("R2 storage disabled, skipping custom skill lookup")
@@ -339,16 +339,16 @@ class SkillRegistry:
                 # R2 content missing - create a minimal skill from DB metadata
                 return self._skill_from_metadata(custom_skill, source, owner_id)
 
-            skill = self.loader.load_from_content(
+            loaded_skill = self.loader.load_from_content(
                 content,
                 path=f"r2://{custom_skill.storage_key}",
                 source=source,
                 owner_id=owner_id,
             )
 
-            if skill:
-                self._r2_cache[cache_key] = (skill, time.time())
-                return skill
+            if loaded_skill:
+                self._r2_cache[cache_key] = (loaded_skill, time.time())
+                return loaded_skill
 
         except Exception as e:
             logger.error(f"Error loading custom skill from R2: {e}")
