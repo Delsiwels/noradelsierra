@@ -172,7 +172,7 @@ async function generateStatus() {
     btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/bank-recon-status/api/generate?as_at_date=${asAtDate}`);
+        const resp = await fetch(`/bank-recon-status/api/generate?as_at_date=${encodeURIComponent(asAtDate)}`);
         const data = await resp.json();
 
         if (!resp.ok) {
@@ -266,10 +266,17 @@ function renderResults(data) {
 
             const hasUnreconciled = acc.unreconciled_count > 0;
 
+            const accountName = escapeHtml(acc.name);
+            const accountCode = escapeHtml(acc.code ?? '');
+            const accountId = String(acc.account_id ?? '');
+            const actionHtml = hasUnreconciled
+                ? '<button type="button" class="view-unreconciled-btn text-primary hover:text-blue-700 text-sm font-medium">View Items</button>'
+                : '<span class="text-gray-400 text-sm">-</span>';
+
             tr.innerHTML = `
                 <td class="px-4 py-3">
-                    <div class="text-sm font-medium text-gray-900">${acc.name}</div>
-                    <div class="text-xs text-gray-500">${acc.code || ''}</div>
+                    <div class="text-sm font-medium text-gray-900">${accountName}</div>
+                    <div class="text-xs text-gray-500">${accountCode}</div>
                 </td>
                 <td class="px-4 py-3 text-sm text-right text-gray-900">${acc.statement_balance !== null ? formatCurrency(acc.statement_balance) : 'N/A'}</td>
                 <td class="px-4 py-3 text-sm text-right ${hasUnreconciled ? 'text-red-600 font-medium' : 'text-gray-600'}">${acc.unreconciled_count}</td>
@@ -278,16 +285,25 @@ function renderResults(data) {
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusClass}">${statusText}</span>
                 </td>
                 <td class="px-4 py-3 text-center">
-                    ${hasUnreconciled ? `<button onclick="showUnreconciled('${acc.account_id}')" class="text-primary hover:text-blue-700 text-sm font-medium">View Items</button>` : '<span class="text-gray-400 text-sm">-</span>'}
+                    ${actionHtml}
                 </td>
             `;
+
+            if (hasUnreconciled) {
+                const viewButton = tr.querySelector('.view-unreconciled-btn');
+                if (viewButton) {
+                    viewButton.addEventListener('click', function() {
+                        showUnreconciled(accountId);
+                    });
+                }
+            }
             tbody.appendChild(tr);
         });
     }
 }
 
 function showUnreconciled(accountId) {
-    const account = currentData.data.accounts.find(a => a.account_id === accountId);
+    const account = currentData.data.accounts.find(a => String(a.account_id ?? '') === accountId);
     if (!account) return;
 
     document.getElementById('selectedAccountName').textContent = account.name;
@@ -302,11 +318,15 @@ function showUnreconciled(accountId) {
     } else {
         transactions.forEach(txn => {
             const tr = document.createElement('tr');
+            const txnDate = escapeHtml(txn.date);
+            const txnType = escapeHtml(txn.type);
+            const txnContact = escapeHtml(txn.contact ?? '-');
+            const txnReference = escapeHtml(txn.reference ?? '-');
             tr.innerHTML = `
-                <td class="px-4 py-3 text-sm text-gray-900">${txn.date}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${txn.type}</td>
-                <td class="px-4 py-3 text-sm text-gray-900">${txn.contact || '-'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${txn.reference || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">${txnDate}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${txnType}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">${txnContact}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${txnReference}</td>
                 <td class="px-4 py-3 text-sm text-right ${txn.amount >= 0 ? 'text-green-600' : 'text-red-600'}">${formatCurrency(txn.amount)}</td>
             `;
             tbody.appendChild(tr);
@@ -329,7 +349,7 @@ function downloadExcel() {
         return;
     }
 
-    window.location.href = `/bank-recon-status/api/download?as_at_date=${asAtDate}`;
+    window.location.href = `/bank-recon-status/api/download?as_at_date=${encodeURIComponent(asAtDate)}`;
 }
 
 function formatCurrency(amount) {
@@ -337,6 +357,15 @@ function formatCurrency(amount) {
     const abs = Math.abs(amount);
     const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 </script>
 {% endblock %}
