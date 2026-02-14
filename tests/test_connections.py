@@ -1,5 +1,6 @@
 """Tests for Xero connections blueprint."""
 
+from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -91,6 +92,53 @@ class TestConnectionStatus:
         data = res.get_json()
         assert data["connected"] is False
         assert data["status"] == "expired"
+
+    def test_expiring_connection(self, client):
+        """Session with near-expiry token reports expiring."""
+        _register_and_login(client)
+        expires_soon = (datetime.now(UTC) + timedelta(seconds=120)).isoformat()
+        with client.session_transaction() as sess:
+            sess["xero_connection"] = {
+                "access_token": "tok_expiring",
+                "tenant_id": "tid_1",
+                "tenant_name": "Soon Expiring Org",
+                "token_expires_at": expires_soon,
+            }
+        res = client.get("/api/connection-status")
+        data = res.get_json()
+        assert data["connected"] is True
+        assert data["status"] == "expiring"
+
+    def test_connection_status_handles_naive_timestamp(self, client):
+        """Naive ISO timestamp is treated as UTC for status calculations."""
+        _register_and_login(client)
+        naive_future = (
+            (datetime.now(UTC) + timedelta(days=1)).replace(tzinfo=None).isoformat()
+        )
+        with client.session_transaction() as sess:
+            sess["xero_connection"] = {
+                "access_token": "tok_naive",
+                "tenant_id": "tid_1",
+                "tenant_name": "Naive Timestamp Org",
+                "token_expires_at": naive_future,
+            }
+        res = client.get("/api/connection-status")
+        data = res.get_json()
+        assert data["status"] == "healthy"
+
+    def test_connection_status_invalid_timestamp_defaults_to_healthy(self, client):
+        """Invalid token timestamp should not break status endpoint."""
+        _register_and_login(client)
+        with client.session_transaction() as sess:
+            sess["xero_connection"] = {
+                "access_token": "tok_invalid_ts",
+                "tenant_id": "tid_1",
+                "tenant_name": "Invalid Timestamp Org",
+                "token_expires_at": "not-a-real-timestamp",
+            }
+        res = client.get("/api/connection-status")
+        data = res.get_json()
+        assert data["status"] == "healthy"
 
 
 class TestListConnections:
