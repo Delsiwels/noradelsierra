@@ -7,7 +7,8 @@ Endpoints:
 - GET /api/connection-status - Current connection status for the bar
 - GET /xero/api/connections - List all available Xero connections
 - POST /xero/api/switch-connection - Switch active Xero org
-- GET /xero/login - Redirect to Xero OAuth (placeholder)
+- GET /xero/login - Redirect to Xero OAuth authorize URL
+- GET /xero/callback - Handle Xero OAuth callback
 """
 
 import logging
@@ -225,3 +226,40 @@ def xero_login():
     }
 
     return redirect(f"{authorize_url}?{urlencode(params)}")
+
+
+@connections_bp.route("/xero/callback", methods=["GET"])
+@login_required
+def xero_callback():
+    """Handle Xero OAuth callback and validate anti-CSRF state."""
+    oauth_error = request.args.get("error")
+    if oauth_error:
+        logger.warning(
+            "Xero OAuth callback returned error for user %s: %s",
+            current_user.id,
+            oauth_error,
+        )
+        session.pop("xero_oauth_state", None)
+        session.pop("xero_pkce_verifier", None)
+        session.modified = True
+        return redirect("/dashboard?xero_auth=failed")
+
+    code = str(request.args.get("code", "")).strip()
+    returned_state = str(request.args.get("state", "")).strip()
+    expected_state = str(session.pop("xero_oauth_state", "")).strip()
+    verifier = str(session.pop("xero_pkce_verifier", "")).strip()
+
+    if not code or not returned_state or returned_state != expected_state:
+        logger.warning(
+            "Xero OAuth callback state mismatch for user %s",
+            current_user.id,
+        )
+        session.modified = True
+        return redirect("/dashboard?xero_auth=invalid_state")
+
+    # Persist callback artifacts for downstream token exchange handling.
+    session["xero_oauth_code"] = code
+    session["xero_oauth_pkce_verifier"] = verifier
+    session.modified = True
+    logger.info("Captured Xero OAuth callback code for user %s", current_user.id)
+    return redirect("/dashboard?xero_auth=code_received")

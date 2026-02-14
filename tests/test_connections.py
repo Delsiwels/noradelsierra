@@ -248,3 +248,42 @@ class TestXeroLogin:
         with client.session_transaction() as sess:
             assert sess.get("xero_oauth_state")
             assert sess.get("xero_pkce_verifier")
+
+
+class TestXeroCallback:
+    """Tests for GET /xero/callback."""
+
+    def test_requires_auth(self, client):
+        res = client.get("/xero/callback")
+        assert res.status_code == 401
+
+    def test_invalid_state_redirects(self, client):
+        _register_and_login(client)
+        with client.session_transaction() as sess:
+            sess["xero_oauth_state"] = "expected-state"
+            sess["xero_pkce_verifier"] = "verifier"
+
+        res = client.get("/xero/callback?code=abc123&state=wrong-state")
+        assert res.status_code == 302
+        assert "xero_auth=invalid_state" in res.headers["Location"]
+
+    def test_error_redirects_failed(self, client):
+        _register_and_login(client)
+        res = client.get("/xero/callback?error=access_denied")
+        assert res.status_code == 302
+        assert "xero_auth=failed" in res.headers["Location"]
+
+    def test_success_captures_code_and_pkce_verifier(self, client):
+        _register_and_login(client)
+        with client.session_transaction() as sess:
+            sess["xero_oauth_state"] = "state-123"
+            sess["xero_pkce_verifier"] = "pkce-verifier-xyz"
+
+        res = client.get("/xero/callback?code=auth-code-1&state=state-123")
+        assert res.status_code == 302
+        assert "xero_auth=code_received" in res.headers["Location"]
+
+        with client.session_transaction() as sess:
+            assert sess.get("xero_oauth_code") == "auth-code-1"
+            assert sess.get("xero_oauth_pkce_verifier") == "pkce-verifier-xyz"
+            assert "xero_oauth_state" not in sess
