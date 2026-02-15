@@ -187,10 +187,14 @@ function renderLineItems(containerId, inflows, outflows) {
     Object.entries(grouped).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).forEach(([label, amount]) => {
         const div = document.createElement('div');
         div.className = 'flex justify-between items-center py-0.5';
-        div.innerHTML = `
-            <span class="text-gray-600 capitalize">${label}</span>
-            <span class="${colorClass(amount)}">${formatCurrency(amount)}</span>
-        `;
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'text-gray-600 capitalize';
+        labelSpan.textContent = String(label ?? '');
+        const amountSpan = document.createElement('span');
+        amountSpan.className = colorClass(amount);
+        amountSpan.textContent = formatCurrency(amount);
+        div.appendChild(labelSpan);
+        div.appendChild(amountSpan);
         container.appendChild(div);
     });
 }

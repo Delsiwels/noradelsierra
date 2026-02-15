@@ -411,7 +411,7 @@ async function runComparison() {
     btn.textContent = 'Comparing...';
 
     try {
-        const resp = await fetch(`/payroll-review/api/compare?draft_id=${draftId}`);
+        const resp = await fetch(`/payroll-review/api/compare?draft_id=${encodeURIComponent(draftId)}`);
         const data = await resp.json();
 
         if (!resp.ok) {
@@ -461,6 +461,8 @@ function renderComparison(data) {
 
     data.comparison.forEach(row => {
         const tr = document.createElement('tr');
+        const employeeName = escapeHtml(row.name);
+        const grossVariancePct = escapeHtml(row.gross_variance_pct);
 
         // Row styling based on flag
         if (row.flag === 'alert') {
@@ -470,12 +472,12 @@ function renderComparison(data) {
         }
 
         tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${row.name}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${employeeName}</td>
             <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(row.draft_gross)}</td>
             <td class="px-4 py-3 text-sm text-right text-gray-500">${formatCurrency(row.posted_gross)}</td>
             <td class="px-4 py-3 text-sm text-right ${row.gross_variance >= 0 ? 'text-green-600' : 'text-red-600'}">
                 ${row.gross_variance >= 0 ? '+' : ''}${formatCurrency(row.gross_variance)}
-                <span class="text-xs text-gray-400 ml-1">(${row.gross_variance_pct}%)</span>
+                <span class="text-xs text-gray-400 ml-1">(${grossVariancePct}%)</span>
             </td>
             <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(row.draft_super)}</td>
             <td class="px-4 py-3 text-sm text-right text-gray-500">${formatCurrency(row.posted_super)}</td>
@@ -500,7 +502,7 @@ async function loadLeaveFlags() {
     btn.textContent = 'Loading...';
 
     try {
-        const resp = await fetch(`/payroll-review/api/leave-flags?pay_run_id=${payRunId}`);
+        const resp = await fetch(`/payroll-review/api/leave-flags?pay_run_id=${encodeURIComponent(payRunId)}`);
         const data = await resp.json();
 
         if (!resp.ok) {
@@ -535,6 +537,12 @@ function renderLeaveFlags(data) {
 
     data.employees_with_leave.forEach(emp => {
         const tr = document.createElement('tr');
+        const employeeName = escapeHtml(emp.name);
+        const leaveType = escapeHtml(emp.leave_type);
+        const leaveHours = escapeHtml(emp.hours);
+        const balanceText = emp.balance_remaining !== null
+            ? `${escapeHtml(emp.balance_remaining)} hrs`
+            : 'N/A';
         if (emp.low_balance_warning) {
             tr.className = 'bg-yellow-50';
         }
@@ -550,12 +558,12 @@ function renderLeaveFlags(data) {
         }
 
         tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${emp.name}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${emp.leave_type}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${emp.hours}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${employeeName}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${leaveType}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900">${leaveHours}</td>
             <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(emp.amount)}</td>
             <td class="px-4 py-3 text-sm text-right ${emp.low_balance_warning ? 'text-yellow-700 font-medium' : 'text-gray-600'}">
-                ${emp.balance_remaining !== null ? emp.balance_remaining + ' hrs' : 'N/A'}
+                ${balanceText}
             </td>
             <td class="px-4 py-3 text-center">${statusBadge}</td>
         `;
@@ -634,6 +642,11 @@ function renderUploadPreview(data) {
 
     data.employees.forEach(emp => {
         const tr = document.createElement('tr');
+        const rowNumber = escapeHtml(emp.row);
+        const firstName = escapeHtml(emp.first_name || '');
+        const lastName = escapeHtml(emp.last_name || '');
+        const email = escapeHtml(emp.email || '');
+        const startDate = escapeHtml(emp.start_date || '');
         if (!emp.valid) {
             tr.className = 'bg-red-50';
         }
@@ -642,19 +655,21 @@ function renderUploadPreview(data) {
         if (emp.valid) {
             statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Valid</span>';
         } else {
-            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800" title="${emp.errors.join('; ')}">
+            const errorTitle = escapeHtml((emp.errors || []).join('; '));
+            const errorCount = Number((emp.errors || []).length);
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800" title="${errorTitle}">
                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                 </svg>
-                ${emp.errors.length} error${emp.errors.length > 1 ? 's' : ''}
+                ${errorCount} error${errorCount > 1 ? 's' : ''}
             </span>`;
         }
 
         tr.innerHTML = `
-            <td class="px-4 py-3 text-sm text-gray-500">${emp.row}</td>
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${emp.first_name || ''} ${emp.last_name || ''}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${emp.email || ''}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${emp.start_date || ''}</td>
+            <td class="px-4 py-3 text-sm text-gray-500">${rowNumber}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${firstName} ${lastName}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${email}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${startDate}</td>
             <td class="px-4 py-3 text-center">${statusBadge}</td>
         `;
         tbody.appendChild(tr);
@@ -710,24 +725,26 @@ function renderCreationResults(data) {
     // Summary
     const summary = document.createElement('div');
     summary.className = `p-3 rounded-lg mb-4 ${data.success ? 'bg-green-50 text-green-800' : 'bg-yellow-50 text-yellow-800'}`;
-    summary.innerHTML = `<strong>${data.created}</strong> of <strong>${data.total}</strong> employees created successfully`;
+    summary.innerHTML = `<strong>${escapeHtml(data.created)}</strong> of <strong>${escapeHtml(data.total)}</strong> employees created successfully`;
     list.appendChild(summary);
 
     // Individual results
     data.results.forEach(result => {
         const div = document.createElement('div');
+        const resultName = escapeHtml(result.name);
+        const resultError = escapeHtml(result.error);
         if (result.success) {
             div.className = 'flex items-center justify-between p-3 bg-green-50 rounded-lg';
             div.innerHTML = `
-                <span class="text-sm font-medium text-gray-900">${result.name}</span>
+                <span class="text-sm font-medium text-gray-900">${resultName}</span>
                 <span class="text-xs text-green-600">Created</span>
             `;
         } else {
             div.className = 'flex items-start justify-between p-3 bg-red-50 rounded-lg';
             div.innerHTML = `
                 <div>
-                    <span class="text-sm font-medium text-gray-900">${result.name}</span>
-                    <p class="text-xs text-red-600 mt-1">${result.error}</p>
+                    <span class="text-sm font-medium text-gray-900">${resultName}</span>
+                    <p class="text-xs text-red-600 mt-1">${resultError}</p>
                 </div>
                 <span class="text-xs text-red-600">Failed</span>
             `;
@@ -745,6 +762,15 @@ function formatCurrency(amount) {
 
 function formatNumber(amount) {
     return Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 </script>
 {% endblock %}

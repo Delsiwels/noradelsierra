@@ -161,7 +161,6 @@ async function calculateFTC() {
         if (manualLitres) {
             params.set('litres', manualLitres);
         }
-
         const resp = await fetch(`/fuel-tax-credits/api/generate?${params.toString()}`);
         const data = await resp.json();
         if (!resp.ok) {

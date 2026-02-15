@@ -207,7 +207,8 @@ async function setLodgeMethod(method) {
 
 async function loadDeadlines() {
     try {
-        const resp = await fetch(`/api/forecast/deadlines?lodge_method=${currentLodgeMethod}`);
+        const params = new URLSearchParams({ lodge_method: currentLodgeMethod });
+        const resp = await fetch(`/api/forecast/deadlines?${params.toString()}`);
         const data = await resp.json();
         renderDeadlineCards(data.deadlines, 'calendarCards', 'calendarLabel');
         renderDeadlineCards(data.deadlines, 'calendarCardsEmpty', 'calendarLabelEmpty');
@@ -238,11 +239,9 @@ function renderDeadlineCards(deadlines, containerId, labelId) {
 
         const card = document.createElement('div');
         card.className = `rounded-lg border-2 ${statusColor} p-4 text-center`;
-        card.innerHTML = `
-            <p class="text-xs font-medium text-gray-500 mb-1">${dl.quarter}</p>
-            <p class="text-sm font-semibold text-gray-900">${dl.due_date}</p>
-            <p class="text-xs text-gray-500 mt-1">${daysText}</p>
-        `;
+        card.appendChild(createTextNode('p', 'text-xs font-medium text-gray-500 mb-1', dl.quarter));
+        card.appendChild(createTextNode('p', 'text-sm font-semibold text-gray-900', dl.due_date));
+        card.appendChild(createTextNode('p', 'text-xs text-gray-500 mt-1', daysText));
         container.appendChild(card);
     });
 }
@@ -341,10 +340,14 @@ function renderForecast(data) {
     data.accounts.forEach(function(acct) {
         const row = document.createElement('div');
         row.className = 'flex justify-between items-center py-2';
-        row.innerHTML = `
-            <span class="text-sm text-gray-700">${acct.name}</span>
-            <span class="text-sm font-medium ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}">${formatCurrencyDetailed(acct.balance)}</span>
-        `;
+        row.appendChild(createTextNode('span', 'text-sm text-gray-700', acct.name));
+        row.appendChild(
+            createTextNode(
+                'span',
+                `text-sm font-medium ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}`,
+                formatCurrencyDetailed(acct.balance)
+            )
+        );
         accountsList.appendChild(row);
     });
 
@@ -357,16 +360,30 @@ function renderForecast(data) {
         if (hasBas) {
             tr.className = 'border-l-4 border-l-yellow-400';
         }
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${m.month}</td>
-            <td class="px-4 py-3 text-sm text-right text-green-600">${formatCurrencyDetailed(m.inflows)}</td>
-            <td class="px-4 py-3 text-sm text-right text-red-600">${formatCurrencyDetailed(m.outflows)}</td>
-            <td class="px-4 py-3 text-sm text-right ${hasBas ? 'text-yellow-700 font-medium' : 'text-gray-400'}">
-                ${hasBas ? formatCurrencyDetailed(m.bas_payment) + ' ' + (m.bas_info ? m.bas_info.quarter : '') : ''}
-            </td>
-            <td class="px-4 py-3 text-sm text-right ${m.net >= 0 ? 'text-green-600' : 'text-red-600'}">${formatCurrencyDetailed(m.net)}</td>
-            <td class="px-4 py-3 text-sm text-right font-medium ${m.balance < 0 ? 'text-red-600' : 'text-gray-900'}">${formatCurrencyDetailed(m.balance)}</td>
-        `;
+        const basText = hasBas
+            ? `${formatCurrencyDetailed(m.bas_payment)} ${m.bas_info ? (m.bas_info.quarter || '') : ''}`.trim()
+            : '';
+        tr.appendChild(createTableCell('px-4 py-3 text-sm font-medium text-gray-900', m.month));
+        tr.appendChild(createTableCell('px-4 py-3 text-sm text-right text-green-600', formatCurrencyDetailed(m.inflows)));
+        tr.appendChild(createTableCell('px-4 py-3 text-sm text-right text-red-600', formatCurrencyDetailed(m.outflows)));
+        tr.appendChild(
+            createTableCell(
+                `px-4 py-3 text-sm text-right ${hasBas ? 'text-yellow-700 font-medium' : 'text-gray-400'}`,
+                basText
+            )
+        );
+        tr.appendChild(
+            createTableCell(
+                `px-4 py-3 text-sm text-right ${m.net >= 0 ? 'text-green-600' : 'text-red-600'}`,
+                formatCurrencyDetailed(m.net)
+            )
+        );
+        tr.appendChild(
+            createTableCell(
+                `px-4 py-3 text-sm text-right font-medium ${m.balance < 0 ? 'text-red-600' : 'text-gray-900'}`,
+                formatCurrencyDetailed(m.balance)
+            )
+        );
         tbody.appendChild(tr);
     });
 
@@ -381,6 +398,20 @@ function toggleAccounts() {
     const chevron = document.getElementById('accountsChevron');
     list.classList.toggle('hidden');
     chevron.classList.toggle('rotate-180');
+}
+
+function createTextNode(tagName, className, value) {
+    const node = document.createElement(tagName);
+    node.className = className;
+    node.textContent = String(value ?? '');
+    return node;
+}
+
+function createTableCell(className, value) {
+    const td = document.createElement('td');
+    td.className = className;
+    td.textContent = String(value ?? '');
+    return td;
 }
 </script>
 {% endblock %}
