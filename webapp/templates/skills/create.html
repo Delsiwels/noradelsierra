@@ -506,16 +506,19 @@ Instructions for the AI assistant...</div>
                 const data = await response.json();
 
                 if (data.valid) {
+                    const metadataName = escapeHtml(data.metadata?.name || '');
+                    const metadataDescription = escapeHtml(data.metadata?.description || '');
+                    const triggerCount = Number(data.metadata?.triggers?.length || 0);
                     validationResult.innerHTML = `
                         <div class="validation-result valid">
                             <strong>Valid!</strong><br>
-                            Name: ${data.metadata.name}<br>
-                            ${data.metadata.description ? `Description: ${data.metadata.description}<br>` : ''}
-                            Triggers: ${data.metadata.triggers?.length || 0}
+                            Name: ${metadataName}<br>
+                            ${metadataDescription ? `Description: ${metadataDescription}<br>` : ''}
+                            Triggers: ${triggerCount}
                         </div>
                     `;
                 } else {
-                    validationResult.innerHTML = `<div class="validation-result invalid">${data.error}</div>`;
+                    validationResult.innerHTML = `<div class="validation-result invalid">${escapeHtml(data.error)}</div>`;
                 }
             } catch (error) {
                 validationResult.innerHTML = '<div class="validation-result invalid">Validation failed</div>';
@@ -577,8 +580,22 @@ Instructions for the AI assistant...</div>
         });
 
         function showMessage(text, type) {
-            messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
+            const safeType = type === 'success' ? 'success' : 'error';
+            messageDiv.innerHTML = '';
+            const container = document.createElement('div');
+            container.className = `message ${safeType}`;
+            container.textContent = String(text ?? '');
+            messageDiv.appendChild(container);
             window.scrollTo(0, 0);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
     </script>
 </body>

@@ -322,36 +322,62 @@ fetch('/api/reminders/bas')
             el.innerHTML = '<p class="text-gray-500 text-sm">No upcoming deadlines.</p>';
             return;
         }
-        let html = '<div class="space-y-3">';
+        el.innerHTML = '';
+        const list = document.createElement('div');
+        list.className = 'space-y-3';
         data.deadlines.forEach(d => {
             let color = 'bg-gray-100 text-gray-700';
-            let badge = '';
+            let badgeText = '';
+            let badgeClass = '';
             if (d.status === 'overdue') {
                 color = 'bg-red-50 border-red-200';
-                badge = '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">Overdue</span>';
+                badgeClass = 'text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium';
+                badgeText = 'Overdue';
             } else if (d.status === 'due_soon') {
                 color = 'bg-yellow-50 border-yellow-200';
-                badge = '<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">Due Soon</span>';
+                badgeClass = 'text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium';
+                badgeText = 'Due Soon';
             } else if (d.status === 'upcoming') {
                 color = 'bg-blue-50 border-blue-200';
-                badge = '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Upcoming</span>';
+                badgeClass = 'text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium';
+                badgeText = 'Upcoming';
             }
             const label = d.quarter || d.period || '';
             const days = d.days_remaining;
             const daysText = days < 0 ? `${Math.abs(days)} days overdue` : days === 0 ? 'Due today' : `${days} days remaining`;
-            html += `<div class="flex items-center justify-between p-3 rounded-lg border ${color}">
-                <div>
-                    <span class="font-medium text-gray-900">${label}</span>
-                    <span class="text-gray-500 text-sm ml-2">Due ${d.due_date_str}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-600">${daysText}</span>
-                    ${badge}
-                </div>
-            </div>`;
+
+            const row = document.createElement('div');
+            row.className = `flex items-center justify-between p-3 rounded-lg border ${color}`;
+
+            const left = document.createElement('div');
+            const labelNode = document.createElement('span');
+            labelNode.className = 'font-medium text-gray-900';
+            labelNode.textContent = String(label);
+            const dueNode = document.createElement('span');
+            dueNode.className = 'text-gray-500 text-sm ml-2';
+            dueNode.textContent = `Due ${String(d.due_date_str ?? '')}`;
+            left.appendChild(labelNode);
+            left.appendChild(dueNode);
+
+            const right = document.createElement('div');
+            right.className = 'flex items-center gap-3';
+            const daysNode = document.createElement('span');
+            daysNode.className = 'text-sm text-gray-600';
+            daysNode.textContent = daysText;
+            right.appendChild(daysNode);
+
+            if (badgeText) {
+                const badge = document.createElement('span');
+                badge.className = badgeClass;
+                badge.textContent = badgeText;
+                right.appendChild(badge);
+            }
+
+            row.appendChild(left);
+            row.appendChild(right);
+            list.appendChild(row);
         });
-        html += '</div>';
-        el.innerHTML = html;
+        el.appendChild(list);
     })
     .catch(() => {
         document.getElementById('reminders-content').innerHTML = '<p class="text-gray-500 text-sm">Could not load deadlines.</p>';
@@ -363,8 +389,8 @@ document.getElementById('export-form').addEventListener('submit', function(e) {
     const from = document.getElementById('export-from').value;
     const to = document.getElementById('export-to').value;
     let url = '/api/export/compliance/pdf?';
-    if (from) url += 'date_from=' + from + '&';
-    if (to) url += 'date_to=' + to;
+    if (from) url += 'date_from=' + encodeURIComponent(from) + '&';
+    if (to) url += 'date_to=' + encodeURIComponent(to);
     window.location.href = url;
 });
 </script>
