@@ -102,7 +102,8 @@ async function generateSchedule() {
     btn.disabled = true; btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/prepayment-tracker/api/generate?as_at_date=${asAtDate}`);
+        const params = new URLSearchParams({ as_at_date: asAtDate });
+        const resp = await fetch(`/prepayment-tracker/api/generate?${params.toString()}`);
         const data = await resp.json();
         if (!resp.ok) {
             if (resp.status === 400 && data.error === 'Xero not connected') {
@@ -141,41 +142,63 @@ function renderResults(data) {
     schedule.forEach(item => {
         const tr = document.createElement('tr');
         if (item.status === 'warning') tr.className = 'bg-yellow-50';
-
-        let statusBadge = '';
-        switch(item.status) {
-            case 'ok':
-                statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>';
-                break;
-            case 'warning':
-                statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">No Amort.</span>';
-                break;
-            case 'error':
-                statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Error</span>';
-                break;
-        }
-
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.account_name}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.opening)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.additions)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.amortization)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900 font-medium">${formatCurrency(item.closing)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.monthly_amortization)}</td>
-            <td class="px-4 py-3 text-center">${statusBadge}</td>
-        `;
+        tr.appendChild(createTextCell('px-4 py-3 text-sm font-medium text-gray-900', item.account_name));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(item.opening)));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(item.additions)));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(item.amortization)));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900 font-medium', formatCurrency(item.closing)));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(item.monthly_amortization)));
+        tr.appendChild(createStatusCell(item.status));
         tbody.appendChild(tr);
     });
 }
 
 function downloadExcel() {
     const asAtDate = document.getElementById('asAtDate').value;
-    window.location.href = `/prepayment-tracker/api/download?as_at_date=${asAtDate}`;
+    const params = new URLSearchParams({ as_at_date: asAtDate });
+    window.location.href = `/prepayment-tracker/api/download?${params.toString()}`;
 }
 
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function createTextCell(className, value) {
+    const td = document.createElement('td');
+    td.className = className;
+    td.textContent = String(value ?? '');
+    return td;
+}
+
+function createStatusCell(status) {
+    const td = document.createElement('td');
+    td.className = 'px-4 py-3 text-center';
+
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+
+    switch (status) {
+        case 'ok':
+            badge.classList.add('bg-green-100', 'text-green-800');
+            badge.textContent = 'OK';
+            break;
+        case 'warning':
+            badge.classList.add('bg-yellow-100', 'text-yellow-800');
+            badge.textContent = 'No Amort.';
+            break;
+        case 'error':
+            badge.classList.add('bg-red-100', 'text-red-800');
+            badge.textContent = 'Error';
+            break;
+        default:
+            badge.classList.add('bg-gray-100', 'text-gray-700');
+            badge.textContent = 'Unknown';
+            break;
+    }
+
+    td.appendChild(badge);
+    return td;
 }
 </script>
 {% endblock %}

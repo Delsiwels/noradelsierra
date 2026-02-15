@@ -246,7 +246,8 @@ async function generateDashboard() {
     btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/aging-dashboard/api/generate?as_at_date=${asAtDate}`);
+        const params = new URLSearchParams({ as_at_date: asAtDate });
+        const resp = await fetch(`/aging-dashboard/api/generate?${params.toString()}`);
         const data = await resp.json();
 
         if (!resp.ok) {
@@ -306,16 +307,30 @@ function renderResults(data) {
         allAlerts.slice(0, 5).forEach(alert => {
             const div = document.createElement('div');
             div.className = 'bg-white rounded-lg p-3 flex justify-between items-center';
-            div.innerHTML = `
-                <div>
-                    <span class="font-medium text-gray-900">${alert.contact_name}</span>
-                    <span class="text-xs text-gray-500 ml-2">${alert.type === 'receivable' ? 'AR' : 'AP'}</span>
-                </div>
-                <div class="text-right">
-                    <span class="text-sm font-semibold ${alert.severity === 'high' ? 'text-red-600' : 'text-yellow-600'}">${formatCurrency(alert.amount)}</span>
-                    <span class="text-xs text-gray-500 ml-2">60+ days</span>
-                </div>
-            `;
+
+            const left = document.createElement('div');
+            const name = document.createElement('span');
+            name.className = 'font-medium text-gray-900';
+            name.textContent = String(alert.contact_name ?? '');
+            const type = document.createElement('span');
+            type.className = 'text-xs text-gray-500 ml-2';
+            type.textContent = alert.type === 'receivable' ? 'AR' : 'AP';
+            left.appendChild(name);
+            left.appendChild(type);
+
+            const right = document.createElement('div');
+            right.className = 'text-right';
+            const amount = document.createElement('span');
+            amount.className = `text-sm font-semibold ${alert.severity === 'high' ? 'text-red-600' : 'text-yellow-600'}`;
+            amount.textContent = formatCurrency(alert.amount);
+            const aging = document.createElement('span');
+            aging.className = 'text-xs text-gray-500 ml-2';
+            aging.textContent = '60+ days';
+            right.appendChild(amount);
+            right.appendChild(aging);
+
+            div.appendChild(left);
+            div.appendChild(right);
             alertsList.appendChild(div);
         });
     } else {
@@ -377,15 +392,18 @@ function renderTable(type, contacts) {
         } else if (contact.days_60 > 500) {
             tr.className = 'bg-yellow-50';
         }
-
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${contact.contact_name}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(contact.current)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(contact.days_30)}</td>
-            <td class="px-4 py-3 text-sm text-right ${contact.days_60 > 0 ? 'text-orange-600 font-medium' : 'text-gray-600'}">${formatCurrency(contact.days_60)}</td>
-            <td class="px-4 py-3 text-sm text-right ${contact.days_90_plus > 0 ? 'text-red-600 font-medium' : 'text-gray-600'}">${formatCurrency(contact.days_90_plus)}</td>
-            <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900">${formatCurrency(contact.total)}</td>
-        `;
+        tr.appendChild(createTextCell('px-4 py-3 text-sm font-medium text-gray-900', contact.contact_name));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(contact.current)));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(contact.days_30)));
+        tr.appendChild(createTextCell(
+            `px-4 py-3 text-sm text-right ${contact.days_60 > 0 ? 'text-orange-600 font-medium' : 'text-gray-600'}`,
+            formatCurrency(contact.days_60)
+        ));
+        tr.appendChild(createTextCell(
+            `px-4 py-3 text-sm text-right ${contact.days_90_plus > 0 ? 'text-red-600 font-medium' : 'text-gray-600'}`,
+            formatCurrency(contact.days_90_plus)
+        ));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right font-semibold text-gray-900', formatCurrency(contact.total)));
         tbody.appendChild(tr);
     });
 }
@@ -419,7 +437,8 @@ function downloadExcel() {
         return;
     }
 
-    window.location.href = `/aging-dashboard/api/download?as_at_date=${asAtDate}`;
+    const params = new URLSearchParams({ as_at_date: asAtDate });
+    window.location.href = `/aging-dashboard/api/download?${params.toString()}`;
 }
 
 function formatCurrency(amount) {
@@ -427,6 +446,13 @@ function formatCurrency(amount) {
     const abs = Math.abs(amount);
     const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return amount < 0 ? '-$' + formatted : '$' + formatted;
+}
+
+function createTextCell(className, value) {
+    const td = document.createElement('td');
+    td.className = className;
+    td.textContent = String(value ?? '');
+    return td;
 }
 </script>
 {% endblock %}

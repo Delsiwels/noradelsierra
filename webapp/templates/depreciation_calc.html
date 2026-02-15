@@ -273,7 +273,11 @@ async function generateSchedule() {
     btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/depreciation-calc/api/generate?from_date=${fromDate}&to_date=${toDate}`);
+        const params = new URLSearchParams({
+            from_date: fromDate,
+            to_date: toDate,
+        });
+        const resp = await fetch(`/depreciation-calc/api/generate?${params.toString()}`);
         const data = await resp.json();
 
         if (!resp.ok) {
@@ -325,7 +329,7 @@ function renderResults(data) {
     const schedule = result.schedule || [];
     if (schedule.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">No fixed assets found in Xero</td></tr>';
-        tfoot.innerHTML = '';
+        tfoot.replaceChildren();
     } else {
         schedule.forEach(item => {
             const tr = document.createElement('tr');
@@ -337,51 +341,22 @@ function renderResults(data) {
                 tr.className = 'bg-yellow-50';
             }
 
-            let statusBadge = '';
-            switch(item.status) {
-                case 'ok':
-                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>';
-                    break;
-                case 'warning':
-                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Warning</span>';
-                    break;
-                case 'error':
-                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Variance</span>';
-                    break;
-            }
-
-            tr.innerHTML = `
-                <td class="px-4 py-3">
-                    <div class="text-sm font-medium text-gray-900">${item.account_name}</div>
-                    <div class="text-xs text-gray-500">${formatCategory(item.category)}</div>
-                </td>
-                <td class="px-4 py-3 text-sm text-center text-gray-600">${item.depreciation_rate}%</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(item.opening_value)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.additions)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(item.depreciation_expected)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(item.depreciation_actual)}</td>
-                <td class="px-4 py-3 text-sm text-right ${item.variance === 0 ? 'text-gray-600' : item.variance > 0 ? 'text-green-600' : 'text-red-600'}">
-                    ${formatCurrency(item.variance)} (${item.variance_pct}%)
-                </td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(item.closing_value)}</td>
-                <td class="px-4 py-3 text-center">${statusBadge}</td>
-            `;
+            tr.appendChild(createAccountCell(item.account_name, formatCategory(item.category)));
+            tr.appendChild(createTextCell('px-4 py-3 text-sm text-center text-gray-600', `${item.depreciation_rate}%`));
+            tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(item.opening_value)));
+            tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(item.additions)));
+            tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(item.depreciation_expected)));
+            tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(item.depreciation_actual)));
+            tr.appendChild(createTextCell(
+                `px-4 py-3 text-sm text-right ${item.variance === 0 ? 'text-gray-600' : item.variance > 0 ? 'text-green-600' : 'text-red-600'}`,
+                `${formatCurrency(item.variance)} (${item.variance_pct}%)`
+            ));
+            tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(item.closing_value)));
+            tr.appendChild(createStatusCell(item.status));
             tbody.appendChild(tr);
         });
 
-        // Totals row
-        tfoot.innerHTML = `
-            <tr class="font-semibold">
-                <td class="px-4 py-3 text-sm text-gray-900" colspan="2">Total</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(totals.total_opening)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(totals.total_additions)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(totals.total_depreciation_expected)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(totals.total_depreciation_actual)}</td>
-                <td class="px-4 py-3 text-sm text-right ${totals.total_variance === 0 ? 'text-gray-600' : totals.total_variance > 0 ? 'text-green-600' : 'text-red-600'}">${formatCurrency(totals.total_variance)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(totals.total_closing)}</td>
-                <td class="px-4 py-3"></td>
-            </tr>
-        `;
+        renderTotalsRow(tfoot, totals);
     }
 }
 
@@ -436,7 +411,11 @@ function downloadExcel() {
         return;
     }
 
-    window.location.href = `/depreciation-calc/api/download?from_date=${fromDate}&to_date=${toDate}`;
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+    });
+    window.location.href = `/depreciation-calc/api/download?${params.toString()}`;
 }
 
 function formatCurrency(amount) {
@@ -449,6 +428,94 @@ function formatCurrency(amount) {
 function formatCategory(category) {
     if (!category) return '';
     return category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function createTextCell(className, value) {
+    const td = document.createElement('td');
+    td.className = className;
+    td.textContent = String(value ?? '');
+    return td;
+}
+
+function createAccountCell(accountName, category) {
+    const td = document.createElement('td');
+    td.className = 'px-4 py-3';
+
+    const name = document.createElement('div');
+    name.className = 'text-sm font-medium text-gray-900';
+    name.textContent = String(accountName ?? '');
+
+    const categoryEl = document.createElement('div');
+    categoryEl.className = 'text-xs text-gray-500';
+    categoryEl.textContent = String(category ?? '');
+
+    td.appendChild(name);
+    td.appendChild(categoryEl);
+    return td;
+}
+
+function createStatusCell(status) {
+    const td = document.createElement('td');
+    td.className = 'px-4 py-3 text-center';
+
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+
+    switch (status) {
+        case 'ok':
+            badge.classList.add('bg-green-100', 'text-green-800');
+            badge.textContent = 'OK';
+            break;
+        case 'warning':
+            badge.classList.add('bg-yellow-100', 'text-yellow-800');
+            badge.textContent = 'Warning';
+            break;
+        case 'error':
+            badge.classList.add('bg-red-100', 'text-red-800');
+            badge.textContent = 'Variance';
+            break;
+        default:
+            badge.classList.add('bg-gray-100', 'text-gray-700');
+            badge.textContent = 'Unknown';
+            break;
+    }
+
+    td.appendChild(badge);
+    return td;
+}
+
+function createEmptyCell(className) {
+    const td = document.createElement('td');
+    td.className = className;
+    return td;
+}
+
+function renderTotalsRow(tfoot, totals) {
+    tfoot.replaceChildren();
+
+    const row = document.createElement('tr');
+    row.className = 'font-semibold';
+
+    const labelCell = createTextCell('px-4 py-3 text-sm text-gray-900', 'Total');
+    labelCell.colSpan = 2;
+    row.appendChild(labelCell);
+
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(totals.total_opening)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(totals.total_additions)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(totals.total_depreciation_expected)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(totals.total_depreciation_actual)));
+
+    const varianceClass =
+        totals.total_variance === 0
+            ? 'px-4 py-3 text-sm text-right text-gray-600'
+            : totals.total_variance > 0
+                ? 'px-4 py-3 text-sm text-right text-green-600'
+                : 'px-4 py-3 text-sm text-right text-red-600';
+    row.appendChild(createTextCell(varianceClass, formatCurrency(totals.total_variance)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(totals.total_closing)));
+    row.appendChild(createEmptyCell('px-4 py-3'));
+
+    tfoot.appendChild(row);
 }
 </script>
 {% endblock %}

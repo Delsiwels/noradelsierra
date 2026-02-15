@@ -153,10 +153,16 @@ async function calculateFTC() {
     btn.disabled = true; btn.textContent = 'Calculating...';
 
     try {
-        let url = `/fuel-tax-credits/api/generate?from_date=${fromDate}&to_date=${toDate}&fuel_type=${fuelType}`;
-        if (manualLitres) url += `&litres=${manualLitres}`;
+        const params = new URLSearchParams({
+            from_date: fromDate,
+            to_date: toDate,
+            fuel_type: fuelType,
+        });
+        if (manualLitres) {
+            params.set('litres', manualLitres);
+        }
 
-        const resp = await fetch(url);
+        const resp = await fetch(`/fuel-tax-credits/api/generate?${params.toString()}`);
         const data = await resp.json();
         if (!resp.ok) {
             if (resp.status === 400 && data.error === 'Xero not connected') {
@@ -194,13 +200,11 @@ function renderResults(data) {
 
     invoices.forEach(inv => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm text-gray-900">${inv.date}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${inv.invoice_number || '-'}</td>
-            <td class="px-4 py-3 text-sm text-gray-900">${inv.contact}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(inv.amount)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(inv.gst)}</td>
-        `;
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-gray-900', inv.date));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', inv.invoice_number || '-'));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-gray-900', inv.contact));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(inv.amount)));
+        tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(inv.gst)));
         tbody.appendChild(tr);
     });
 }
@@ -209,12 +213,24 @@ function downloadExcel() {
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
     const fuelType = document.getElementById('fuelType').value;
-    window.location.href = `/fuel-tax-credits/api/download?from_date=${fromDate}&to_date=${toDate}&fuel_type=${fuelType}`;
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+        fuel_type: fuelType,
+    });
+    window.location.href = `/fuel-tax-credits/api/download?${params.toString()}`;
 }
 
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function createTextCell(className, value) {
+    const td = document.createElement('td');
+    td.className = className;
+    td.textContent = String(value ?? '');
+    return td;
 }
 </script>
 {% endblock %}
