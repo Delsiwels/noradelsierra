@@ -211,6 +211,14 @@ class TestAnalyticsEndpoints:
         data = response.get_json()
         assert data["period_days"] == 7
 
+    def test_get_skill_analytics_invalid_params(self, client):
+        """Test skill analytics with invalid query params."""
+        response = client.get("/api/analytics/skills?period=abc&limit=-1")
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
     def test_get_user_skill_stats(self, client, app):
         """Test GET /api/analytics/skills/user/<id> endpoint."""
         with app.app_context():
@@ -245,6 +253,14 @@ class TestAnalyticsEndpoints:
         data = response.get_json()
         assert data["success"] is True
         assert "summary" in data
+
+    def test_get_analytics_summary_invalid_period(self, client):
+        """Test analytics summary with invalid period query param."""
+        response = client.get("/api/analytics/summary?period=0")
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
 
 
 class TestAnalyticsServiceInit:

@@ -74,6 +74,30 @@ def login_required(f):
     return decorated_function
 
 
+def _parse_int_query_arg(
+    name: str,
+    *,
+    default: int,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    """Parse and validate integer query arguments."""
+    raw = request.args.get(name, None)
+    if raw in (None, ""):
+        value = default
+    else:
+        try:
+            value = int(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{name} must be an integer") from exc
+
+    if minimum is not None and value < minimum:
+        raise ValueError(f"{name} must be >= {minimum}")
+    if maximum is not None:
+        value = min(value, maximum)
+    return value
+
+
 # =============================================================================
 # API Routes
 # =============================================================================
@@ -100,8 +124,8 @@ def api_get_skill_analytics():
 
         service = get_analytics_service()
 
-        period_days = int(request.args.get("period", 30))
-        limit = min(int(request.args.get("limit", 10)), 50)
+        period_days = _parse_int_query_arg("period", default=30, minimum=1)
+        limit = _parse_int_query_arg("limit", default=10, minimum=1, maximum=50)
 
         top_skills = service.get_top_skills(period_days=period_days, limit=limit)
 
@@ -113,6 +137,8 @@ def api_get_skill_analytics():
             }
         )
 
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.exception(f"Error getting skill analytics: {e}")
         return jsonify({"error": "Failed to get skill analytics"}), 500
@@ -214,7 +240,7 @@ def api_get_analytics_summary():
 
         service = get_analytics_service()
 
-        period_days = int(request.args.get("period", 30))
+        period_days = _parse_int_query_arg("period", default=30, minimum=1)
         summary = service.get_summary(period_days=period_days)
 
         return jsonify(
@@ -224,6 +250,8 @@ def api_get_analytics_summary():
             }
         )
 
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.exception(f"Error getting analytics summary: {e}")
         return jsonify({"error": "Failed to get analytics summary"}), 500

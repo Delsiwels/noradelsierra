@@ -123,6 +123,30 @@ def validate_chat_request(data):
     return None, None
 
 
+def _parse_int_query_arg(
+    name: str,
+    *,
+    default: int,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    """Parse and validate integer query arguments."""
+    raw = request.args.get(name, None)
+    if raw in (None, ""):
+        value = default
+    else:
+        try:
+            value = int(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{name} must be an integer") from exc
+
+    if minimum is not None and value < minimum:
+        raise ValueError(f"{name} must be >= {minimum}")
+    if maximum is not None:
+        value = min(value, maximum)
+    return value
+
+
 # =============================================================================
 # API Routes
 # =============================================================================
@@ -434,6 +458,11 @@ def api_list_conversations():
     try:
         from webapp.models import Conversation
 
+        # Parse pagination params first so invalid input is rejected
+        # consistently in both testing and authenticated runtime.
+        limit = _parse_int_query_arg("limit", default=20, minimum=1, maximum=100)
+        offset = _parse_int_query_arg("offset", default=0, minimum=0)
+
         user = get_current_user()
         user_id = user.id if user else None
 
@@ -451,10 +480,6 @@ def api_list_conversations():
                 )
             return jsonify({"error": "Authentication required"}), 401
 
-        # Parse pagination params
-        limit = min(int(request.args.get("limit", 20)), 100)
-        offset = int(request.args.get("offset", 0))
-
         # Query conversations
         query = Conversation.query.filter_by(user_id=user_id).order_by(
             Conversation.updated_at.desc()
@@ -471,6 +496,8 @@ def api_list_conversations():
             }
         )
 
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.exception(f"Error listing conversations: {e}")
         return jsonify({"error": "Failed to list conversations"}), 500

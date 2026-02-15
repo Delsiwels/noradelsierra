@@ -242,6 +242,22 @@ class TestConversationEndpoints:
         assert data["conversations"] == []
         assert data["total"] == 0
 
+    def test_list_conversations_rejects_invalid_pagination(self, client):
+        """Test listing conversations with invalid pagination params."""
+        client.post(
+            "/api/auth/register",
+            json={
+                "email": "pager@test.com",
+                "password": "password123",
+                "name": "Pager",
+            },
+        )
+        response = client.get("/api/conversations?limit=abc&offset=-1")
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
     def test_get_conversation_not_found(self, client):
         """Test getting non-existent conversation."""
         response = client.get("/api/conversations/nonexistent")

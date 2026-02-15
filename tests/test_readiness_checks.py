@@ -692,6 +692,13 @@ class TestReadinessBlueprint:
         assert res.status_code == 200
         assert "history" in res.get_json()
 
+    def test_get_history_invalid_limit(self, client, db):
+        """Test history endpoint with invalid limit query param."""
+        _register(client)
+        res = client.get("/api/readiness/history?limit=bad")
+        assert res.status_code == 400
+        assert "error" in res.get_json()
+
     def test_get_status(self, client, db):
         """Test getting quick status."""
         _register(client)

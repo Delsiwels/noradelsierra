@@ -27,6 +27,30 @@ logger = logging.getLogger(__name__)
 readiness_bp = Blueprint("readiness", __name__)
 
 
+def _parse_int_query_arg(
+    name: str,
+    *,
+    default: int,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    """Parse and validate integer query arguments."""
+    raw = request.args.get(name, None)
+    if raw in (None, ""):
+        value = default
+    else:
+        try:
+            value = int(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{name} must be an integer") from exc
+
+    if minimum is not None and value < minimum:
+        raise ValueError(f"{name} must be >= {minimum}")
+    if maximum is not None:
+        value = min(value, maximum)
+    return value
+
+
 def _get_tenant() -> tuple[str | None, str | None]:
     """Read tenant_id / tenant_name from session's Xero connection."""
     conn: dict = session.get("xero_connection", {})
@@ -157,7 +181,7 @@ def api_get_history():
 
         from webapp.services.readiness_checks import get_checklist_history
 
-        limit = min(int(request.args.get("limit", 12)), 50)
+        limit = _parse_int_query_arg("limit", default=12, minimum=1, maximum=50)
         history = get_checklist_history(team_id, limit=limit, tenant_id=tenant_id)
 
         return jsonify(
@@ -167,6 +191,8 @@ def api_get_history():
             }
         )
 
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.exception(f"Error getting history: {e}")
         return jsonify({"error": "Failed to get history"}), 500
