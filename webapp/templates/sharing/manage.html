@@ -1341,12 +1341,13 @@
         `;
 
         clientGroups.forEach(group => {
+            const safeGroupId = escapeHtml(String(group.id ?? ''));
             const count = group.clientIds.length;
             html += `
-                <button type="button" class="group-tab ${activeGroup === group.id ? 'active' : ''}" data-group="${group.id}">
+                <button type="button" class="group-tab ${activeGroup === group.id ? 'active' : ''}" data-group="${safeGroupId}">
                     ${escapeHtml(group.name)}
                     <span class="group-count">${count}</span>
-                    <span class="group-tab-delete" data-delete="${group.id}" title="Delete group">
+                    <span class="group-tab-delete" data-delete="${safeGroupId}" title="Delete group">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -1413,7 +1414,7 @@
             `;
         } else {
             container.innerHTML = clientGroups.map(group => `
-                <button type="button" class="dropdown-item" data-add-to-group="${group.id}">
+                <button type="button" class="dropdown-item" data-add-to-group="${escapeHtml(String(group.id ?? ''))}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/>
                     </svg>
@@ -1597,8 +1598,9 @@
         list.innerHTML = filtered.map(client => {
             const isSelected = selectedClients.has(client.id);
             const lastUsed = client.lastUsed ? new Date(client.lastUsed).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : '';
+            const safeClientId = escapeHtml(String(client.id ?? ''));
             return `
-                <li class="client-item ${isSelected ? 'selected' : ''}" data-id="${client.id}">
+                <li class="client-item ${isSelected ? 'selected' : ''}" data-id="${safeClientId}">
                     <div class="client-checkbox">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
