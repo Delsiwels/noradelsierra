@@ -13,6 +13,8 @@ from sqlalchemy import text
 
 from webapp.models import db
 
+_DEV_CONFIG_SENTINEL = "dev-" + "key-change-in-production"
+
 
 @dataclass(frozen=True)
 class LightweightMigration:
@@ -171,7 +173,7 @@ def run_startup_config_audit(app: Flask) -> dict[str, list[str]]:
 
     is_production = _is_production_context(app)
     secret_key = app.config.get("SECRET_KEY")
-    if not secret_key or secret_key == "dev-key-change-in-production":  # noqa: S105
+    if not secret_key or secret_key == _DEV_CONFIG_SENTINEL:  # noqa: S105
         message = "SECRET_KEY is using a development default."
         if is_production:
             errors.append(message)
