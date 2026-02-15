@@ -23,25 +23,45 @@ async function loadHistory() {
         container.innerHTML = '<p class="text-gray-500">No checklist history yet.</p>';
         return;
     }
-    container.innerHTML = data.history.map(h => {
+    container.innerHTML = '';
+    data.history.forEach(h => {
         const items = h.items || [];
         const completed = items.filter(i => i.completed).length;
-        return `
-        <div class="bg-white rounded-lg shadow p-4">
-            <div class="flex justify-between items-center">
-                <div>
-                    <span class="font-medium">${h.checklist_type === 'eofy' ? 'EOFY' : 'Month-End'}</span>
-                    <span class="text-gray-500 text-sm ml-2">${h.period}</span>
-                </div>
-                <div class="text-sm">
-                    <span class="${h.completed_at ? 'text-green-600' : 'text-yellow-600'}">
-                        ${completed}/${items.length} items
-                    </span>
-                    ${h.completed_at ? '<span class="text-green-600 ml-2">Completed</span>' : ''}
-                </div>
-            </div>
-        </div>`;
-    }).join('');
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow p-4';
+
+        const header = document.createElement('div');
+        header.className = 'flex justify-between items-center';
+
+        const left = document.createElement('div');
+        const typeLabel = document.createElement('span');
+        typeLabel.className = 'font-medium';
+        typeLabel.textContent = h.checklist_type === 'eofy' ? 'EOFY' : 'Month-End';
+        const period = document.createElement('span');
+        period.className = 'text-gray-500 text-sm ml-2';
+        period.textContent = String(h.period ?? '');
+        left.appendChild(typeLabel);
+        left.appendChild(period);
+
+        const right = document.createElement('div');
+        right.className = 'text-sm';
+        const count = document.createElement('span');
+        count.className = h.completed_at ? 'text-green-600' : 'text-yellow-600';
+        count.textContent = `${completed}/${items.length} items`;
+        right.appendChild(count);
+
+        if (h.completed_at) {
+            const completedBadge = document.createElement('span');
+            completedBadge.className = 'text-green-600 ml-2';
+            completedBadge.textContent = 'Completed';
+            right.appendChild(completedBadge);
+        }
+
+        header.appendChild(left);
+        header.appendChild(right);
+        card.appendChild(header);
+        container.appendChild(card);
+    });
 }
 loadHistory();
 </script>

@@ -757,6 +757,8 @@
             const initials = team.name.split(' ').map(n => n[0]).join('').substring(0, 2);
             const colorVariant = colorVariants[index % colorVariants.length];
             const sharedDate = st.shared_at ? new Date(st.shared_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+            const teamId = encodeURIComponent(String(team.id ?? ''));
+            const accessLevelLabel = st.access_level === 'read_only' ? 'Read Only' : String(st.access_level ?? '');
 
             const isExpiring = st.expires_at && (() => {
                 const daysUntil = Math.ceil((new Date(st.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
@@ -775,7 +777,7 @@
                             <div class="client-name">${escapeHtml(team.name)}</div>
                             <div class="client-meta">ABN: ${escapeHtml(team.abn || 'Not provided')}</div>
                         </div>
-                        <span class="client-badge ${isExpiring ? 'warning' : ''}">${isExpiring ? 'Expiring' : st.access_level === 'read_only' ? 'Read Only' : st.access_level}</span>
+                        <span class="client-badge ${isExpiring ? 'warning' : ''}">${isExpiring ? 'Expiring' : escapeHtml(accessLevelLabel)}</span>
                     </div>
                     <div class="client-body">
                         <div class="client-stats">
@@ -800,7 +802,7 @@
                                 Shared ${sharedDate}${expiresText ? ` &middot; ${expiresText}` : ''}
                             </div>
                             <div class="client-actions">
-                                <a href="/chat?team=${team.id}" class="btn-sm btn-sm-primary">
+                                <a href="/chat?team=${teamId}" class="btn-sm btn-sm-primary">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                                     </svg>
@@ -826,13 +828,15 @@
             const team = st.team;
             const initials = team.name.split(' ').map(n => n[0]).join('').substring(0, 2);
             const sharedDate = st.shared_at ? new Date(st.shared_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            const teamId = escapeHtml(String(team.id ?? ''));
+            const accessLevelLabel = st.access_level === 'read_only' ? 'Read Only' : String(st.access_level ?? '');
 
             return `
-                <div class="client-list-item" onclick="window.location.href='/chat?team=${team.id}'">
+                <div class="client-list-item" data-team-id="${teamId}">
                     <div class="client-list-logo">${escapeHtml(initials)}</div>
                     <div class="client-list-info">
                         <div class="client-list-name">${escapeHtml(team.name)}</div>
-                        <div class="client-list-meta">Shared ${sharedDate} &middot; ${st.access_level === 'read_only' ? 'Read Only' : st.access_level}</div>
+                        <div class="client-list-meta">Shared ${sharedDate} &middot; ${escapeHtml(accessLevelLabel)}</div>
                     </div>
                     <div class="client-list-stats">
                         <div class="client-list-stat">
@@ -852,6 +856,13 @@
                 </div>
             `;
         }).join('');
+
+        container.querySelectorAll('.client-list-item[data-team-id]').forEach(item => {
+            item.addEventListener('click', () => {
+                const teamId = item.getAttribute('data-team-id') || '';
+                window.location.href = `/chat?team=${encodeURIComponent(teamId)}`;
+            });
+        });
     }
 
     function updateStats(total, active, basDue, expiring) {
