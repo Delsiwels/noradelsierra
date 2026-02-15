@@ -157,7 +157,12 @@ async function generateInstalment() {
     btn.disabled = true; btn.textContent = 'Generating...';
 
     try {
-        const resp = await fetch(`/payg-instalment/api/generate?from_date=${fromDate}&to_date=${toDate}&rate=${rate}`);
+        const params = new URLSearchParams({
+            from_date: fromDate,
+            to_date: toDate,
+            rate: rate,
+        });
+        const resp = await fetch(`/payg-instalment/api/generate?${params.toString()}`);
         const data = await resp.json();
         if (!resp.ok) {
             if (resp.status === 400 && data.error === 'Xero not connected') {
@@ -200,7 +205,11 @@ function downloadExcel() {
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
     if (!fromDate || !toDate) { alert('Select dates first'); return; }
-    window.location.href = `/payg-instalment/api/download?from_date=${fromDate}&to_date=${toDate}`;
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+    });
+    window.location.href = `/payg-instalment/api/download?${params.toString()}`;
 }
 
 function formatCurrency(amount) {
