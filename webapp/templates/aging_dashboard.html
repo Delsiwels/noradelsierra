@@ -350,17 +350,40 @@ function renderDistributionChart(type, summary) {
     const chart = document.getElementById(type + 'DistributionChart');
     const total = summary.total || 1;
 
-    const currentPct = (summary.current || 0) / total * 100;
-    const days30Pct = (summary.days_30 || 0) / total * 100;
-    const days60Pct = (summary.days_60 || 0) / total * 100;
-    const days90Pct = (summary.days_90_plus || 0) / total * 100;
+    const currentPct = safePercent((summary.current || 0) / total * 100);
+    const days30Pct = safePercent((summary.days_30 || 0) / total * 100);
+    const days60Pct = safePercent((summary.days_60 || 0) / total * 100);
+    const days90Pct = safePercent((summary.days_90_plus || 0) / total * 100);
 
-    chart.innerHTML = `
-        <div class="bg-green-500" style="width: ${currentPct}%" title="Current: ${formatCurrency(summary.current)}"></div>
-        <div class="bg-yellow-400" style="width: ${days30Pct}%" title="30 Days: ${formatCurrency(summary.days_30)}"></div>
-        <div class="bg-orange-500" style="width: ${days60Pct}%" title="60 Days: ${formatCurrency(summary.days_60)}"></div>
-        <div class="bg-red-500" style="width: ${days90Pct}%" title="90+ Days: ${formatCurrency(summary.days_90_plus)}"></div>
-    `;
+    chart.innerHTML = '';
+    chart.appendChild(
+        createChartSegment(
+            'bg-green-500',
+            currentPct,
+            `Current: ${formatCurrency(summary.current)}`
+        )
+    );
+    chart.appendChild(
+        createChartSegment(
+            'bg-yellow-400',
+            days30Pct,
+            `30 Days: ${formatCurrency(summary.days_30)}`
+        )
+    );
+    chart.appendChild(
+        createChartSegment(
+            'bg-orange-500',
+            days60Pct,
+            `60 Days: ${formatCurrency(summary.days_60)}`
+        )
+    );
+    chart.appendChild(
+        createChartSegment(
+            'bg-red-500',
+            days90Pct,
+            `90+ Days: ${formatCurrency(summary.days_90_plus)}`
+        )
+    );
 }
 
 function renderTable(type, contacts) {
@@ -368,7 +391,16 @@ function renderTable(type, contacts) {
     tbody.innerHTML = '';
 
     if (contacts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No ${type} data available</td></tr>`;
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.className = 'px-4 py-8 text-center text-gray-500';
+        td.textContent =
+            type === 'receivables'
+                ? 'No receivables data available'
+                : 'No payables data available';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
         return;
     }
 
@@ -453,6 +485,20 @@ function createTextCell(className, value) {
     td.className = className;
     td.textContent = String(value ?? '');
     return td;
+}
+
+function safePercent(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return 0;
+    return Math.max(0, Math.min(100, num));
+}
+
+function createChartSegment(className, widthPercent, title) {
+    const segment = document.createElement('div');
+    segment.className = className;
+    segment.style.width = `${widthPercent}%`;
+    segment.title = String(title ?? '');
+    return segment;
 }
 </script>
 {% endblock %}
