@@ -85,13 +85,85 @@
             margin-left: 64px;
             transition: margin-left 0.2s ease;
         }
+        .mobile-sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 60;
+            width: 44px;
+            height: 44px;
+            border: 1px solid #D1D5DB;
+            border-radius: 10px;
+            background: #FFFFFF;
+            color: #111827;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+        .mobile-sidebar-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+        .mobile-sidebar-overlay {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: min(84vw, 280px);
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+                z-index: 50;
+            }
+            .sidebar:hover, .sidebar.expanded {
+                width: min(84vw, 280px);
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .sidebar.mobile-open .sidebar-item span,
+            .sidebar.mobile-open .sidebar-section-title,
+            .sidebar.mobile-open .logo-text {
+                opacity: 1 !important;
+            }
+            .main-with-sidebar {
+                margin-left: 0;
+            }
+            .mobile-sidebar-toggle {
+                display: flex;
+            }
+            .mobile-sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                border: 0;
+                background: rgba(17, 24, 39, 0.45);
+                z-index: 45;
+            }
+            .mobile-sidebar-overlay.open {
+                display: block;
+            }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
     {% if current_user and current_user.is_authenticated %}
+    <button id="mobileSidebarToggle"
+            class="mobile-sidebar-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-controls="appSidebar"
+            aria-expanded="false">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+    </button>
+    <button id="mobileSidebarOverlay"
+            class="mobile-sidebar-overlay"
+            type="button"
+            aria-label="Close navigation menu"></button>
     <!-- Sidebar -->
-    <aside class="sidebar fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 flex flex-col">
+    <aside id="appSidebar" class="sidebar fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 flex flex-col">
         <!-- Logo -->
         <div class="p-4 border-b border-gray-200">
             <a href="/dashboard" class="flex items-center">
@@ -101,7 +173,7 @@
                     <rect x="4" y="18" width="10" height="10" rx="2"/>
                     <rect x="18" y="18" width="10" height="10" rx="2"/>
                 </svg>
-                <span class="ml-3 text-xl font-bold text-primary" style="opacity: 0; transition: opacity 0.15s;">FinQL</span>
+                <span class="logo-text ml-3 text-xl font-bold text-primary" style="opacity: 0; transition: opacity 0.15s;">FinQL</span>
             </a>
         </div>
 
@@ -304,6 +376,64 @@
             </div>
         </div>
     </footer>
+
+    {% if current_user and current_user.is_authenticated %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('appSidebar');
+            const sidebarToggle = document.getElementById('mobileSidebarToggle');
+            const sidebarOverlay = document.getElementById('mobileSidebarOverlay');
+            const mobileQuery = window.matchMedia('(max-width: 768px)');
+
+            if (!sidebar || !sidebarToggle || !sidebarOverlay) {
+                return;
+            }
+
+            function setSidebarOpenState(isOpen) {
+                const shouldOpen = Boolean(isOpen) && mobileQuery.matches;
+                sidebar.classList.toggle('mobile-open', shouldOpen);
+                sidebarOverlay.classList.toggle('open', shouldOpen);
+                sidebarToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+                document.body.style.overflow = shouldOpen ? 'hidden' : '';
+            }
+
+            function closeSidebar() {
+                setSidebarOpenState(false);
+            }
+
+            sidebarToggle.addEventListener('click', function() {
+                const currentlyOpen = sidebar.classList.contains('mobile-open');
+                setSidebarOpenState(!currentlyOpen);
+            });
+
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+
+            sidebar.querySelectorAll('a, button').forEach(function(element) {
+                element.addEventListener('click', function() {
+                    closeSidebar();
+                });
+            });
+
+            function handleViewportChange() {
+                if (!mobileQuery.matches) {
+                    closeSidebar();
+                }
+            }
+
+            if (typeof mobileQuery.addEventListener === 'function') {
+                mobileQuery.addEventListener('change', handleViewportChange);
+            } else if (typeof mobileQuery.addListener === 'function') {
+                mobileQuery.addListener(handleViewportChange);
+            }
+        });
+    </script>
+    {% endif %}
 
     {% block extra_scripts %}{% endblock %}
 </body>
