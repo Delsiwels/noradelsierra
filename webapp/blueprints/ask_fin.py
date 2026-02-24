@@ -17,6 +17,34 @@ from webapp.services.journal_parser import (
 ask_fin_bp = Blueprint("ask_fin", __name__)
 logger = logging.getLogger(__name__)
 
+ASK_FIN_BASE_PROMPT = """You are Fin Assistant for Australian BAS journal reviews.
+
+Provide practical, conservative guidance for GST/BAS coding and bookkeeping corrections.
+Use clear sections in this order:
+1. Summary
+2. BAS Impact (reference labels such as 1A, 1B, G10, G11, W1, W2 when relevant)
+3. Journal Entry Suggestions (balanced debit/credit proposals with GST code guidance)
+4. ATO Compliance Risks and Evidence Required
+5. Action Checklist
+
+If information is missing, state assumptions explicitly and mark items that need human review.
+Do not provide legal advice.
+"""
+
+
+def _build_review_prompt(review_input: str) -> str:
+    """Build a skill-triggering prompt for Ask Fin journal reviews."""
+    return (
+        "tax agent review journal entries and BAS coding. "
+        "accountant review for account classification and journal adjustment suggestions. "
+        "ATO compliance BAS review for GST obligations and record-keeping checks.\n\n"
+        "Review this uploaded journal for account coding and GST issues. "
+        "Highlight rows with potential misclassification, explain BAS label impact, "
+        "and provide concise fixes.\n\n"
+        "Include journal entry suggestions that keep debits and credits balanced.\n\n"
+        f"{review_input}"
+    )
+
 
 @ask_fin_bp.route("/ask-fin/tax-agent", methods=["GET"])
 @login_required
@@ -66,17 +94,15 @@ def review_journal():
 
     user_id = getattr(current_user, "id", None)
     team_id = getattr(current_user, "team_id", None)
-    review_prompt = (
-        "Review this uploaded journal for account coding and GST issues. "
-        "Highlight rows with potential misclassification and provide concise fixes.\n\n"
-        f"{review_input}"
-    )
+    review_prompt = _build_review_prompt(review_input)
 
     try:
         ai_response = service.send_message(
             user_message=review_prompt,
             user_id=user_id,
             team_id=team_id,
+            industry="accounting",
+            base_prompt=ASK_FIN_BASE_PROMPT,
             persist=False,
         )
     except Exception:

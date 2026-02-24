@@ -182,12 +182,14 @@ def test_review_journal_returns_parsed_summary(client):
 
 def test_review_journal_returns_ai_review_when_service_available(client, monkeypatch):
     _register(client)
+    captured: dict[str, str] = {}
 
     class _StubService:
-        def send_message(self, **_kwargs):
+        def send_message(self, **kwargs):
+            captured.update(kwargs)
             return ChatResponse(
                 content="Detected one GST coding issue on row 2.",
-                skills_used=["tax_agent"],
+                skills_used=["tax_agent", "accountant", "ato_compliance"],
                 model="stub-model",
                 usage={"input": 10, "output": 15},
             )
@@ -206,7 +208,13 @@ def test_review_journal_returns_ai_review_when_service_available(client, monkeyp
     payload = response.get_json()
     assert payload["review"] == "Detected one GST coding issue on row 2."
     assert payload["model"] == "stub-model"
-    assert payload["skills_used"] == ["tax_agent"]
+    assert payload["skills_used"] == ["tax_agent", "accountant", "ato_compliance"]
+    assert captured["industry"] == "accounting"
+    assert "tax agent review journal entries" in captured["user_message"].lower()
+    assert "accountant review" in captured["user_message"].lower()
+    assert "ato compliance" in captured["user_message"].lower()
+    assert "journal entry suggestions" in captured["user_message"].lower()
+    assert "BAS Impact" in captured["base_prompt"]
 
 
 def test_review_journal_returns_503_when_ai_review_fails(client, monkeypatch):

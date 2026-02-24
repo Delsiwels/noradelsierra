@@ -1,15 +1,193 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ask Fin Tax Agent</title>
-  </head>
-  <body>
-    <nav>Ask Fin</nav>
-    <main>
-      <h1>Tax Agent</h1>
-      <p>Welcome, {{ display_name }}. Upload a CSV journal for review.</p>
-    </main>
-  </body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Ask Fin Tax Agent - BAS Reviewer{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="border-b border-gray-200 px-6 py-5">
+            <p class="text-xs font-semibold tracking-wider text-primary uppercase">Ask Fin</p>
+            <h1 class="mt-1 text-2xl font-semibold text-gray-900">Tax Agent</h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Welcome, {{ display_name }}. Upload a CSV journal to run BAS-focused coding, GST, and compliance review.
+            </p>
+        </div>
+
+        <div class="px-6 py-6 space-y-6">
+            <form id="journal-review-form" class="space-y-4" novalidate>
+                <div>
+                    <label for="journal-file" class="block text-sm font-medium text-gray-700">Journal CSV file</label>
+                    <input
+                        id="journal-file"
+                        name="file"
+                        type="file"
+                        accept=".csv,text/csv"
+                        required
+                        class="mt-2 block w-full text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
+                    />
+                    <p class="mt-2 text-xs text-gray-500">
+                        Expected columns include Date, Account, Debit, Credit, with optional Description and GST Code.
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button
+                        id="review-submit"
+                        type="submit"
+                        class="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Review Journal
+                    </button>
+                    <span id="review-status" class="text-xs text-gray-500"></span>
+                </div>
+            </form>
+
+            <div id="review-error" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+
+            <section id="warnings-panel" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
+                <h2 class="text-sm font-semibold text-amber-900">Import Warnings</h2>
+                <ul id="warnings-list" class="mt-2 list-disc pl-5 text-sm text-amber-900"></ul>
+            </section>
+
+            <section id="summary-panel" class="hidden rounded-lg border border-gray-200 bg-gray-50 px-4 py-4">
+                <h2 class="text-sm font-semibold text-gray-900">Journal Summary</h2>
+                <pre id="journal-summary" class="mt-2 whitespace-pre-wrap text-xs text-gray-700"></pre>
+            </section>
+
+            <section id="review-panel" class="hidden rounded-lg border border-gray-200 px-4 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-sm font-semibold text-gray-900">Assistant Review</h2>
+                    <div id="skills-used" class="flex flex-wrap gap-2"></div>
+                </div>
+                <pre id="review-output" class="mt-3 whitespace-pre-wrap text-sm text-gray-800"></pre>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    const form = document.getElementById('journal-review-form');
+    if (!form) {
+        return;
+    }
+
+    const fileInput = document.getElementById('journal-file');
+    const submitButton = document.getElementById('review-submit');
+    const statusText = document.getElementById('review-status');
+    const errorBox = document.getElementById('review-error');
+    const warningsPanel = document.getElementById('warnings-panel');
+    const warningsList = document.getElementById('warnings-list');
+    const summaryPanel = document.getElementById('summary-panel');
+    const summaryOutput = document.getElementById('journal-summary');
+    const reviewPanel = document.getElementById('review-panel');
+    const reviewOutput = document.getElementById('review-output');
+    const skillsUsed = document.getElementById('skills-used');
+
+    function setHidden(element, hidden) {
+        element.classList.toggle('hidden', hidden);
+    }
+
+    function resetOutput() {
+        errorBox.textContent = '';
+        warningsList.innerHTML = '';
+        summaryOutput.textContent = '';
+        reviewOutput.textContent = '';
+        skillsUsed.innerHTML = '';
+        setHidden(errorBox, true);
+        setHidden(warningsPanel, true);
+        setHidden(summaryPanel, true);
+        setHidden(reviewPanel, true);
+    }
+
+    function showError(message) {
+        errorBox.textContent = message;
+        setHidden(errorBox, false);
+    }
+
+    function renderWarnings(warnings) {
+        warningsList.innerHTML = '';
+        for (const warning of warnings) {
+            const item = document.createElement('li');
+            item.textContent = warning;
+            warningsList.appendChild(item);
+        }
+        setHidden(warningsPanel, warnings.length === 0);
+    }
+
+    function renderSkills(skills) {
+        skillsUsed.innerHTML = '';
+        for (const skill of skills) {
+            const chip = document.createElement('span');
+            chip.className = 'rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-800';
+            chip.textContent = skill;
+            skillsUsed.appendChild(chip);
+        }
+    }
+
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        resetOutput();
+
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) {
+            showError('Please select a CSV file to review.');
+            return;
+        }
+
+        submitButton.disabled = true;
+        statusText.textContent = 'Review in progress...';
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('/api/ask-fin/review-journal', {
+                method: 'POST',
+                body: formData
+            });
+
+            let payload = null;
+            try {
+                payload = await response.json();
+            } catch (_error) {
+                payload = { error: 'Unexpected response received from server.' };
+            }
+
+            if (Array.isArray(payload.warnings)) {
+                renderWarnings(payload.warnings);
+            }
+
+            if (payload.journal_summary) {
+                summaryOutput.textContent = payload.journal_summary;
+                setHidden(summaryPanel, false);
+            }
+
+            if (payload.review) {
+                reviewOutput.textContent = payload.review;
+                setHidden(reviewPanel, false);
+            }
+
+            if (Array.isArray(payload.skills_used) && payload.skills_used.length > 0) {
+                renderSkills(payload.skills_used);
+            }
+
+            if (!response.ok) {
+                showError(payload.error || 'Failed to review uploaded file.');
+                return;
+            }
+
+            if (!payload.review) {
+                showError('AI review is currently unavailable. Try again shortly.');
+            }
+        } catch (_error) {
+            showError('Failed to upload or review the file. Please try again.');
+        } finally {
+            submitButton.disabled = false;
+            statusText.textContent = '';
+        }
+    });
+})();
+</script>
+{% endblock %}

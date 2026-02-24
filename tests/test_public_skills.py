@@ -1,4 +1,4 @@
-"""Tests for public skills (tax_agent, accountant)."""
+"""Tests for public skills (tax_agent, accountant, ato_compliance, bas_review)."""
 
 from pathlib import Path
 
@@ -33,6 +33,18 @@ class TestPublicSkillsDirectory:
         accountant_dir = public_skills_dir / "accountant"
         assert accountant_dir.exists()
         assert (accountant_dir / "SKILL.md").exists()
+
+    def test_ato_compliance_skill_exists(self, public_skills_dir):
+        """Test that ato_compliance skill exists."""
+        ato_dir = public_skills_dir / "ato_compliance"
+        assert ato_dir.exists()
+        assert (ato_dir / "SKILL.md").exists()
+
+    def test_bas_review_skill_exists(self, public_skills_dir):
+        """Test that bas_review skill exists."""
+        bas_review_dir = public_skills_dir / "bas_review"
+        assert bas_review_dir.exists()
+        assert (bas_review_dir / "SKILL.md").exists()
 
 
 class TestTaxAgentSkill:
@@ -131,7 +143,7 @@ class TestAccountantSkill:
             "accountant" in skill.description.lower()
             or "financial" in skill.description.lower()
         )
-        assert skill.metadata.version == "1.0.0"
+        assert skill.metadata.version == "1.1.0"
 
     def test_accountant_triggers(self, loader, skill_path):
         """Test accountant skill triggers."""
@@ -152,6 +164,50 @@ class TestAccountantSkill:
         assert len(skill.content) > 100
 
 
+class TestBasReviewSkill:
+    """Tests for bas_review skill."""
+
+    @pytest.fixture
+    def skill_path(self):
+        """Get path to bas_review skill."""
+        return (
+            Path(__file__).parent.parent
+            / "webapp"
+            / "skills"
+            / "public"
+            / "bas_review"
+            / "SKILL.md"
+        )
+
+    @pytest.fixture
+    def loader(self):
+        """Create skill loader."""
+        return SkillLoader()
+
+    def test_bas_review_loads_successfully(self, loader, skill_path):
+        """Test that bas_review skill loads without errors."""
+        skill = loader.load_from_path(skill_path)
+
+        assert skill is not None
+        assert skill.name == "bas_review"
+
+    def test_bas_review_metadata(self, loader, skill_path):
+        """Test bas_review skill metadata."""
+        skill = loader.load_from_path(skill_path)
+
+        assert skill.metadata.name == "bas_review"
+        assert "bas" in skill.description.lower()
+        assert skill.metadata.version == "1.0.0"
+
+    def test_bas_review_triggers_include_bas(self, loader, skill_path):
+        """Test bas_review triggers include BAS review phrases."""
+        skill = loader.load_from_path(skill_path)
+
+        triggers = [t.lower() for t in skill.triggers]
+        assert "run bas review" in triggers
+        assert "review bas" in triggers
+
+
 class TestPublicSkillsDiscovery:
     """Tests for public skills discovery via registry."""
 
@@ -170,6 +226,8 @@ class TestPublicSkillsDiscovery:
             skill_names = [s.name for s in skills]
             assert "tax_agent" in skill_names
             assert "accountant" in skill_names
+            assert "ato_compliance" in skill_names
+            assert "bas_review" in skill_names
 
     def test_get_public_skill_by_name(self, app):
         """Test getting public skill by name."""
@@ -225,6 +283,30 @@ class TestPublicSkillsTriggerDetection:
 
             skill_names = [m.skill.name for m in matches]
             assert "tax_agent" in skill_names
+
+    def test_ato_compliance_triggers_compliance_skill(self, app):
+        """Test that compliance phrasing triggers ato_compliance skill."""
+        with app.app_context():
+            from webapp.skills import get_injector
+
+            injector = get_injector()
+
+            matches = injector.detect_skill_triggers("Need ATO compliance BAS review")
+
+            skill_names = [m.skill.name for m in matches]
+            assert "ato_compliance" in skill_names
+
+    def test_bas_review_phrase_triggers_bas_review_skill(self, app):
+        """Test that BAS review phrasing triggers bas_review skill."""
+        with app.app_context():
+            from webapp.skills import get_injector
+
+            injector = get_injector()
+
+            matches = injector.detect_skill_triggers("Please run bas review for this quarter")
+
+            skill_names = [m.skill.name for m in matches]
+            assert "bas_review" in skill_names
 
     def test_aasb_triggers_accountant(self, app):
         """Test that AASB mention triggers accountant."""
