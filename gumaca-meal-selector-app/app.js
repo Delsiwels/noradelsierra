@@ -1015,6 +1015,49 @@ function mealTagLabel(meal) {
   return 'family meal';
 }
 
+function mealIngredientsForFamily(meal) {
+  return meal.ingredients.map((ingredient) => {
+    const familyQty = ingredient.qty * state.settings.familySize;
+    return `${ingredient.name}: ${formatQuantity(familyQty, ingredient.unit)}`;
+  });
+}
+
+function mealDialogAvailable() {
+  return Boolean(
+    ui.mealDialog &&
+    ui.mealDialogSlot &&
+    ui.mealDialogTitle &&
+    ui.mealDialogMeta &&
+    ui.mealDialogIngredients &&
+    ui.mealDialogAdd &&
+    ui.mealDialogClose,
+  );
+}
+
+function showMealFallbackPrompt(day, mealTypeId, meal, slot) {
+  const ingredientLines = mealIngredientsForFamily(meal).join('\n');
+  const details = [
+    `${day} | ${mealTypeLabel(mealTypeId)}`,
+    meal.name,
+    `${formatCurrency(mealCostForFamily(meal))} per family`,
+    '',
+    'Ingredients:',
+    ingredientLines,
+  ].join('\n');
+
+  if (slot.selectedMealId === meal.id) {
+    window.alert(`${details}\n\nAlready in weekly menu.`);
+    return;
+  }
+
+  if (window.confirm(`${details}\n\nAdd to weekly menu?`)) {
+    state.slots[slotKey(day, mealTypeId)].selectedMealId = meal.id;
+    saveState();
+    renderPlanner();
+    renderSummaryAndGroceries();
+  }
+}
+
 function clearMealDialogState() {
   mealDialogState.day = null;
   mealDialogState.mealTypeId = null;
@@ -1023,7 +1066,7 @@ function clearMealDialogState() {
 }
 
 function closeMealDialog(restoreFocus = true) {
-  if (ui.mealDialog.hidden) {
+  if (!ui.mealDialog || ui.mealDialog.hidden) {
     return;
   }
 
@@ -1044,6 +1087,11 @@ function openMealDialog(day, mealTypeId, mealId, triggerButton = null) {
     return;
   }
 
+  if (!mealDialogAvailable()) {
+    showMealFallbackPrompt(day, mealTypeId, meal, slot);
+    return;
+  }
+
   mealDialogState.day = day;
   mealDialogState.mealTypeId = mealTypeId;
   mealDialogState.mealId = mealId;
@@ -1054,10 +1102,9 @@ function openMealDialog(day, mealTypeId, mealId, triggerButton = null) {
   ui.mealDialogMeta.textContent = `${formatCurrency(mealCostForFamily(meal))} per family | ${mealTagLabel(meal)}`;
 
   ui.mealDialogIngredients.innerHTML = '';
-  for (const ingredient of meal.ingredients) {
+  for (const line of mealIngredientsForFamily(meal)) {
     const item = document.createElement('li');
-    const familyQty = ingredient.qty * state.settings.familySize;
-    item.textContent = `${ingredient.name}: ${formatQuantity(familyQty, ingredient.unit)}`;
+    item.textContent = line;
     ui.mealDialogIngredients.appendChild(item);
   }
 
@@ -1525,20 +1572,26 @@ function bindEvents() {
     });
     });
 
-  ui.mealDialogBackdrop.addEventListener('click', () => {
-    closeMealDialog();
-  });
+  if (ui.mealDialogBackdrop) {
+    ui.mealDialogBackdrop.addEventListener('click', () => {
+      closeMealDialog();
+    });
+  }
 
-  ui.mealDialogClose.addEventListener('click', () => {
-    closeMealDialog();
-  });
+  if (ui.mealDialogClose) {
+    ui.mealDialogClose.addEventListener('click', () => {
+      closeMealDialog();
+    });
+  }
 
-  ui.mealDialogAdd.addEventListener('click', () => {
-    addDialogMealToWeeklyMenu();
-  });
+  if (ui.mealDialogAdd) {
+    ui.mealDialogAdd.addEventListener('click', () => {
+      addDialogMealToWeeklyMenu();
+    });
+  }
 
   window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !ui.mealDialog.hidden) {
+    if (event.key === 'Escape' && ui.mealDialog && !ui.mealDialog.hidden) {
       event.preventDefault();
       closeMealDialog();
     }
