@@ -763,6 +763,16 @@ function clamp(value, min, max) {
 }
 
 function populateFamilySizeOptions() {
+  if (!ui.familySize) {
+    return;
+  }
+
+  if (ui.familySize.tagName !== 'SELECT') {
+    ui.familySize.min = String(MIN_PAX);
+    ui.familySize.max = String(MAX_PAX);
+    return;
+  }
+
   ui.familySize.innerHTML = '';
   for (let pax = MIN_PAX; pax <= MAX_PAX; pax += 1) {
     const option = document.createElement('option');
@@ -778,7 +788,9 @@ function applyStateToInputs() {
   ui.avoidPork.checked = state.settings.avoidPork;
   ui.avoidSeafood.checked = state.settings.avoidSeafood;
   ui.preferVegetables.checked = state.settings.preferVegetables;
-  ui.kidsOnly.checked = state.settings.kidsOnly;
+  if (ui.kidsOnly) {
+    ui.kidsOnly.checked = state.settings.kidsOnly;
+  }
 }
 
 function readSettingsFromInputs() {
@@ -787,7 +799,7 @@ function readSettingsFromInputs() {
   state.settings.avoidPork = ui.avoidPork.checked;
   state.settings.avoidSeafood = ui.avoidSeafood.checked;
   state.settings.preferVegetables = ui.preferVegetables.checked;
-  state.settings.kidsOnly = ui.kidsOnly.checked;
+  state.settings.kidsOnly = ui.kidsOnly ? ui.kidsOnly.checked : false;
   ui.familySize.value = String(state.settings.familySize);
 }
 
@@ -1501,7 +1513,9 @@ function bindEvents() {
     renderPlanner();
   });
 
-  [ui.budgetMode, ui.avoidPork, ui.avoidSeafood, ui.preferVegetables, ui.kidsOnly].forEach((control) => {
+  [ui.budgetMode, ui.avoidPork, ui.avoidSeafood, ui.preferVegetables, ui.kidsOnly]
+    .filter(Boolean)
+    .forEach((control) => {
     control.addEventListener('change', () => {
       closeMealDialog(false);
       readSettingsFromInputs();
@@ -1509,7 +1523,7 @@ function bindEvents() {
       renderPlanner();
       renderSummaryAndGroceries();
     });
-  });
+    });
 
   ui.mealDialogBackdrop.addEventListener('click', () => {
     closeMealDialog();
