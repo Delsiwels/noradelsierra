@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gumaca Family Meal Selector</title>
+  <meta name="description" content="Suggest meals, select weekly meals, and generate grocery list with quantity and estimated price.">
+  <meta name="theme-color" content="#205a48">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gumaca Meals">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#planner">Skip to meal planner</a>
+  <main class="app-shell">
+    <header class="hero">
+      <p class="kicker">Gumaca, Quezon Province</p>
+      <h1>Family Meal Selector</h1>
+      <p class="hero-copy">Suggest meals, pick your weekly menu, then get a grocery list with quantities and estimated prices.</p>
+    </header>
+
+    <section class="panel controls" aria-labelledby="controls-title">
+      <div class="panel-header">
+        <h2 id="controls-title">Plan Settings</h2>
+      </div>
+      <div class="controls-grid">
+        <label>
+          Family size (pax)
+          <select id="familySize"></select>
+        </label>
+        <label>
+          Budget mode
+          <select id="budgetMode">
+            <option value="tight">Tight</option>
+            <option value="balanced" selected>Balanced</option>
+            <option value="generous">Generous</option>
+          </select>
+        </label>
+        <label class="check-row">
+          <input id="avoidPork" type="checkbox">
+          Avoid pork
+        </label>
+        <label class="check-row">
+          <input id="avoidSeafood" type="checkbox">
+          Avoid seafood
+        </label>
+        <label class="check-row">
+          <input id="preferVegetables" type="checkbox">
+          Prefer vegetable meals
+        </label>
+      </div>
+      <div class="control-actions">
+        <button id="generateButton" class="button primary" type="button">Suggest meals</button>
+        <button id="resetButton" class="button ghost" type="button">Reset week</button>
+        <button id="exportCsvButton" class="button secondary" type="button">Export CSV</button>
+      </div>
+    </section>
+
+    <section class="panel planner-panel" aria-labelledby="planner-title">
+      <div class="panel-header">
+        <h2 id="planner-title">Choose Meals For Each Day</h2>
+        <p id="plannerHint">Tap a meal to view ingredients, then add it to your weekly menu.</p>
+      </div>
+      <div id="planner" class="planner-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="panel summary" aria-labelledby="summary-title">
+      <div class="panel-header">
+        <h2 id="summary-title">Week Summary</h2>
+      </div>
+      <div class="stats">
+        <article class="stat-card">
+          <span>Total selected meals</span>
+          <strong id="statMeals">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Estimated weekly menu cost</span>
+          <strong id="statWeeklyCost">PHP 0.00</strong>
+        </article>
+        <article class="stat-card">
+          <span>Estimated daily average</span>
+          <strong id="statDailyCost">PHP 0.00</strong>
+        </article>
+      </div>
+      <div class="table-wrap">
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Breakfast</th>
+              <th>Lunch</th>
+              <th>Dinner</th>
+              <th>Est. day cost</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel groceries" aria-labelledby="grocery-title">
+      <div class="panel-header">
+        <h2 id="grocery-title">Grocery List: Quantity + Estimated Price</h2>
+        <p>Pricing is estimated using common public market rates around Gumaca and nearby Quezon municipalities.</p>
+      </div>
+      <div class="table-wrap">
+        <table id="groceryTable">
+          <thead>
+            <tr>
+              <th>Ingredient</th>
+              <th>Total quantity</th>
+              <th>Est. price</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="grocery-total">
+        <span>Estimated grocery total</span>
+        <strong id="groceryTotal">PHP 0.00</strong>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <p>Tip: On iPhone Safari, tap Share then Add to Home Screen to use this like an app.</p>
+      <p>Assumed pantry basics: salt, pepper, and small seasoning portions.</p>
+    </footer>
+  </main>
+
+  <div id="mealDialog" class="meal-dialog" hidden>
+    <button id="mealDialogBackdrop" class="meal-dialog-backdrop" type="button" aria-label="Close meal details"></button>
+    <section class="meal-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="mealDialogTitle">
+      <p id="mealDialogSlot" class="meal-dialog-slot"></p>
+      <h2 id="mealDialogTitle"></h2>
+      <p id="mealDialogMeta" class="meal-dialog-meta"></p>
+      <h3 class="meal-dialog-subtitle">Ingredients for your family size</h3>
+      <ul id="mealDialogIngredients" class="meal-dialog-ingredients"></ul>
+      <div class="meal-dialog-actions">
+        <button id="mealDialogClose" class="button ghost" type="button">Close</button>
+        <button id="mealDialogAdd" class="button primary" type="button">Add to weekly menu</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
