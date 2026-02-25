@@ -675,6 +675,7 @@ const state = {
   settings: {
     familySize: 6,
     budgetMode: 'balanced',
+    weeklyBudget: 0,
     avoidPork: false,
     avoidSeafood: false,
     preferVegetables: false,
@@ -688,11 +689,13 @@ const mealDialogState = {
   mealTypeId: null,
   mealId: null,
   triggerButton: null,
+  handlersBound: false,
 };
 
 const ui = {
   familySize: document.getElementById('familySize'),
   budgetMode: document.getElementById('budgetMode'),
+  weeklyBudget: document.getElementById('weeklyBudget'),
   avoidPork: document.getElementById('avoidPork'),
   avoidSeafood: document.getElementById('avoidSeafood'),
   preferVegetables: document.getElementById('preferVegetables'),
@@ -704,6 +707,7 @@ const ui = {
   statMeals: document.getElementById('statMeals'),
   statWeeklyCost: document.getElementById('statWeeklyCost'),
   statDailyCost: document.getElementById('statDailyCost'),
+  statBudgetStatus: document.getElementById('statBudgetStatus'),
   summaryTableBody: document.querySelector('#summaryTable tbody'),
   groceryTableBody: document.querySelector('#groceryTable tbody'),
   groceryTotal: document.getElementById('groceryTotal'),
@@ -739,6 +743,7 @@ function loadState() {
       if (['tight', 'balanced', 'generous'].includes(parsed.settings.budgetMode)) {
         state.settings.budgetMode = parsed.settings.budgetMode;
       }
+      state.settings.weeklyBudget = normalizeWeeklyBudget(parsed.settings.weeklyBudget);
 
       state.settings.avoidPork = Boolean(parsed.settings.avoidPork);
       state.settings.avoidSeafood = Boolean(parsed.settings.avoidSeafood);
@@ -760,6 +765,14 @@ function saveState() {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function normalizeWeeklyBudget(value) {
+  const budget = Number(value);
+  if (!Number.isFinite(budget) || budget <= 0) {
+    return 0;
+  }
+  return clamp(Math.round(budget), 100, 1000000);
 }
 
 function populateFamilySizeOptions() {
@@ -785,6 +798,7 @@ function populateFamilySizeOptions() {
 function applyStateToInputs() {
   ui.familySize.value = String(state.settings.familySize);
   ui.budgetMode.value = state.settings.budgetMode;
+  ui.weeklyBudget.value = state.settings.weeklyBudget ? String(state.settings.weeklyBudget) : '';
   ui.avoidPork.checked = state.settings.avoidPork;
   ui.avoidSeafood.checked = state.settings.avoidSeafood;
   ui.preferVegetables.checked = state.settings.preferVegetables;
@@ -796,10 +810,12 @@ function applyStateToInputs() {
 function readSettingsFromInputs() {
   state.settings.familySize = clamp(Math.round(Number(ui.familySize.value || 6)), MIN_PAX, MAX_PAX);
   state.settings.budgetMode = ui.budgetMode.value;
+  state.settings.weeklyBudget = normalizeWeeklyBudget(ui.weeklyBudget.value);
   state.settings.avoidPork = ui.avoidPork.checked;
   state.settings.avoidSeafood = ui.avoidSeafood.checked;
   state.settings.preferVegetables = ui.preferVegetables.checked;
   state.settings.kidsOnly = ui.kidsOnly ? ui.kidsOnly.checked : false;
+  ui.weeklyBudget.value = state.settings.weeklyBudget ? String(state.settings.weeklyBudget) : '';
   ui.familySize.value = String(state.settings.familySize);
 }
 
@@ -899,8 +915,16 @@ function mealCostForFamily(meal) {
   return mealCostPerPerson(meal) * state.settings.familySize;
 }
 
+function targetCostPerPerson() {
+  if (state.settings.weeklyBudget > 0) {
+    const mealSlotsPerWeek = DAYS.length * MEAL_TYPES.length;
+    return state.settings.weeklyBudget / Math.max(1, state.settings.familySize) / mealSlotsPerWeek;
+  }
+  return BUDGET_TARGET[state.settings.budgetMode];
+}
+
 function scoreMeal(meal, useCounts) {
-  const target = BUDGET_TARGET[state.settings.budgetMode];
+  const target = targetCostPerPerson();
   let score = Math.abs(mealCostPerPerson(meal) - target);
   score += (useCounts[meal.id] || 0) * 18;
 
@@ -1022,40 +1046,111 @@ function mealIngredientsForFamily(meal) {
   });
 }
 
-function mealDialogAvailable() {
-  return Boolean(
+function bindMealDialogControls() {
+  if (mealDialogState.handlersBound) {
+    return;
+  }
+  if (!ui.mealDialogBackdrop || !ui.mealDialogClose || !ui.mealDialogAdd) {
+    return;
+  }
+
+  ui.mealDialogBackdrop.addEventListener('click', () => {
+    closeMealDialog();
+  });
+
+  ui.mealDialogClose.addEventListener('click', () => {
+    closeMealDialog();
+  });
+
+  ui.mealDialogAdd.addEventListener('click', () => {
+    addDialogMealToWeeklyMenu();
+  });
+
+  mealDialogState.handlersBound = true;
+}
+
+function ensureMealDialogDom() {
+  if (
     ui.mealDialog &&
+    ui.mealDialogBackdrop &&
     ui.mealDialogSlot &&
     ui.mealDialogTitle &&
     ui.mealDialogMeta &&
     ui.mealDialogIngredients &&
-    ui.mealDialogAdd &&
-    ui.mealDialogClose,
-  );
-}
-
-function showMealFallbackPrompt(day, mealTypeId, meal, slot) {
-  const ingredientLines = mealIngredientsForFamily(meal).join('\n');
-  const details = [
-    `${day} | ${mealTypeLabel(mealTypeId)}`,
-    meal.name,
-    `${formatCurrency(mealCostForFamily(meal))} per family`,
-    '',
-    'Ingredients:',
-    ingredientLines,
-  ].join('\n');
-
-  if (slot.selectedMealId === meal.id) {
-    window.alert(`${details}\n\nAlready in weekly menu.`);
-    return;
+    ui.mealDialogClose &&
+    ui.mealDialogAdd
+  ) {
+    bindMealDialogControls();
+    return true;
   }
 
-  if (window.confirm(`${details}\n\nAdd to weekly menu?`)) {
-    state.slots[slotKey(day, mealTypeId)].selectedMealId = meal.id;
-    saveState();
-    renderPlanner();
-    renderSummaryAndGroceries();
-  }
+  const dialog = document.createElement('div');
+  dialog.id = 'mealDialog';
+  dialog.className = 'meal-dialog';
+  dialog.hidden = true;
+
+  const backdrop = document.createElement('button');
+  backdrop.id = 'mealDialogBackdrop';
+  backdrop.className = 'meal-dialog-backdrop';
+  backdrop.type = 'button';
+  backdrop.setAttribute('aria-label', 'Close meal details');
+
+  const panel = document.createElement('section');
+  panel.className = 'meal-dialog-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+  panel.setAttribute('aria-labelledby', 'mealDialogTitle');
+
+  const slot = document.createElement('p');
+  slot.id = 'mealDialogSlot';
+  slot.className = 'meal-dialog-slot';
+
+  const title = document.createElement('h2');
+  title.id = 'mealDialogTitle';
+
+  const meta = document.createElement('p');
+  meta.id = 'mealDialogMeta';
+  meta.className = 'meal-dialog-meta';
+
+  const subtitle = document.createElement('h3');
+  subtitle.className = 'meal-dialog-subtitle';
+  subtitle.textContent = 'Ingredients for your family size';
+
+  const ingredients = document.createElement('ul');
+  ingredients.id = 'mealDialogIngredients';
+  ingredients.className = 'meal-dialog-ingredients';
+
+  const actions = document.createElement('div');
+  actions.className = 'meal-dialog-actions';
+
+  const closeButton = document.createElement('button');
+  closeButton.id = 'mealDialogClose';
+  closeButton.className = 'button ghost';
+  closeButton.type = 'button';
+  closeButton.textContent = 'Close';
+
+  const addButton = document.createElement('button');
+  addButton.id = 'mealDialogAdd';
+  addButton.className = 'button primary';
+  addButton.type = 'button';
+  addButton.textContent = 'Add to weekly menu';
+
+  actions.append(closeButton, addButton);
+  panel.append(slot, title, meta, subtitle, ingredients, actions);
+  dialog.append(backdrop, panel);
+  document.body.appendChild(dialog);
+
+  ui.mealDialog = dialog;
+  ui.mealDialogBackdrop = backdrop;
+  ui.mealDialogSlot = slot;
+  ui.mealDialogTitle = title;
+  ui.mealDialogMeta = meta;
+  ui.mealDialogIngredients = ingredients;
+  ui.mealDialogClose = closeButton;
+  ui.mealDialogAdd = addButton;
+
+  bindMealDialogControls();
+  return true;
 }
 
 function clearMealDialogState() {
@@ -1087,8 +1182,7 @@ function openMealDialog(day, mealTypeId, mealId, triggerButton = null) {
     return;
   }
 
-  if (!mealDialogAvailable()) {
-    showMealFallbackPrompt(day, mealTypeId, meal, slot);
+  if (!ensureMealDialogDom()) {
     return;
   }
 
@@ -1398,6 +1492,18 @@ function renderSummaryAndGroceries() {
   ui.statMeals.textContent = String(totalMeals);
   ui.statWeeklyCost.textContent = formatCurrency(totalCost);
   ui.statDailyCost.textContent = formatCurrency(totalCost / DAYS.length);
+  if (state.settings.weeklyBudget > 0) {
+    const diff = totalCost - state.settings.weeklyBudget;
+    if (Math.abs(diff) < 1) {
+      ui.statBudgetStatus.textContent = 'On budget';
+    } else if (diff > 0) {
+      ui.statBudgetStatus.textContent = `Over by ${formatCurrency(diff)}`;
+    } else {
+      ui.statBudgetStatus.textContent = `Under by ${formatCurrency(Math.abs(diff))}`;
+    }
+  } else {
+    ui.statBudgetStatus.textContent = 'No target';
+  }
 
   const groceryRows = aggregateGroceries(grouped);
   const groceryGroups = groupGroceriesByCategory(groceryRows);
@@ -1522,6 +1628,7 @@ function resetPlanner() {
   state.settings = {
     familySize: 6,
     budgetMode: 'balanced',
+    weeklyBudget: 0,
     avoidPork: false,
     avoidSeafood: false,
     preferVegetables: false,
@@ -1560,35 +1667,19 @@ function bindEvents() {
     renderPlanner();
   });
 
-  [ui.budgetMode, ui.avoidPork, ui.avoidSeafood, ui.preferVegetables, ui.kidsOnly]
+  [ui.budgetMode, ui.weeklyBudget, ui.avoidPork, ui.avoidSeafood, ui.preferVegetables, ui.kidsOnly]
     .filter(Boolean)
     .forEach((control) => {
-    control.addEventListener('change', () => {
-      closeMealDialog(false);
-      readSettingsFromInputs();
-      regenerateWeek();
-      renderPlanner();
-      renderSummaryAndGroceries();
-    });
+      control.addEventListener('change', () => {
+        closeMealDialog(false);
+        readSettingsFromInputs();
+        regenerateWeek();
+        renderPlanner();
+        renderSummaryAndGroceries();
+      });
     });
 
-  if (ui.mealDialogBackdrop) {
-    ui.mealDialogBackdrop.addEventListener('click', () => {
-      closeMealDialog();
-    });
-  }
-
-  if (ui.mealDialogClose) {
-    ui.mealDialogClose.addEventListener('click', () => {
-      closeMealDialog();
-    });
-  }
-
-  if (ui.mealDialogAdd) {
-    ui.mealDialogAdd.addEventListener('click', () => {
-      addDialogMealToWeeklyMenu();
-    });
-  }
+  bindMealDialogControls();
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && ui.mealDialog && !ui.mealDialog.hidden) {
@@ -1601,7 +1692,7 @@ function bindEvents() {
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {
+      navigator.serviceWorker.register('./sw.js?v=20260226-ingredientsfix').catch(() => {
         // Fail silently for local file previews.
       });
     });

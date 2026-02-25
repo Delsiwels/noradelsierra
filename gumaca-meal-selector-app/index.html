@@ -67,6 +67,10 @@
             <option value="generous">Generous</option>
           </select>
         </label>
+        <label>
+          Weekly budget (PHP)
+          <input id="weeklyBudget" type="number" min="0" step="50" placeholder="e.g. 2000" inputmode="numeric">
+        </label>
         <label class="check-row">
           <input id="avoidPork" type="checkbox">
           Avoid pork
@@ -115,6 +119,10 @@
         <article class="stat-card">
           <span>Estimated daily average</span>
           <strong id="statDailyCost">PHP 0.00</strong>
+        </article>
+        <article class="stat-card">
+          <span>Budget status</span>
+          <strong id="statBudgetStatus">No target</strong>
         </article>
       </div>
       <div class="table-wrap">
@@ -177,6 +185,6 @@
     </section>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260226-ingredientsfix"></script>
 </body>
 </html>

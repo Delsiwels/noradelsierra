@@ -1,9 +1,10 @@
-const CACHE_NAME = 'gumaca-meals-v2';
+const CACHE_NAME = 'gumaca-meals-v3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './app.js?v=20260226-ingredientsfix',
   './manifest.json',
   './assets/icon.svg',
 ];

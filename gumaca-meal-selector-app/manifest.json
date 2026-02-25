@@ -1,0 +1,17 @@
+{
+  "name": "Gumaca Family Meal Selector",
+  "short_name": "Gumaca Meals",
+  "start_url": "./index.html?v=20260226-ingredientsfix",
+  "display": "standalone",
+  "background_color": "#f4e9d7",
+  "theme_color": "#205a48",
+  "description": "Filipino weekly meal selector with grocery quantity and estimated market pricing.",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
