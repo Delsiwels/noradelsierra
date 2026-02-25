@@ -146,6 +146,30 @@ const INGREDIENT_CATEGORY = {
   Bangus: 'seafood',
 };
 
+const KIDS_MEAL_IDS = new Set([
+  'pandesal-itlog-kamatis',
+  'champorado-tuyo',
+  'lugaw-tokwa',
+  'arroz-caldo-manok',
+  'tortang-talong-sinangag',
+  'sopas-manok',
+  'taho-saging',
+  'suman-itlog-saging',
+  'adobong-manok',
+  'tinolang-manok',
+  'pork-menudo',
+  'chicken-afritada',
+  'pancit-bihon-tokwa',
+  'sinigang-bangus',
+  'chicken-curry',
+  'tokwa-gulay-stirfry',
+  'pork-adobo',
+  'nilagang-baka',
+  'pancit-canton-gulay',
+  'chicken-adobo-sa-gata',
+  'chopsuey-tokwa',
+]);
+
 const MEALS = [
   {
     id: 'pandesal-itlog-kamatis',
@@ -654,6 +678,7 @@ const state = {
     avoidPork: false,
     avoidSeafood: false,
     preferVegetables: false,
+    kidsOnly: false,
   },
   slots: {},
 };
@@ -671,6 +696,7 @@ const ui = {
   avoidPork: document.getElementById('avoidPork'),
   avoidSeafood: document.getElementById('avoidSeafood'),
   preferVegetables: document.getElementById('preferVegetables'),
+  kidsOnly: document.getElementById('kidsOnly'),
   generateButton: document.getElementById('generateButton'),
   resetButton: document.getElementById('resetButton'),
   exportCsvButton: document.getElementById('exportCsvButton'),
@@ -717,6 +743,7 @@ function loadState() {
       state.settings.avoidPork = Boolean(parsed.settings.avoidPork);
       state.settings.avoidSeafood = Boolean(parsed.settings.avoidSeafood);
       state.settings.preferVegetables = Boolean(parsed.settings.preferVegetables);
+      state.settings.kidsOnly = Boolean(parsed.settings.kidsOnly);
     }
 
     if (parsed.slots && typeof parsed.slots === 'object') {
@@ -751,6 +778,7 @@ function applyStateToInputs() {
   ui.avoidPork.checked = state.settings.avoidPork;
   ui.avoidSeafood.checked = state.settings.avoidSeafood;
   ui.preferVegetables.checked = state.settings.preferVegetables;
+  ui.kidsOnly.checked = state.settings.kidsOnly;
 }
 
 function readSettingsFromInputs() {
@@ -759,6 +787,7 @@ function readSettingsFromInputs() {
   state.settings.avoidPork = ui.avoidPork.checked;
   state.settings.avoidSeafood = ui.avoidSeafood.checked;
   state.settings.preferVegetables = ui.preferVegetables.checked;
+  state.settings.kidsOnly = ui.kidsOnly.checked;
   ui.familySize.value = String(state.settings.familySize);
 }
 
@@ -813,10 +842,17 @@ function filteredMealsByType(mealType) {
     if (state.settings.avoidSeafood && meal.tags.includes('seafood')) {
       return false;
     }
+    if (state.settings.kidsOnly && !isKidsMeal(meal)) {
+      return false;
+    }
     return true;
   });
 
   return filtered.length ? filtered : MEALS.filter((meal) => meal.mealType === mealType);
+}
+
+function isKidsMeal(meal) {
+  return KIDS_MEAL_IDS.has(meal.id) || meal.tags.includes('kids');
 }
 
 function ingredientCost(ingredient) {
@@ -952,6 +988,9 @@ function mealTypeLabel(mealTypeId) {
 }
 
 function mealTagLabel(meal) {
+  if (isKidsMeal(meal)) {
+    return 'kid-friendly';
+  }
   if (meal.tags.includes('vegetarian')) {
     return 'vegetable-forward';
   }
@@ -1427,6 +1466,7 @@ function resetPlanner() {
     avoidPork: false,
     avoidSeafood: false,
     preferVegetables: false,
+    kidsOnly: false,
   };
   state.slots = {};
   applyStateToInputs();
@@ -1461,7 +1501,7 @@ function bindEvents() {
     renderPlanner();
   });
 
-  [ui.budgetMode, ui.avoidPork, ui.avoidSeafood, ui.preferVegetables].forEach((control) => {
+  [ui.budgetMode, ui.avoidPork, ui.avoidSeafood, ui.preferVegetables, ui.kidsOnly].forEach((control) => {
     control.addEventListener('change', () => {
       closeMealDialog(false);
       readSettingsFromInputs();
