@@ -239,38 +239,6 @@ class ChecklistComment(db.Model):  # type: ignore[name-defined]
         return f"<ChecklistComment {self.item_key} by {self.user_id[:8]}>"
 
 
-class PettyCashTransaction(db.Model):  # type: ignore[name-defined]
-    """Petty cash transaction record."""
-
-    __tablename__ = "petty_cash_transactions"
-
-    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    team_id = db.Column(db.String(36), nullable=False, index=True)
-    user_id = db.Column(db.String(36), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    transaction_type = db.Column(db.String(3), nullable=False)  # 'in' or 'out'
-    amount = db.Column(db.Numeric(10, 2), nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    category = db.Column(db.String(50), nullable=False, default="Other")
-    reference = db.Column(db.String(100), nullable=True)
-    created_at = db.Column(db.DateTime, default=utcnow)
-
-    def to_dict(self) -> dict:
-        return {
-            "id": self.id,
-            "date": self.date.isoformat() if self.date else None,
-            "transaction_type": self.transaction_type,
-            "amount": float(self.amount),
-            "description": self.description,
-            "category": self.category,
-            "reference": self.reference or "",
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
-
-    def __repr__(self) -> str:
-        return f"<PettyCashTransaction {self.transaction_type} ${self.amount}>"
-
-
 class CustomSkill(db.Model):  # type: ignore[name-defined]
     """
     Custom skill model for user-defined and team-shared skills.
