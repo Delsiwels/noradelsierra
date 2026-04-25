@@ -227,10 +227,6 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(prepayment_tracker_bp)
     app.register_blueprint(fuel_tax_credits_bp)
 
-    from webapp.blueprints.petty_cash import petty_cash_bp
-
-    app.register_blueprint(petty_cash_bp)
-
     scheduler_report = start_background_scheduler(
         app,
         jobs=[
