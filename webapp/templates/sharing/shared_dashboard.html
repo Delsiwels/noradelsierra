@@ -731,7 +731,12 @@
 
         } catch (error) {
             console.error('Error loading shared teams:', error);
-            document.getElementById('loading').innerHTML = '<p style="color: #DC2626;">Failed to load clients</p>';
+            const loading = document.getElementById('loading');
+            loading.replaceChildren();
+            const errorText = document.createElement('p');
+            errorText.style.color = '#DC2626';
+            errorText.textContent = 'Failed to load clients';
+            loading.appendChild(errorText);
         }
     }
 
@@ -746,123 +751,223 @@
 
     function renderGridView(clients) {
         const grid = document.getElementById('clients-grid');
+        clearElement(grid);
 
         if (clients.length === 0) {
-            grid.innerHTML = '';
             return;
         }
 
-        grid.innerHTML = clients.map((st, index) => {
-            const team = st.team;
-            const initials = team.name.split(' ').map(n => n[0]).join('').substring(0, 2);
-            const colorVariant = colorVariants[index % colorVariants.length];
-            const sharedDate = st.shared_at ? new Date(st.shared_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
-            const teamId = encodeURIComponent(String(team.id ?? ''));
-            const accessLevelLabel = st.access_level === 'read_only' ? 'Read Only' : String(st.access_level ?? '');
-
-            const isExpiring = st.expires_at && (() => {
-                const daysUntil = Math.ceil((new Date(st.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
-                return daysUntil <= 30 && daysUntil > 0;
-            })();
-
-            const expiresText = st.expires_at
-                ? `Expires ${new Date(st.expires_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`
-                : '';
-
-            return `
-                <div class="client-card">
-                    <div class="client-header">
-                        <div class="client-logo ${colorVariant}">${escapeHtml(initials)}</div>
-                        <div class="client-info">
-                            <div class="client-name">${escapeHtml(team.name)}</div>
-                            <div class="client-meta">ABN: ${escapeHtml(team.abn || 'Not provided')}</div>
-                        </div>
-                        <span class="client-badge ${isExpiring ? 'warning' : ''}">${isExpiring ? 'Expiring' : escapeHtml(accessLevelLabel)}</span>
-                    </div>
-                    <div class="client-body">
-                        <div class="client-stats">
-                            <div class="client-stat">
-                                <div class="client-stat-value">--</div>
-                                <div class="client-stat-label">Invoices</div>
-                            </div>
-                            <div class="client-stat">
-                                <div class="client-stat-value">--</div>
-                                <div class="client-stat-label">Bank Txns</div>
-                            </div>
-                            <div class="client-stat">
-                                <div class="client-stat-value">--</div>
-                                <div class="client-stat-label">Reviews</div>
-                            </div>
-                        </div>
-                        <div class="client-footer">
-                            <div class="shared-info">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                Shared ${sharedDate}${expiresText ? ` &middot; ${expiresText}` : ''}
-                            </div>
-                            <div class="client-actions">
-                                <a href="/chat?team=${teamId}" class="btn-sm btn-sm-primary">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                                    </svg>
-                                    Review
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        clients.forEach((sharedTeam, index) => {
+            grid.appendChild(createGridClientCard(sharedTeam, index));
+        });
     }
 
     function renderListView(clients) {
         const container = document.getElementById('clients-list-container');
+        clearElement(container);
 
         if (clients.length === 0) {
-            container.innerHTML = '';
             return;
         }
 
-        container.innerHTML = clients.map((st, index) => {
-            const team = st.team;
-            const initials = team.name.split(' ').map(n => n[0]).join('').substring(0, 2);
-            const sharedDate = st.shared_at ? new Date(st.shared_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-            const teamId = escapeHtml(String(team.id ?? ''));
-            const accessLevelLabel = st.access_level === 'read_only' ? 'Read Only' : String(st.access_level ?? '');
-
-            return `
-                <div class="client-list-item" data-team-id="${teamId}">
-                    <div class="client-list-logo">${escapeHtml(initials)}</div>
-                    <div class="client-list-info">
-                        <div class="client-list-name">${escapeHtml(team.name)}</div>
-                        <div class="client-list-meta">Shared ${sharedDate} &middot; ${escapeHtml(accessLevelLabel)}</div>
-                    </div>
-                    <div class="client-list-stats">
-                        <div class="client-list-stat">
-                            <div class="client-list-stat-value">--</div>
-                            <div class="client-list-stat-label">Invoices</div>
-                        </div>
-                        <div class="client-list-stat">
-                            <div class="client-list-stat-value">--</div>
-                            <div class="client-list-stat-label">Bank Txns</div>
-                        </div>
-                    </div>
-                    <button class="btn-sm btn-sm-primary">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-            `;
-        }).join('');
-
-        container.querySelectorAll('.client-list-item[data-team-id]').forEach(item => {
-            item.addEventListener('click', () => {
-                const teamId = item.getAttribute('data-team-id') || '';
-                window.location.href = `/chat?team=${encodeURIComponent(teamId)}`;
-            });
+        clients.forEach(sharedTeam => {
+            container.appendChild(createListClientRow(sharedTeam));
         });
+    }
+
+    function clearElement(element) {
+        element.replaceChildren();
+    }
+
+    function createElement(tagName, className = '', text = null) {
+        const element = document.createElement(tagName);
+        if (className) {
+            element.className = className;
+        }
+        if (text !== null) {
+            element.textContent = text;
+        }
+        return element;
+    }
+
+    function createSvgIcon(className, viewBox, pathDefinition, width = null, height = null) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        if (className) {
+            svg.setAttribute('class', className);
+        }
+        if (width !== null) {
+            svg.setAttribute('width', String(width));
+        }
+        if (height !== null) {
+            svg.setAttribute('height', String(height));
+        }
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('viewBox', viewBox);
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', pathDefinition);
+        svg.appendChild(path);
+
+        return svg;
+    }
+
+    function getTeamInitials(teamName) {
+        return String(teamName || '')
+            .split(' ')
+            .map(namePart => namePart[0] || '')
+            .join('')
+            .substring(0, 2)
+            .toUpperCase();
+    }
+
+    function formatSharedDate(dateValue, withYear = false) {
+        if (!dateValue) return '';
+        return new Date(dateValue).toLocaleDateString(
+            'en-AU',
+            withYear ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' }
+        );
+    }
+
+    function isExpiringSoon(sharedTeam) {
+        if (!sharedTeam.expires_at) return false;
+        const daysUntil = Math.ceil((new Date(sharedTeam.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+        return daysUntil <= 30 && daysUntil > 0;
+    }
+
+    function createClientStat(label) {
+        const stat = createElement('div', 'client-stat');
+        stat.appendChild(createElement('div', 'client-stat-value', '--'));
+        stat.appendChild(createElement('div', 'client-stat-label', label));
+        return stat;
+    }
+
+    function createClientListStat(label) {
+        const stat = createElement('div', 'client-list-stat');
+        stat.appendChild(createElement('div', 'client-list-stat-value', '--'));
+        stat.appendChild(createElement('div', 'client-list-stat-label', label));
+        return stat;
+    }
+
+    function createReviewButton(teamId, navigateOnClick = false) {
+        const buttonLikeLink = createElement(navigateOnClick ? 'button' : 'a', 'btn-sm btn-sm-primary');
+        if (navigateOnClick) {
+            buttonLikeLink.type = 'button';
+        } else {
+            buttonLikeLink.href = `/chat?team=${encodeURIComponent(String(teamId ?? ''))}`;
+        }
+
+        buttonLikeLink.appendChild(
+            createSvgIcon(
+                '',
+                '0 0 24 24',
+                navigateOnClick
+                    ? 'M9 5l7 7-7 7'
+                    : 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z',
+                14,
+                14
+            )
+        );
+
+        if (!navigateOnClick) {
+            buttonLikeLink.appendChild(document.createTextNode('Review'));
+        }
+        return buttonLikeLink;
+    }
+
+    function createGridClientCard(sharedTeam, index) {
+        const team = sharedTeam.team || {};
+        const card = createElement('div', 'client-card');
+        const teamId = String(team.id ?? '');
+        const accessLevelLabel = sharedTeam.access_level === 'read_only' ? 'Read Only' : String(sharedTeam.access_level ?? '');
+        const expiringSoon = isExpiringSoon(sharedTeam);
+        const colorVariant = colorVariants[index % colorVariants.length];
+
+        const header = createElement('div', 'client-header');
+
+        const logo = createElement('div', `client-logo ${colorVariant}`, getTeamInitials(team.name));
+        header.appendChild(logo);
+
+        const info = createElement('div', 'client-info');
+        info.appendChild(createElement('div', 'client-name', String(team.name ?? '')));
+        info.appendChild(createElement('div', 'client-meta', `ABN: ${String(team.abn || 'Not provided')}`));
+        header.appendChild(info);
+
+        const badge = createElement('span', `client-badge${expiringSoon ? ' warning' : ''}`);
+        badge.textContent = expiringSoon ? 'Expiring' : accessLevelLabel;
+        header.appendChild(badge);
+
+        const body = createElement('div', 'client-body');
+        const stats = createElement('div', 'client-stats');
+        stats.appendChild(createClientStat('Invoices'));
+        stats.appendChild(createClientStat('Bank Txns'));
+        stats.appendChild(createClientStat('Reviews'));
+        body.appendChild(stats);
+
+        const footer = createElement('div', 'client-footer');
+        const sharedInfo = createElement('div', 'shared-info');
+        sharedInfo.appendChild(
+            createSvgIcon(
+                '',
+                '0 0 24 24',
+                'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+            )
+        );
+
+        const sharedDate = formatSharedDate(sharedTeam.shared_at, false);
+        const infoText = createElement('span');
+        infoText.textContent = sharedDate ? `Shared ${sharedDate}` : 'Shared';
+
+        if (sharedTeam.expires_at) {
+            const expiresText = formatSharedDate(sharedTeam.expires_at, false);
+            if (expiresText) {
+                infoText.appendChild(document.createTextNode(` \u00b7 Expires ${expiresText}`));
+            }
+        }
+        sharedInfo.appendChild(infoText);
+        footer.appendChild(sharedInfo);
+
+        const actions = createElement('div', 'client-actions');
+        actions.appendChild(createReviewButton(teamId, false));
+        footer.appendChild(actions);
+
+        body.appendChild(footer);
+        card.appendChild(header);
+        card.appendChild(body);
+        return card;
+    }
+
+    function createListClientRow(sharedTeam) {
+        const team = sharedTeam.team || {};
+        const teamId = String(team.id ?? '');
+        const accessLevelLabel = sharedTeam.access_level === 'read_only' ? 'Read Only' : String(sharedTeam.access_level ?? '');
+        const sharedDate = formatSharedDate(sharedTeam.shared_at, true);
+
+        const row = createElement('div', 'client-list-item');
+        row.dataset.teamId = teamId;
+        row.addEventListener('click', () => {
+            window.location.href = `/chat?team=${encodeURIComponent(teamId)}`;
+        });
+
+        row.appendChild(createElement('div', 'client-list-logo', getTeamInitials(team.name)));
+
+        const info = createElement('div', 'client-list-info');
+        info.appendChild(createElement('div', 'client-list-name', String(team.name ?? '')));
+        const meta = createElement('div', 'client-list-meta');
+        meta.textContent = sharedDate ? `Shared ${sharedDate} \u00b7 ${accessLevelLabel}` : accessLevelLabel;
+        info.appendChild(meta);
+        row.appendChild(info);
+
+        const stats = createElement('div', 'client-list-stats');
+        stats.appendChild(createClientListStat('Invoices'));
+        stats.appendChild(createClientListStat('Bank Txns'));
+        row.appendChild(stats);
+
+        row.appendChild(createReviewButton(teamId, true));
+        return row;
     }
 
     function updateStats(total, active, basDue, expiring) {
@@ -907,11 +1012,5 @@
         });
     }
 
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
 </script>
 {% endblock %}

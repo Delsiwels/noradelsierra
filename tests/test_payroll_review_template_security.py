@@ -13,13 +13,15 @@ def _template_source() -> str:
     return template_path.read_text(encoding="utf-8")
 
 
-def test_payroll_review_template_escapes_dynamic_html_values():
+def test_payroll_review_template_uses_dom_builders_for_dynamic_rows_and_results():
     source = _template_source()
 
-    assert "function escapeHtml(value)" in source
-    assert "const employeeName = escapeHtml(row.name);" in source
-    assert "const errorTitle = escapeHtml((emp.errors || []).join('; '));" in source
-    assert "const resultError = escapeHtml(result.error);" in source
+    assert "function createComparisonRow(row)" in source
+    assert "function createLeaveFlagRow(employee)" in source
+    assert "function createUploadPreviewRow(employee)" in source
+    assert "function createCreationResultRow(result)" in source
+    assert "tr.innerHTML = `" not in source
+    assert "summary.innerHTML =" not in source
 
 
 def test_payroll_review_template_encodes_query_params():

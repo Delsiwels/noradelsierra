@@ -320,42 +320,19 @@ function renderResults(data) {
 
     // Status badge
     const statusEl = document.getElementById('summaryStatus');
-    const status = result.status;
-    let statusBadge = '';
-    switch(status) {
-        case 'ok':
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Reconciled</span>';
-            break;
-        case 'warning':
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Minor Variance</span>';
-            break;
-        case 'error':
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Variance Alert</span>';
-            break;
-        default:
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">Incomplete</span>';
-    }
-    statusEl.innerHTML = statusBadge;
+    clearElement(statusEl);
+    statusEl.appendChild(createSummaryStatusBadge(result.status));
 
     // Warnings
     const warnings = data.warnings || [];
     const warningsContainer = document.getElementById('warningsContainer');
     const warningsList = document.getElementById('warningsList');
-    warningsList.innerHTML = '';
+    clearElement(warningsList);
 
     if (warnings.length > 0) {
         warningsContainer.classList.remove('hidden');
         warnings.forEach(warning => {
-            const div = document.createElement('div');
-            div.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start';
-            const warningText = escapeHtml(warning);
-            div.innerHTML = `
-                <svg class="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-                <span class="text-sm text-yellow-800">${warningText}</span>
-            `;
-            warningsList.appendChild(div);
+            warningsList.appendChild(createWarningBannerItem(warning));
         });
     } else {
         warningsContainer.classList.add('hidden');
@@ -364,47 +341,139 @@ function renderResults(data) {
     // Pay runs table
     const tbody = document.getElementById('payRunsTableBody');
     const tfoot = document.getElementById('payRunsTableFoot');
-    tbody.innerHTML = '';
+    clearElement(tbody);
+    clearElement(tfoot);
 
     const payRuns = result.pay_runs || [];
     if (payRuns.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No pay runs found in this period</td></tr>';
-        tfoot.innerHTML = '';
+        tbody.appendChild(createEmptyTableRow(7, 'No pay runs found in this period'));
     } else {
         payRuns.forEach(pr => {
-            const tr = document.createElement('tr');
-            const paymentDate = escapeHtml(pr.payment_date);
-            const periodStart = escapeHtml(pr.period_start ?? '');
-            const periodEnd = escapeHtml(pr.period_end ?? '');
-            const payRunStatus = escapeHtml(pr.status ?? 'Unknown');
-            if (pr.status === 'DRAFT') {
-                tr.className = 'bg-yellow-50';
-            }
-            tr.innerHTML = `
-                <td class="px-4 py-3 text-sm text-gray-900">${paymentDate}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${periodStart} - ${periodEnd}</td>
-                <td class="px-4 py-3 text-sm">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${pr.status === 'POSTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${payRunStatus}</span>
-                </td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(pr.gross_wages)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(pr.payg_withheld)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(pr.super)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${pr.employee_count}</td>
-            `;
-            tbody.appendChild(tr);
+            tbody.appendChild(createPayRunRow(pr));
         });
 
-        // Totals row
-        tfoot.innerHTML = `
-            <tr class="font-semibold">
-                <td class="px-4 py-3 text-sm text-gray-900" colspan="3">Total</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(payroll.w1_gross_wages)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(payroll.w2_payg_withheld)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(payroll.super)}</td>
-                <td class="px-4 py-3 text-sm text-right text-gray-600">${payroll.employee_count}</td>
-            </tr>
-        `;
+        tfoot.appendChild(createPayRunTotalsRow(payroll));
     }
+}
+
+function clearElement(element) {
+    element.replaceChildren();
+}
+
+function createTextCell(className, value, colSpan = null) {
+    const cell = document.createElement('td');
+    cell.className = className;
+    if (colSpan !== null) {
+        cell.colSpan = colSpan;
+    }
+    cell.textContent = String(value ?? '');
+    return cell;
+}
+
+function createSummaryStatusBadge(status) {
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium';
+    switch (status) {
+        case 'ok':
+            badge.classList.add('bg-green-100', 'text-green-800');
+            badge.textContent = 'Reconciled';
+            break;
+        case 'warning':
+            badge.classList.add('bg-yellow-100', 'text-yellow-800');
+            badge.textContent = 'Minor Variance';
+            break;
+        case 'error':
+            badge.classList.add('bg-red-100', 'text-red-800');
+            badge.textContent = 'Variance Alert';
+            break;
+        default:
+            badge.classList.add('bg-gray-100', 'text-gray-800');
+            badge.textContent = 'Incomplete';
+    }
+    return badge;
+}
+
+function createWarningBannerItem(warning) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start';
+
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5');
+    icon.setAttribute('fill', 'currentColor');
+    icon.setAttribute('viewBox', '0 0 20 20');
+
+    const iconPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    iconPath.setAttribute('fill-rule', 'evenodd');
+    iconPath.setAttribute('clip-rule', 'evenodd');
+    iconPath.setAttribute(
+        'd',
+        'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+    );
+    icon.appendChild(iconPath);
+
+    const text = document.createElement('span');
+    text.className = 'text-sm text-yellow-800';
+    text.textContent = String(warning ?? '');
+
+    wrapper.appendChild(icon);
+    wrapper.appendChild(text);
+    return wrapper;
+}
+
+function createPayRunStatusBadge(status) {
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+    if (status === 'POSTED') {
+        badge.classList.add('bg-green-100', 'text-green-800');
+    } else {
+        badge.classList.add('bg-yellow-100', 'text-yellow-800');
+    }
+    badge.textContent = String(status ?? 'Unknown');
+    return badge;
+}
+
+function createPayRunRow(payRun) {
+    const row = document.createElement('tr');
+    if (payRun.status === 'DRAFT') {
+        row.className = 'bg-yellow-50';
+    }
+
+    const periodStart = String(payRun.period_start ?? '');
+    const periodEnd = String(payRun.period_end ?? '');
+    const periodLabel = `${periodStart} - ${periodEnd}`;
+
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-900', payRun.payment_date ?? ''));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', periodLabel));
+
+    const statusCell = createTextCell('px-4 py-3 text-sm', '');
+    statusCell.appendChild(createPayRunStatusBadge(payRun.status));
+    row.appendChild(statusCell);
+
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(payRun.gross_wages)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(payRun.payg_withheld)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(payRun.super)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCount(payRun.employee_count)));
+
+    return row;
+}
+
+function createPayRunTotalsRow(payroll) {
+    const row = document.createElement('tr');
+    row.className = 'font-semibold';
+
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-900', 'Total', 3));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(payroll.w1_gross_wages)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(payroll.w2_payg_withheld)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(payroll.super)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCount(payroll.employee_count)));
+
+    return row;
+}
+
+function createEmptyTableRow(columnCount, message) {
+    const row = document.createElement('tr');
+    row.appendChild(createTextCell('px-4 py-8 text-center text-gray-500', message, columnCount));
+    return row;
 }
 
 function applyManualBas() {
@@ -467,13 +536,10 @@ function formatCurrency(amount) {
     return amount < 0 ? '-$' + formatted : '$' + formatted;
 }
 
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+function formatCount(value) {
+    const count = Number(value);
+    if (!Number.isFinite(count)) return '0';
+    return count.toLocaleString('en-AU');
 }
 </script>
 {% endblock %}

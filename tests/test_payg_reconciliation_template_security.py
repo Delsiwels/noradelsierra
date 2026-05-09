@@ -13,13 +13,14 @@ def _template_source() -> str:
     return template_path.read_text(encoding="utf-8")
 
 
-def test_payg_template_escapes_warning_and_pay_run_text():
+def test_payg_template_uses_dom_builders_for_warnings_and_pay_runs():
     source = _template_source()
 
-    assert "function escapeHtml(value)" in source
-    assert "const warningText = escapeHtml(warning);" in source
-    assert "const paymentDate = escapeHtml(pr.payment_date);" in source
-    assert "const payRunStatus = escapeHtml(pr.status ?? 'Unknown');" in source
+    assert "function createWarningBannerItem(warning)" in source
+    assert "function createPayRunRow(payRun)" in source
+    assert "statusEl.appendChild(createSummaryStatusBadge(result.status));" in source
+    assert "tr.innerHTML = `" not in source
+    assert "tfoot.innerHTML = `" not in source
 
 
 def test_payg_template_url_params_are_encoded():

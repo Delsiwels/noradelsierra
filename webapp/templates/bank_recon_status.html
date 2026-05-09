@@ -213,91 +213,20 @@ function renderResults(data) {
     document.getElementById('summaryUnreconAmount').textContent = formatCurrency(totals.total_unreconciled_amount || 0);
 
     // Status badge
-    const status = result.overall_status;
-    let statusBadge = '';
-    switch(status) {
-        case 'ok':
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Reconciled</span>';
-            break;
-        case 'warning':
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Minor Issues</span>';
-            break;
-        case 'error':
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Needs Attention</span>';
-            break;
-        default:
-            statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">Unknown</span>';
-    }
-    document.getElementById('summaryStatus').innerHTML = statusBadge;
+    const summaryStatus = document.getElementById('summaryStatus');
+    clearElement(summaryStatus);
+    summaryStatus.appendChild(createOverallStatusBadge(result.overall_status));
 
     // Accounts table
     const tbody = document.getElementById('accountsTableBody');
-    tbody.innerHTML = '';
+    clearElement(tbody);
 
     const accounts = result.accounts || [];
     if (accounts.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No bank accounts found</td></tr>';
+        tbody.appendChild(createEmptyTableRow(6, 'No bank accounts found'));
     } else {
         accounts.forEach(acc => {
-            const tr = document.createElement('tr');
-
-            // Status styling
-            let statusClass = '';
-            let statusText = '';
-            switch(acc.status) {
-                case 'ok':
-                    statusClass = 'bg-green-100 text-green-800';
-                    statusText = 'OK';
-                    break;
-                case 'warning':
-                    tr.className = 'bg-yellow-50';
-                    statusClass = 'bg-yellow-100 text-yellow-800';
-                    statusText = 'Warning';
-                    break;
-                case 'error':
-                    tr.className = 'bg-red-50';
-                    statusClass = 'bg-red-100 text-red-800';
-                    statusText = 'Error';
-                    break;
-                default:
-                    statusClass = 'bg-gray-100 text-gray-800';
-                    statusText = 'Unknown';
-            }
-
-            const hasUnreconciled = acc.unreconciled_count > 0;
-
-            const accountName = escapeHtml(acc.name);
-            const accountCode = escapeHtml(acc.code ?? '');
-            const accountId = String(acc.account_id ?? '');
-            const actionHtml = hasUnreconciled
-                ? '<button type="button" class="view-unreconciled-btn text-primary hover:text-blue-700 text-sm font-medium">View Items</button>'
-                : '<span class="text-gray-400 text-sm">-</span>';
-
-            tr.innerHTML = `
-                <td class="px-4 py-3">
-                    <div class="text-sm font-medium text-gray-900">${accountName}</div>
-                    <div class="text-xs text-gray-500">${accountCode}</div>
-                </td>
-                <td class="px-4 py-3 text-sm text-right text-gray-900">${acc.statement_balance !== null ? formatCurrency(acc.statement_balance) : 'N/A'}</td>
-                <td class="px-4 py-3 text-sm text-right ${hasUnreconciled ? 'text-red-600 font-medium' : 'text-gray-600'}">${acc.unreconciled_count}</td>
-                <td class="px-4 py-3 text-sm text-right ${hasUnreconciled ? 'text-red-600 font-medium' : 'text-gray-600'}">${formatCurrency(acc.unreconciled_amount)}</td>
-                <td class="px-4 py-3 text-center">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusClass}">${statusText}</span>
-                </td>
-                <td class="px-4 py-3 text-center">
-                    ${actionHtml}
-                </td>
-            `;
-
-            if (hasUnreconciled) {
-                const viewButton = tr.querySelector('.view-unreconciled-btn');
-                if (viewButton) {
-                    viewButton.addEventListener('click', function() {
-                        showUnreconciled(accountId);
-                    });
-                }
-            }
-            tbody.appendChild(tr);
+            tbody.appendChild(createAccountRow(acc));
         });
     }
 }
@@ -310,26 +239,14 @@ function showUnreconciled(accountId) {
     document.getElementById('unreconciledContainer').classList.remove('hidden');
 
     const tbody = document.getElementById('unreconciledTableBody');
-    tbody.innerHTML = '';
+    clearElement(tbody);
 
     const transactions = account.unreconciled_items || [];
     if (transactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No unreconciled transactions</td></tr>';
+        tbody.appendChild(createEmptyTableRow(5, 'No unreconciled transactions'));
     } else {
         transactions.forEach(txn => {
-            const tr = document.createElement('tr');
-            const txnDate = escapeHtml(txn.date);
-            const txnType = escapeHtml(txn.type);
-            const txnContact = escapeHtml(txn.contact ?? '-');
-            const txnReference = escapeHtml(txn.reference ?? '-');
-            tr.innerHTML = `
-                <td class="px-4 py-3 text-sm text-gray-900">${txnDate}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${txnType}</td>
-                <td class="px-4 py-3 text-sm text-gray-900">${txnContact}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${txnReference}</td>
-                <td class="px-4 py-3 text-sm text-right ${txn.amount >= 0 ? 'text-green-600' : 'text-red-600'}">${formatCurrency(txn.amount)}</td>
-            `;
-            tbody.appendChild(tr);
+            tbody.appendChild(createUnreconciledRow(txn));
         });
     }
 
@@ -352,6 +269,170 @@ function downloadExcel() {
     window.location.href = `/bank-recon-status/api/download?as_at_date=${encodeURIComponent(asAtDate)}`;
 }
 
+function clearElement(element) {
+    element.replaceChildren();
+}
+
+function createTextCell(className, value, colSpan = null) {
+    const cell = document.createElement('td');
+    cell.className = className;
+    if (colSpan !== null) {
+        cell.colSpan = colSpan;
+    }
+    cell.textContent = String(value ?? '');
+    return cell;
+}
+
+function createEmptyTableRow(columnCount, message) {
+    const row = document.createElement('tr');
+    row.appendChild(createTextCell('px-4 py-8 text-center text-gray-500', message, columnCount));
+    return row;
+}
+
+function createOverallStatusBadge(status) {
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium';
+
+    switch (status) {
+        case 'ok':
+            badge.classList.add('bg-green-100', 'text-green-800');
+            badge.textContent = 'Reconciled';
+            break;
+        case 'warning':
+            badge.classList.add('bg-yellow-100', 'text-yellow-800');
+            badge.textContent = 'Minor Issues';
+            break;
+        case 'error':
+            badge.classList.add('bg-red-100', 'text-red-800');
+            badge.textContent = 'Needs Attention';
+            break;
+        default:
+            badge.classList.add('bg-gray-100', 'text-gray-800');
+            badge.textContent = 'Unknown';
+    }
+
+    return badge;
+}
+
+function getAccountStatusMeta(status) {
+    switch (status) {
+        case 'ok':
+            return {
+                rowClass: '',
+                badgeClass: 'bg-green-100 text-green-800',
+                label: 'OK',
+            };
+        case 'warning':
+            return {
+                rowClass: 'bg-yellow-50',
+                badgeClass: 'bg-yellow-100 text-yellow-800',
+                label: 'Warning',
+            };
+        case 'error':
+            return {
+                rowClass: 'bg-red-50',
+                badgeClass: 'bg-red-100 text-red-800',
+                label: 'Error',
+            };
+        default:
+            return {
+                rowClass: '',
+                badgeClass: 'bg-gray-100 text-gray-800',
+                label: 'Unknown',
+            };
+    }
+}
+
+function createAccountStatusBadge(statusMeta) {
+    const badge = document.createElement('span');
+    badge.className = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusMeta.badgeClass}`;
+    badge.textContent = statusMeta.label;
+    return badge;
+}
+
+function createAccountIdentityCell(account) {
+    const cell = document.createElement('td');
+    cell.className = 'px-4 py-3';
+
+    const name = document.createElement('div');
+    name.className = 'text-sm font-medium text-gray-900';
+    name.textContent = String(account.name ?? '');
+
+    const code = document.createElement('div');
+    code.className = 'text-xs text-gray-500';
+    code.textContent = String(account.code ?? '');
+
+    cell.appendChild(name);
+    cell.appendChild(code);
+    return cell;
+}
+
+function createAccountActionCell(account, hasUnreconciled) {
+    const cell = document.createElement('td');
+    cell.className = 'px-4 py-3 text-center';
+
+    if (!hasUnreconciled) {
+        const placeholder = document.createElement('span');
+        placeholder.className = 'text-gray-400 text-sm';
+        placeholder.textContent = '-';
+        cell.appendChild(placeholder);
+        return cell;
+    }
+
+    const accountId = String(account.account_id ?? '');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'text-primary hover:text-blue-700 text-sm font-medium';
+    button.textContent = 'View Items';
+    button.addEventListener('click', function() {
+        showUnreconciled(accountId);
+    });
+    cell.appendChild(button);
+
+    return cell;
+}
+
+function createAccountRow(account) {
+    const row = document.createElement('tr');
+    const statusMeta = getAccountStatusMeta(account.status);
+    if (statusMeta.rowClass) {
+        row.className = statusMeta.rowClass;
+    }
+
+    const hasUnreconciled = Number(account.unreconciled_count) > 0;
+    const emphasisClass = hasUnreconciled ? 'text-red-600 font-medium' : 'text-gray-600';
+
+    row.appendChild(createAccountIdentityCell(account));
+    row.appendChild(
+        createTextCell(
+            'px-4 py-3 text-sm text-right text-gray-900',
+            account.statement_balance !== null ? formatCurrency(account.statement_balance) : 'N/A'
+        )
+    );
+    row.appendChild(createTextCell(`px-4 py-3 text-sm text-right ${emphasisClass}`, formatCount(account.unreconciled_count)));
+    row.appendChild(createTextCell(`px-4 py-3 text-sm text-right ${emphasisClass}`, formatCurrency(account.unreconciled_amount)));
+
+    const statusCell = createTextCell('px-4 py-3 text-center', '');
+    statusCell.appendChild(createAccountStatusBadge(statusMeta));
+    row.appendChild(statusCell);
+
+    row.appendChild(createAccountActionCell(account, hasUnreconciled));
+    return row;
+}
+
+function createUnreconciledRow(transaction) {
+    const row = document.createElement('tr');
+    const amountClass = Number(transaction.amount) >= 0 ? 'text-green-600' : 'text-red-600';
+
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-900', transaction.date ?? ''));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', transaction.type ?? ''));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-900', transaction.contact ?? '-'));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', transaction.reference ?? '-'));
+    row.appendChild(createTextCell(`px-4 py-3 text-sm text-right ${amountClass}`, formatCurrency(transaction.amount)));
+
+    return row;
+}
+
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     const abs = Math.abs(amount);
@@ -359,13 +440,10 @@ function formatCurrency(amount) {
     return amount < 0 ? '-$' + formatted : '$' + formatted;
 }
 
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+function formatCount(value) {
+    const count = Number(value);
+    if (!Number.isFinite(count)) return '0';
+    return count.toLocaleString('en-AU');
 }
 </script>
 {% endblock %}
