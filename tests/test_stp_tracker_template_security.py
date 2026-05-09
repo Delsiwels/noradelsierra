@@ -13,12 +13,12 @@ def _template_source() -> str:
     return template_path.read_text(encoding="utf-8")
 
 
-def test_stp_tracker_template_escapes_dynamic_labels():
+def test_stp_tracker_template_uses_dom_builders_for_quarter_rows():
     source = _template_source()
 
-    assert "function escapeHtml(value)" in source
-    assert "const quarterLabel = escapeHtml(q.quarter);" in source
-    assert "const periodLabel = escapeHtml(q.period);" in source
+    assert "function createQuarterRow(quarter)" in source
+    assert "tbody.appendChild(createQuarterRow(q));" in source
+    assert "tr.innerHTML = `" not in source
 
 
 def test_stp_tracker_template_encodes_financial_year_params():

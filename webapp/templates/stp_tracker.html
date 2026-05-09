@@ -147,21 +147,9 @@ function renderResults(data) {
     document.getElementById('summaryPayRuns').textContent = ytd.pay_run_count || 0;
 
     const tbody = document.getElementById('quartersTableBody');
-    tbody.innerHTML = '';
+    clearElement(tbody);
     (data.data.quarters || []).forEach(q => {
-        const quarterLabel = escapeHtml(q.quarter);
-        const periodLabel = escapeHtml(q.period);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${quarterLabel}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${periodLabel}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(q.gross_wages)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(q.payg_withheld)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCurrency(q.super)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${q.pay_run_count}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-600">${q.employee_count}</td>
-        `;
-        tbody.appendChild(tr);
+        tbody.appendChild(createQuarterRow(q));
     });
 }
 
@@ -170,18 +158,38 @@ function downloadExcel() {
     window.location.href = `/stp-tracker/api/download?financial_year=${encodeURIComponent(fy)}`;
 }
 
+function clearElement(element) {
+    element.replaceChildren();
+}
+
+function createTextCell(className, value) {
+    const cell = document.createElement('td');
+    cell.className = className;
+    cell.textContent = String(value ?? '');
+    return cell;
+}
+
+function createQuarterRow(quarter) {
+    const row = document.createElement('tr');
+    row.appendChild(createTextCell('px-4 py-3 text-sm font-medium text-gray-900', quarter.quarter ?? ''));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', quarter.period ?? ''));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(quarter.gross_wages)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(quarter.payg_withheld)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCurrency(quarter.super)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCount(quarter.pay_run_count)));
+    row.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-600', formatCount(quarter.employee_count)));
+    return row;
+}
+
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     return '$' + Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+function formatCount(value) {
+    const count = Number(value);
+    if (!Number.isFinite(count)) return '0';
+    return count.toLocaleString('en-AU');
 }
 </script>
 {% endblock %}

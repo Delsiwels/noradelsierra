@@ -17,16 +17,18 @@ def _read_template(name: str) -> str:
 def test_skills_create_template_escapes_validation_and_uses_safe_message_rendering():
     source = _read_template("create.html")
 
-    assert "function escapeHtml(value)" in source
-    assert "const metadataName = escapeHtml(data.metadata?.name || '');" in source
-    assert "validationResult.innerHTML = `<div class=\"validation-result invalid\">${escapeHtml(data.error)}</div>`;" in source
+    assert "function renderValidationSuccess(metadata)" in source
+    assert "function renderValidationError(message)" in source
+    assert "validationResult.replaceChildren(container);" in source
+    assert "${escapeHtml(data.error)}" not in source
     assert "container.textContent = String(text ?? '');" in source
 
 
 def test_skills_edit_template_escapes_validation_and_uses_safe_message_rendering():
     source = _read_template("edit.html")
 
-    assert "function escapeHtml(value)" in source
-    assert "const metadataName = escapeHtml(data.metadata?.name || '');" in source
-    assert "validationResult.innerHTML = `<div class=\"validation-result invalid\">${escapeHtml(data.error)}</div>`;" in source
+    assert "function renderValidationSuccess(metadata)" in source
+    assert "function renderValidationError(message)" in source
+    assert "validationResult.replaceChildren(container);" in source
+    assert "${escapeHtml(data.error)}" not in source
     assert "container.textContent = String(text ?? '');" in source

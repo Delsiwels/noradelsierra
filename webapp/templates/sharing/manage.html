@@ -1332,31 +1332,11 @@
     function renderGroupTabs() {
         const container = document.getElementById('group-tabs');
         const allCount = clients.length;
-
-        let html = `
-            <button type="button" class="group-tab ${activeGroup === 'all' ? 'active' : ''}" data-group="all">
-                All Clients
-                <span class="group-count" id="all-clients-count">${allCount}</span>
-            </button>
-        `;
-
+        container.replaceChildren();
+        container.appendChild(createAllClientsTab(allCount));
         clientGroups.forEach(group => {
-            const safeGroupId = escapeHtml(String(group.id ?? ''));
-            const count = group.clientIds.length;
-            html += `
-                <button type="button" class="group-tab ${activeGroup === group.id ? 'active' : ''}" data-group="${safeGroupId}">
-                    ${escapeHtml(group.name)}
-                    <span class="group-count">${count}</span>
-                    <span class="group-tab-delete" data-delete="${safeGroupId}" title="Delete group">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </span>
-                </button>
-            `;
+            container.appendChild(createGroupTab(group));
         });
-
-        container.innerHTML = html;
 
         // Attach click handlers
         container.querySelectorAll('.group-tab').forEach(tab => {
@@ -1393,7 +1373,7 @@
             if (group) {
                 group.clientIds.forEach(id => {
                     // Only select if client exists in current client list
-                    if (clients.find(c => c.id === id)) {
+                    if (clients.find(c => String(c.id ?? '') === String(id))) {
                         selectedClients.add(id);
                     }
                 });
@@ -1406,29 +1386,23 @@
 
     function updateGroupMenuItems() {
         const container = document.getElementById('group-menu-items');
+        container.replaceChildren();
         if (clientGroups.length === 0) {
-            container.innerHTML = `
-                <div style="padding: 10px 14px; font-size: 13px; color: var(--color-text-muted);">
-                    No groups yet
-                </div>
-            `;
+            const empty = document.createElement('div');
+            empty.style.padding = '10px 14px';
+            empty.style.fontSize = '13px';
+            empty.style.color = 'var(--color-text-muted)';
+            empty.textContent = 'No groups yet';
+            container.appendChild(empty);
         } else {
-            container.innerHTML = clientGroups.map(group => `
-                <button type="button" class="dropdown-item" data-add-to-group="${escapeHtml(String(group.id ?? ''))}">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/>
-                    </svg>
-                    ${escapeHtml(group.name)}
-                </button>
-            `).join('');
-
-            // Attach handlers
-            container.querySelectorAll('[data-add-to-group]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const groupId = btn.dataset.addToGroup;
+            clientGroups.forEach(group => {
+                const button = createGroupMenuItem(group);
+                button.addEventListener('click', () => {
+                    const groupId = button.dataset.addToGroup || '';
                     addClientsToGroup(groupId, selectedClients);
                     hideDropdown();
                 });
+                container.appendChild(button);
             });
         }
     }
@@ -1594,25 +1568,10 @@
 
         empty.style.display = 'none';
         list.style.display = 'block';
-
-        list.innerHTML = filtered.map(client => {
-            const isSelected = selectedClients.has(client.id);
-            const lastUsed = client.lastUsed ? new Date(client.lastUsed).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : '';
-            const safeClientId = escapeHtml(String(client.id ?? ''));
-            return `
-                <li class="client-item ${isSelected ? 'selected' : ''}" data-id="${safeClientId}">
-                    <div class="client-checkbox">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                        </svg>
-                    </div>
-                    <div class="client-info">
-                        <div class="client-name">${escapeHtml(client.name)}</div>
-                        <div class="client-meta">Last used: ${lastUsed}</div>
-                    </div>
-                </li>
-            `;
-        }).join('');
+        list.replaceChildren();
+        filtered.forEach(client => {
+            list.appendChild(createClientListItem(client));
+        });
 
         updateSelectedBadge();
     }
@@ -1664,7 +1623,7 @@
             if (allSelected) {
                 selectedClients.clear();
             } else {
-                clients.forEach(c => selectedClients.add(c.id));
+                clients.forEach(c => selectedClients.add(String(c.id ?? '')));
             }
             renderClients(document.getElementById('client-search').value);
             updateRunButton();
@@ -1750,11 +1709,99 @@
         });
     }
 
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    function createElement(tagName, className = '', text = null) {
+        const element = document.createElement(tagName);
+        if (className) {
+            element.className = className;
+        }
+        if (text !== null) {
+            element.textContent = text;
+        }
+        return element;
+    }
+
+    function createStrokeSvg(pathDataList, strokeWidth = '2', width = null, height = null) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        if (width !== null) svg.setAttribute('width', String(width));
+        if (height !== null) svg.setAttribute('height', String(height));
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('viewBox', '0 0 24 24');
+
+        pathDataList.forEach(pathData => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            path.setAttribute('stroke-width', strokeWidth);
+            path.setAttribute('d', pathData);
+            svg.appendChild(path);
+        });
+
+        return svg;
+    }
+
+    function createAllClientsTab(allCount) {
+        const tab = createElement('button', `group-tab${activeGroup === 'all' ? ' active' : ''}`);
+        tab.type = 'button';
+        tab.dataset.group = 'all';
+        tab.appendChild(document.createTextNode('All Clients'));
+        tab.appendChild(createElement('span', 'group-count', String(allCount)));
+        tab.querySelector('.group-count').id = 'all-clients-count';
+        return tab;
+    }
+
+    function createGroupTab(group) {
+        const groupId = String(group.id ?? '');
+        const tab = createElement('button', `group-tab${activeGroup === groupId ? ' active' : ''}`);
+        tab.type = 'button';
+        tab.dataset.group = groupId;
+        tab.appendChild(document.createTextNode(String(group.name ?? '')));
+        tab.appendChild(createElement('span', 'group-count', String((group.clientIds || []).length)));
+
+        const deleteButton = createElement('span', 'group-tab-delete');
+        deleteButton.dataset.delete = groupId;
+        deleteButton.title = 'Delete group';
+        deleteButton.appendChild(createStrokeSvg(['M6 18L18 6M6 6l12 12'], '2', 14, 14));
+        tab.appendChild(deleteButton);
+
+        return tab;
+    }
+
+    function createGroupMenuItem(group) {
+        const button = createElement('button', 'dropdown-item');
+        button.type = 'button';
+        button.dataset.addToGroup = String(group.id ?? '');
+        button.appendChild(
+            createStrokeSvg(
+                [
+                    'M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z',
+                ]
+            )
+        );
+        button.appendChild(document.createTextNode(String(group.name ?? '')));
+        return button;
+    }
+
+    function createClientListItem(client) {
+        const clientId = String(client.id ?? '');
+        const isSelected = selectedClients.has(clientId);
+        const lastUsed = client.lastUsed
+            ? new Date(client.lastUsed).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
+            : '';
+
+        const item = createElement('li', `client-item${isSelected ? ' selected' : ''}`);
+        item.dataset.id = clientId;
+
+        const checkbox = createElement('div', 'client-checkbox');
+        checkbox.appendChild(createStrokeSvg(['M5 13l4 4L19 7'], '3'));
+        item.appendChild(checkbox);
+
+        const info = createElement('div', 'client-info');
+        info.appendChild(createElement('div', 'client-name', String(client.name ?? '')));
+        info.appendChild(createElement('div', 'client-meta', `Last used: ${lastUsed}`));
+        item.appendChild(info);
+
+        return item;
     }
 </script>
 {% endblock %}

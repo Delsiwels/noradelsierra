@@ -396,6 +396,89 @@ select {
   gap: 0.5rem;
 }
 
+.meal-library-grid {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.meal-library-group {
+  border: 1px solid #d2ded8;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.84);
+  padding: 0.7rem;
+}
+
+.meal-library-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.52rem;
+}
+
+.meal-library-head h3 {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.meal-library-count {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.meal-library-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.meal-library-item {
+  border: 1px solid #d9e5df;
+  border-radius: 10px;
+  background: #f9fcfb;
+  padding: 0.18rem 0.58rem 0.56rem;
+}
+
+.meal-library-summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.42rem 0;
+}
+
+.meal-library-summary::-webkit-details-marker {
+  display: none;
+}
+
+.meal-library-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.meal-library-price {
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.meal-library-meta {
+  margin: 0 0 0.36rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.meal-library-ingredients {
+  margin: 0;
+  padding-left: 1.05rem;
+  color: #2e4b40;
+  font-size: 0.8rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
 .stats {
   display: grid;
   grid-template-columns: 1fr;
@@ -531,7 +614,7 @@ tbody tr:last-child td {
   }
 
   .stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .meal-dialog {
@@ -546,5 +629,9 @@ tbody tr:last-child td {
 @media (min-width: 980px) {
   .planner-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

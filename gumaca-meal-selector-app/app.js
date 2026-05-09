@@ -170,6 +170,17 @@ const KIDS_MEAL_IDS = new Set([
   'chopsuey-tokwa',
 ]);
 
+const MEAL_CATALOG_GROUPS = [
+  { id: 'pork', label: 'Pork' },
+  { id: 'chicken', label: 'Chicken' },
+  { id: 'seafood', label: 'Seafood' },
+  { id: 'vegetables', label: 'Vegetables' },
+  { id: 'desserts', label: 'Desserts' },
+  { id: 'drinks', label: 'Drinks' },
+  { id: 'salad', label: 'Salad' },
+  { id: 'other', label: 'Other' },
+];
+
 const MEALS = [
   {
     id: 'pandesal-itlog-kamatis',
@@ -704,6 +715,7 @@ const ui = {
   resetButton: document.getElementById('resetButton'),
   exportCsvButton: document.getElementById('exportCsvButton'),
   planner: document.getElementById('planner'),
+  mealLibrary: document.getElementById('mealLibrary'),
   statMeals: document.getElementById('statMeals'),
   statWeeklyCost: document.getElementById('statWeeklyCost'),
   statDailyCost: document.getElementById('statDailyCost'),
@@ -1023,6 +1035,47 @@ function mealTypeLabel(mealTypeId) {
   return MEAL_TYPES.find((entry) => entry.id === mealTypeId)?.label || mealTypeId;
 }
 
+function mealHasIngredient(meal, ingredientName) {
+  return meal.ingredients.some((ingredient) => ingredient.name === ingredientName);
+}
+
+function mealCatalogGroup(meal) {
+  const lowerName = meal.name.toLowerCase();
+
+  if (meal.tags.includes('dessert') || /taho|suman|champorado/.test(lowerName)) {
+    return 'desserts';
+  }
+  if (meal.tags.includes('drink') || meal.tags.includes('beverage') || /juice|shake|tea|coffee/.test(lowerName)) {
+    return 'drinks';
+  }
+  if (meal.tags.includes('salad') || /salad/.test(lowerName)) {
+    return 'salad';
+  }
+  if (
+    meal.tags.includes('seafood') ||
+    mealHasIngredient(meal, 'Tilapia') ||
+    mealHasIngredient(meal, 'Galunggong') ||
+    mealHasIngredient(meal, 'Bangus') ||
+    mealHasIngredient(meal, 'Shrimp') ||
+    mealHasIngredient(meal, 'Tinapa') ||
+    mealHasIngredient(meal, 'Dried Fish') ||
+    mealHasIngredient(meal, 'Sardines Can')
+  ) {
+    return 'seafood';
+  }
+  if (mealHasIngredient(meal, 'Chicken')) {
+    return 'chicken';
+  }
+  if (mealHasIngredient(meal, 'Pork')) {
+    return 'pork';
+  }
+  if (meal.tags.includes('vegetarian') || mealHasIngredient(meal, 'Tofu') || mealHasIngredient(meal, 'Mung Beans')) {
+    return 'vegetables';
+  }
+
+  return 'other';
+}
+
 function mealTagLabel(meal) {
   if (isKidsMeal(meal)) {
     return 'kid-friendly';
@@ -1333,6 +1386,91 @@ function renderPlanner() {
   }
 }
 
+function renderMealLibrary() {
+  if (!ui.mealLibrary) {
+    return;
+  }
+
+  ui.mealLibrary.innerHTML = '';
+
+  const grouped = new Map(MEAL_CATALOG_GROUPS.map((group) => [group.id, []]));
+  for (const meal of MEALS) {
+    const groupId = mealCatalogGroup(meal);
+    const bucket = grouped.get(groupId) || grouped.get('other');
+    bucket.push(meal);
+  }
+
+  for (const group of MEAL_CATALOG_GROUPS) {
+    const meals = [...(grouped.get(group.id) || [])].sort((a, b) => a.name.localeCompare(b.name));
+
+    const section = document.createElement('section');
+    section.className = 'meal-library-group';
+
+    const head = document.createElement('div');
+    head.className = 'meal-library-head';
+
+    const title = document.createElement('h3');
+    title.textContent = group.label;
+
+    const count = document.createElement('span');
+    count.className = 'meal-library-count';
+    count.textContent = `${meals.length} meal${meals.length === 1 ? '' : 's'}`;
+
+    head.append(title, count);
+    section.appendChild(head);
+
+    if (!meals.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-note';
+      empty.textContent = 'No meals in this category yet.';
+      section.appendChild(empty);
+      ui.mealLibrary.appendChild(section);
+      continue;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'meal-library-list';
+
+    for (const meal of meals) {
+      const details = document.createElement('details');
+      details.className = 'meal-library-item';
+
+      const summary = document.createElement('summary');
+      summary.className = 'meal-library-summary';
+
+      const name = document.createElement('span');
+      name.className = 'meal-library-name';
+      name.textContent = meal.name;
+
+      const price = document.createElement('span');
+      price.className = 'meal-library-price';
+      price.textContent = formatCurrency(mealCostForFamily(meal));
+
+      summary.append(name, price);
+      details.appendChild(summary);
+
+      const meta = document.createElement('p');
+      meta.className = 'meal-library-meta';
+      meta.textContent = `${mealTypeLabel(meal.mealType)} | ${mealTagLabel(meal)} | per family`;
+      details.appendChild(meta);
+
+      const ingredientsList = document.createElement('ul');
+      ingredientsList.className = 'meal-library-ingredients';
+      for (const line of mealIngredientsForFamily(meal)) {
+        const item = document.createElement('li');
+        item.textContent = line;
+        ingredientsList.appendChild(item);
+      }
+      details.appendChild(ingredientsList);
+
+      list.appendChild(details);
+    }
+
+    section.appendChild(list);
+    ui.mealLibrary.appendChild(section);
+  }
+}
+
 function selectedMealsGroupedByDay() {
   const grouped = [];
 
@@ -1551,6 +1689,7 @@ function renderSummaryAndGroceries() {
   }
 
   ui.groceryTotal.textContent = formatCurrency(groceryTotal);
+  renderMealLibrary();
 }
 
 function csvEscape(value) {

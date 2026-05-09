@@ -25,6 +25,7 @@ def test_skills_index_template_sanitizes_ids_and_css_tokens():
 def test_skills_index_template_escapes_display_values():
     source = _template_source()
 
-    assert "const safeSkillName = escapeHtml(skill.name || '');" in source
-    assert "const safeSkillDescription = escapeHtml(skill.description || 'No description');" in source
-    assert "const safeSkillVersion = escapeHtml(skill.version || '1.0.0');" in source
+    assert "content.appendChild(createElement('div', 'skill-name', skillName));" in source
+    assert "content.appendChild(createElement('div', 'skill-description', skillDescription));" in source
+    assert "meta.appendChild(createElement('span', 'skill-badge version', `v${skillVersion}`));" in source
+    assert "list.innerHTML = skills.map(" not in source

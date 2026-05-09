@@ -460,32 +460,7 @@ function renderComparison(data) {
     }
 
     data.comparison.forEach(row => {
-        const tr = document.createElement('tr');
-        const employeeName = escapeHtml(row.name);
-        const grossVariancePct = escapeHtml(row.gross_variance_pct);
-
-        // Row styling based on flag
-        if (row.flag === 'alert') {
-            tr.className = 'bg-red-50';
-        } else if (row.flag === 'warning') {
-            tr.className = 'bg-yellow-50';
-        }
-
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${employeeName}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(row.draft_gross)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-500">${formatCurrency(row.posted_gross)}</td>
-            <td class="px-4 py-3 text-sm text-right ${row.gross_variance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                ${row.gross_variance >= 0 ? '+' : ''}${formatCurrency(row.gross_variance)}
-                <span class="text-xs text-gray-400 ml-1">(${grossVariancePct}%)</span>
-            </td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(row.draft_super)}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-500">${formatCurrency(row.posted_super)}</td>
-            <td class="px-4 py-3 text-sm text-right ${row.super_variance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                ${row.super_variance >= 0 ? '+' : ''}${formatCurrency(row.super_variance)}
-            </td>
-        `;
-        tbody.appendChild(tr);
+        tbody.appendChild(createComparisonRow(row));
     });
 }
 
@@ -536,38 +511,7 @@ function renderLeaveFlags(data) {
     tbody.innerHTML = '';
 
     data.employees_with_leave.forEach(emp => {
-        const tr = document.createElement('tr');
-        const employeeName = escapeHtml(emp.name);
-        const leaveType = escapeHtml(emp.leave_type);
-        const leaveHours = escapeHtml(emp.hours);
-        const balanceText = emp.balance_remaining !== null
-            ? `${escapeHtml(emp.balance_remaining)} hrs`
-            : 'N/A';
-        if (emp.low_balance_warning) {
-            tr.className = 'bg-yellow-50';
-        }
-
-        let statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>';
-        if (emp.low_balance_warning) {
-            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-                Low Balance
-            </span>`;
-        }
-
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${employeeName}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${leaveType}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${leaveHours}</td>
-            <td class="px-4 py-3 text-sm text-right text-gray-900">${formatCurrency(emp.amount)}</td>
-            <td class="px-4 py-3 text-sm text-right ${emp.low_balance_warning ? 'text-yellow-700 font-medium' : 'text-gray-600'}">
-                ${balanceText}
-            </td>
-            <td class="px-4 py-3 text-center">${statusBadge}</td>
-        `;
-        tbody.appendChild(tr);
+        tbody.appendChild(createLeaveFlagRow(emp));
     });
 }
 
@@ -641,38 +585,7 @@ function renderUploadPreview(data) {
     tbody.innerHTML = '';
 
     data.employees.forEach(emp => {
-        const tr = document.createElement('tr');
-        const rowNumber = escapeHtml(emp.row);
-        const firstName = escapeHtml(emp.first_name || '');
-        const lastName = escapeHtml(emp.last_name || '');
-        const email = escapeHtml(emp.email || '');
-        const startDate = escapeHtml(emp.start_date || '');
-        if (!emp.valid) {
-            tr.className = 'bg-red-50';
-        }
-
-        let statusBadge;
-        if (emp.valid) {
-            statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Valid</span>';
-        } else {
-            const errorTitle = escapeHtml((emp.errors || []).join('; '));
-            const errorCount = Number((emp.errors || []).length);
-            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800" title="${errorTitle}">
-                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-                ${errorCount} error${errorCount > 1 ? 's' : ''}
-            </span>`;
-        }
-
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm text-gray-500">${rowNumber}</td>
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">${firstName} ${lastName}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${email}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">${startDate}</td>
-            <td class="px-4 py-3 text-center">${statusBadge}</td>
-        `;
-        tbody.appendChild(tr);
+        tbody.appendChild(createUploadPreviewRow(emp));
     });
 
     // Enable/disable create button
@@ -725,52 +638,246 @@ function renderCreationResults(data) {
     // Summary
     const summary = document.createElement('div');
     summary.className = `p-3 rounded-lg mb-4 ${data.success ? 'bg-green-50 text-green-800' : 'bg-yellow-50 text-yellow-800'}`;
-    summary.innerHTML = `<strong>${escapeHtml(data.created)}</strong> of <strong>${escapeHtml(data.total)}</strong> employees created successfully`;
+    summary.appendChild(createCreationSummaryContent(data.created, data.total));
     list.appendChild(summary);
 
     // Individual results
-    data.results.forEach(result => {
-        const div = document.createElement('div');
-        const resultName = escapeHtml(result.name);
-        const resultError = escapeHtml(result.error);
-        if (result.success) {
-            div.className = 'flex items-center justify-between p-3 bg-green-50 rounded-lg';
-            div.innerHTML = `
-                <span class="text-sm font-medium text-gray-900">${resultName}</span>
-                <span class="text-xs text-green-600">Created</span>
-            `;
-        } else {
-            div.className = 'flex items-start justify-between p-3 bg-red-50 rounded-lg';
-            div.innerHTML = `
-                <div>
-                    <span class="text-sm font-medium text-gray-900">${resultName}</span>
-                    <p class="text-xs text-red-600 mt-1">${resultError}</p>
-                </div>
-                <span class="text-xs text-red-600">Failed</span>
-            `;
-        }
-        list.appendChild(div);
+    (data.results || []).forEach(result => {
+        list.appendChild(createCreationResultRow(result));
     });
 }
 
 // Helpers
+function createTextCell(className, value, colSpan = null) {
+    const cell = document.createElement('td');
+    cell.className = className;
+    if (colSpan !== null) {
+        cell.colSpan = colSpan;
+    }
+    cell.textContent = String(value ?? '');
+    return cell;
+}
+
+function createComparisonVarianceCell(variance, variancePct = null) {
+    const numericVariance = Number(variance);
+    const safeVariance = Number.isFinite(numericVariance) ? numericVariance : 0;
+    const varianceClass = safeVariance >= 0 ? 'text-green-600' : 'text-red-600';
+    const cell = createTextCell(`px-4 py-3 text-sm text-right ${varianceClass}`, '');
+    const sign = safeVariance >= 0 ? '+' : '';
+    cell.appendChild(document.createTextNode(`${sign}${formatCurrency(safeVariance)}`));
+
+    if (variancePct !== null && variancePct !== undefined) {
+        const pct = document.createElement('span');
+        pct.className = 'text-xs text-gray-400 ml-1';
+        pct.textContent = `(${String(variancePct)}%)`;
+        cell.appendChild(pct);
+    }
+    return cell;
+}
+
+function createComparisonRow(row) {
+    const tr = document.createElement('tr');
+
+    if (row.flag === 'alert') {
+        tr.className = 'bg-red-50';
+    } else if (row.flag === 'warning') {
+        tr.className = 'bg-yellow-50';
+    }
+
+    tr.appendChild(createTextCell('px-4 py-3 text-sm font-medium text-gray-900', row.name ?? ''));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(row.draft_gross)));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-500', formatCurrency(row.posted_gross)));
+    tr.appendChild(createComparisonVarianceCell(row.gross_variance, row.gross_variance_pct));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(row.draft_super)));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-500', formatCurrency(row.posted_super)));
+    tr.appendChild(createComparisonVarianceCell(row.super_variance));
+
+    return tr;
+}
+
+function createWarningIcon() {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'w-3 h-3 mr-1');
+    icon.setAttribute('fill', 'currentColor');
+    icon.setAttribute('viewBox', '0 0 20 20');
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('fill-rule', 'evenodd');
+    path.setAttribute('clip-rule', 'evenodd');
+    path.setAttribute(
+        'd',
+        'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+    );
+    icon.appendChild(path);
+    return icon;
+}
+
+function createErrorIcon() {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'w-3 h-3 mr-1');
+    icon.setAttribute('fill', 'currentColor');
+    icon.setAttribute('viewBox', '0 0 20 20');
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('fill-rule', 'evenodd');
+    path.setAttribute('clip-rule', 'evenodd');
+    path.setAttribute(
+        'd',
+        'M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z'
+    );
+    icon.appendChild(path);
+    return icon;
+}
+
+function createLeaveStatusBadge(hasWarning) {
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+
+    if (!hasWarning) {
+        badge.classList.add('bg-green-100', 'text-green-800');
+        badge.textContent = 'OK';
+        return badge;
+    }
+
+    badge.classList.add('bg-yellow-100', 'text-yellow-800');
+    badge.appendChild(createWarningIcon());
+    badge.appendChild(document.createTextNode('Low Balance'));
+    return badge;
+}
+
+function createLeaveFlagRow(employee) {
+    const tr = document.createElement('tr');
+    if (employee.low_balance_warning) {
+        tr.className = 'bg-yellow-50';
+    }
+
+    const balanceText = employee.balance_remaining !== null && employee.balance_remaining !== undefined
+        ? `${String(employee.balance_remaining)} hrs`
+        : 'N/A';
+    const balanceClass = employee.low_balance_warning ? 'text-yellow-700 font-medium' : 'text-gray-600';
+
+    tr.appendChild(createTextCell('px-4 py-3 text-sm font-medium text-gray-900', employee.name ?? ''));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', employee.leave_type ?? ''));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', employee.hours ?? ''));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-right text-gray-900', formatCurrency(employee.amount)));
+    tr.appendChild(createTextCell(`px-4 py-3 text-sm text-right ${balanceClass}`, balanceText));
+
+    const statusCell = createTextCell('px-4 py-3 text-center', '');
+    statusCell.appendChild(createLeaveStatusBadge(Boolean(employee.low_balance_warning)));
+    tr.appendChild(statusCell);
+
+    return tr;
+}
+
+function createUploadStatusBadge(employee) {
+    const badge = document.createElement('span');
+    badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
+
+    if (employee.valid) {
+        badge.classList.add('bg-green-100', 'text-green-800');
+        badge.textContent = 'Valid';
+        return badge;
+    }
+
+    badge.classList.add('bg-red-100', 'text-red-800');
+    const errors = Array.isArray(employee.errors) ? employee.errors : [];
+    if (errors.length > 0) {
+        badge.setAttribute('title', errors.join('; '));
+    }
+
+    badge.appendChild(createErrorIcon());
+    const errorCount = errors.length;
+    badge.appendChild(document.createTextNode(`${errorCount} error${errorCount === 1 ? '' : 's'}`));
+    return badge;
+}
+
+function createUploadPreviewRow(employee) {
+    const tr = document.createElement('tr');
+    if (!employee.valid) {
+        tr.className = 'bg-red-50';
+    }
+
+    const firstName = String(employee.first_name ?? '').trim();
+    const lastName = String(employee.last_name ?? '').trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-gray-500', employee.row ?? ''));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm font-medium text-gray-900', fullName));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', employee.email ?? ''));
+    tr.appendChild(createTextCell('px-4 py-3 text-sm text-gray-600', employee.start_date ?? ''));
+
+    const statusCell = createTextCell('px-4 py-3 text-center', '');
+    statusCell.appendChild(createUploadStatusBadge(employee));
+    tr.appendChild(statusCell);
+
+    return tr;
+}
+
+function createCreationSummaryContent(created, total) {
+    const fragment = document.createDocumentFragment();
+    const createdStrong = document.createElement('strong');
+    createdStrong.textContent = String(created ?? 0);
+
+    const totalStrong = document.createElement('strong');
+    totalStrong.textContent = String(total ?? 0);
+
+    fragment.appendChild(createdStrong);
+    fragment.appendChild(document.createTextNode(' of '));
+    fragment.appendChild(totalStrong);
+    fragment.appendChild(document.createTextNode(' employees created successfully'));
+    return fragment;
+}
+
+function createCreationResultRow(result) {
+    const container = document.createElement('div');
+    const name = String(result.name ?? '');
+
+    if (result.success) {
+        container.className = 'flex items-center justify-between p-3 bg-green-50 rounded-lg';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'text-sm font-medium text-gray-900';
+        nameSpan.textContent = name;
+        container.appendChild(nameSpan);
+        const status = document.createElement('span');
+        status.className = 'text-xs text-green-600';
+        status.textContent = 'Created';
+        container.appendChild(status);
+        return container;
+    }
+
+    container.className = 'flex items-start justify-between p-3 bg-red-50 rounded-lg';
+    const left = document.createElement('div');
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'text-sm font-medium text-gray-900';
+    nameSpan.textContent = name;
+    left.appendChild(nameSpan);
+
+    const error = document.createElement('p');
+    error.className = 'text-xs text-red-600 mt-1';
+    error.textContent = String(result.error ?? 'Unknown error');
+    left.appendChild(error);
+
+    const status = document.createElement('span');
+    status.className = 'text-xs text-red-600';
+    status.textContent = 'Failed';
+
+    container.appendChild(left);
+    container.appendChild(status);
+    return container;
+}
+
 function formatCurrency(amount) {
-    const abs = Math.abs(amount);
+    const value = Number(amount);
+    if (!Number.isFinite(value)) return '$0.00';
+    const abs = Math.abs(value);
     const formatted = abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return amount < 0 ? '-$' + formatted : '$' + formatted;
+    return value < 0 ? '-$' + formatted : '$' + formatted;
 }
 
 function formatNumber(amount) {
-    return Math.abs(amount).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    const value = Number(amount);
+    if (!Number.isFinite(value)) return '0';
+    return Math.abs(value).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 </script>
 {% endblock %}

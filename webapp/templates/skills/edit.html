@@ -311,7 +311,7 @@
         validateBtn.addEventListener('click', async () => {
             const contentValue = content.value.trim();
             if (!contentValue) {
-                validationResult.innerHTML = '<div class="validation-result invalid">Content is required</div>';
+                renderValidationError('Content is required');
                 return;
             }
 
@@ -327,22 +327,12 @@
                 const data = await response.json();
 
                 if (data.valid) {
-                    const metadataName = escapeHtml(data.metadata?.name || '');
-                    const metadataDescription = escapeHtml(data.metadata?.description || '');
-                    const triggerCount = Number(data.metadata?.triggers?.length || 0);
-                    validationResult.innerHTML = `
-                        <div class="validation-result valid">
-                            <strong>Valid!</strong><br>
-                            Name: ${metadataName}<br>
-                            ${metadataDescription ? `Description: ${metadataDescription}<br>` : ''}
-                            Triggers: ${triggerCount}
-                        </div>
-                    `;
+                    renderValidationSuccess(data.metadata);
                 } else {
-                    validationResult.innerHTML = `<div class="validation-result invalid">${escapeHtml(data.error)}</div>`;
+                    renderValidationError(data.error || 'Validation failed');
                 }
             } catch (error) {
-                validationResult.innerHTML = '<div class="validation-result invalid">Validation failed</div>';
+                renderValidationError('Validation failed');
             }
 
             validateBtn.disabled = false;
@@ -446,13 +436,36 @@
             window.scrollTo(0, 0);
         }
 
-        function escapeHtml(value) {
-            return String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
+        function renderValidationSuccess(metadata) {
+            const metadataName = String(metadata?.name || '');
+            const metadataDescription = String(metadata?.description || '');
+            const triggerCount = Number(metadata?.triggers?.length || 0);
+
+            const container = document.createElement('div');
+            container.className = 'validation-result valid';
+
+            const title = document.createElement('strong');
+            title.textContent = 'Valid!';
+            container.appendChild(title);
+            container.appendChild(document.createElement('br'));
+            container.appendChild(document.createTextNode(`Name: ${metadataName}`));
+            container.appendChild(document.createElement('br'));
+
+            if (metadataDescription) {
+                container.appendChild(document.createTextNode(`Description: ${metadataDescription}`));
+                container.appendChild(document.createElement('br'));
+            }
+
+            container.appendChild(document.createTextNode(`Triggers: ${triggerCount}`));
+
+            validationResult.replaceChildren(container);
+        }
+
+        function renderValidationError(message) {
+            const container = document.createElement('div');
+            container.className = 'validation-result invalid';
+            container.textContent = String(message || 'Validation failed');
+            validationResult.replaceChildren(container);
         }
     </script>
 </body>
