@@ -16,6 +16,8 @@ from typing import Any
 
 import requests
 
+from webapp.time_utils import parse_xero_date
+
 logger = logging.getLogger(__name__)
 
 # Xero Payroll AU API base URL
@@ -65,13 +67,13 @@ def get_pay_runs_by_status(
                 pay_runs.append(
                     {
                         "pay_run_id": pr.get("PayRunID"),
-                        "pay_run_period_start_date": _parse_xero_date(
+                        "pay_run_period_start_date": parse_xero_date(
                             pr.get("PayRunPeriodStartDate")
                         ),
-                        "pay_run_period_end_date": _parse_xero_date(
+                        "pay_run_period_end_date": parse_xero_date(
                             pr.get("PayRunPeriodEndDate")
                         ),
-                        "payment_date": _parse_xero_date(pr.get("PaymentDate")),
+                        "payment_date": parse_xero_date(pr.get("PaymentDate")),
                         "status": pr.get("PayRunStatus"),
                         "wages": float(pr.get("Wages", 0) or 0),
                         "deductions": float(pr.get("Deductions", 0) or 0),
@@ -139,11 +141,11 @@ def get_pay_run_with_payslips(
         pr = pay_runs[0]
         return {
             "pay_run_id": pr.get("PayRunID"),
-            "pay_run_period_start_date": _parse_xero_date(
+            "pay_run_period_start_date": parse_xero_date(
                 pr.get("PayRunPeriodStartDate")
             ),
-            "pay_run_period_end_date": _parse_xero_date(pr.get("PayRunPeriodEndDate")),
-            "payment_date": _parse_xero_date(pr.get("PaymentDate")),
+            "pay_run_period_end_date": parse_xero_date(pr.get("PayRunPeriodEndDate")),
+            "payment_date": parse_xero_date(pr.get("PaymentDate")),
             "status": pr.get("PayRunStatus"),
             "wages": float(pr.get("Wages", 0) or 0),
             "deductions": float(pr.get("Deductions", 0) or 0),
@@ -697,24 +699,6 @@ def create_employees_in_xero(
 # =============================================================================
 # Helper Functions
 # =============================================================================
-
-
-def _parse_xero_date(date_value: str | None) -> str | None:
-    """Parse Xero date format /Date(timestamp)/ to ISO string."""
-    if not date_value:
-        return None
-
-    if "/Date(" in str(date_value):
-        try:
-            ts = int(
-                str(date_value).split("(")[1].split("+")[0].split("-")[0].split(")")[0]
-            )
-            dt = datetime.fromtimestamp(ts / 1000)
-            return dt.strftime("%Y-%m-%d")
-        except (ValueError, IndexError):
-            return None
-
-    return str(date_value)
 
 
 def _get_employee_name_from_payslip(payslip: dict) -> str:

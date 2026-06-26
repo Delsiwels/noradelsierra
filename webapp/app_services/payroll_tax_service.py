@@ -12,7 +12,7 @@ from typing import Any
 
 import requests
 
-from webapp.time_utils import utcnow_iso
+from webapp.time_utils import parse_xero_date, utcnow_iso
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ def _fetch_pay_runs(
 
         pay_runs = []
         for pr in data.get("PayRuns", []):
-            payment_date = _parse_xero_date(pr.get("PaymentDate"))
+            payment_date = parse_xero_date(pr.get("PaymentDate"))
             if not payment_date:
                 continue
 
@@ -247,24 +247,6 @@ def _calculate_tax(
         "threshold_status": "above" if taxable_wages > period_threshold else "below",
         "period_months": period_months,
     }
-
-
-def _parse_xero_date(date_value: str | None) -> str | None:
-    """Parse Xero date format."""
-    if not date_value:
-        return None
-
-    if "/Date(" in str(date_value):
-        try:
-            ts = int(
-                str(date_value).split("(")[1].split("+")[0].split("-")[0].split(")")[0]
-            )
-            dt = datetime.fromtimestamp(ts / 1000)
-            return dt.strftime("%Y-%m-%d")
-        except (ValueError, IndexError):
-            return None
-
-    return str(date_value)
 
 
 def get_all_state_rates() -> dict[str, dict]:

@@ -770,24 +770,24 @@ class TestHelperFunctions:
 
     def test_parse_xero_date_timestamp(self):
         """Should parse Xero /Date(timestamp)/ format."""
-        from webapp.app_services.payroll_review_service import _parse_xero_date
+        from webapp.time_utils import parse_xero_date
 
-        result = _parse_xero_date("/Date(1704067200000)/")
+        result = parse_xero_date("/Date(1704067200000)/")
         assert result is not None
         assert "2024" in result or "2023" in result  # Timestamp for Jan 2024
 
     def test_parse_xero_date_iso(self):
         """Should handle ISO date strings."""
-        from webapp.app_services.payroll_review_service import _parse_xero_date
+        from webapp.time_utils import parse_xero_date
 
-        result = _parse_xero_date("2024-01-15")
+        result = parse_xero_date("2024-01-15")
         assert result == "2024-01-15"
 
     def test_parse_xero_date_none(self):
         """Should handle None input."""
-        from webapp.app_services.payroll_review_service import _parse_xero_date
+        from webapp.time_utils import parse_xero_date
 
-        result = _parse_xero_date(None)
+        result = parse_xero_date(None)
         assert result is None
 
     def test_is_valid_email(self):

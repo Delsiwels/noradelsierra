@@ -11,7 +11,7 @@ from typing import Any
 
 import requests
 
-from webapp.time_utils import utcnow_iso
+from webapp.time_utils import parse_xero_date, utcnow_iso
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ def _fetch_pay_runs_for_fy(
 
         pay_runs = []
         for pr in data.get("PayRuns", []):
-            payment_date = _parse_xero_date(pr.get("PaymentDate"))
+            payment_date = parse_xero_date(pr.get("PaymentDate"))
             if not payment_date:
                 continue
 
@@ -109,10 +109,10 @@ def _fetch_pay_runs_for_fy(
                         {
                             "pay_run_id": pr.get("PayRunID"),
                             "payment_date": payment_date,
-                            "period_start": _parse_xero_date(
+                            "period_start": parse_xero_date(
                                 pr.get("PayRunPeriodStartDate")
                             ),
-                            "period_end": _parse_xero_date(
+                            "period_end": parse_xero_date(
                                 pr.get("PayRunPeriodEndDate")
                             ),
                             "status": pr.get("PayRunStatus"),
@@ -228,24 +228,6 @@ def _calculate_ytd_totals(quarters: list[dict]) -> dict[str, Any]:
         "pay_run_count": sum(q["pay_run_count"] for q in quarters),
         "max_employees": max((q["employee_count"] for q in quarters), default=0),
     }
-
-
-def _parse_xero_date(date_value: str | None) -> str | None:
-    """Parse Xero date format /Date(timestamp)/ to YYYY-MM-DD."""
-    if not date_value:
-        return None
-
-    if "/Date(" in str(date_value):
-        try:
-            ts = int(
-                str(date_value).split("(")[1].split("+")[0].split("-")[0].split(")")[0]
-            )
-            dt = datetime.fromtimestamp(ts / 1000)
-            return dt.strftime("%Y-%m-%d")
-        except (ValueError, IndexError):
-            return None
-
-    return str(date_value)
 
 
 def export_to_excel(data: dict[str, Any]) -> BytesIO:
