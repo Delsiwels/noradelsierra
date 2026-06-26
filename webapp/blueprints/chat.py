@@ -85,7 +85,7 @@ def _parse_int_query_arg(
 ) -> int:
     """Parse and validate integer query arguments."""
     raw = request.args.get(name, None)
-    if raw in (None, ""):
+    if not raw:
         value = default
     else:
         try:
