@@ -10,6 +10,12 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.excel_styles import (
+    header_fill as _header_fill,
+)
+from webapp.app_services.excel_styles import (
+    header_font as _header_font,
+)
 from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import utcnow_iso
 
@@ -212,7 +218,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
     """Export FTC calculation to Excel."""
     try:
         import openpyxl
-        from openpyxl.styles import Font, PatternFill
+        from openpyxl.styles import Font
     except ImportError as err:
         raise ImportError("openpyxl required for Excel export") from err
 
@@ -221,10 +227,8 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
     ws.title = "Fuel Tax Credits"
 
     # Styles
-    header_fill = PatternFill(
-        start_color="0066CC", end_color="0066CC", fill_type="solid"
-    )
-    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = _header_fill()
+    header_font = _header_font()
 
     result = data.get("data", {})
     period = data.get("period", {})

@@ -11,6 +11,15 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.excel_styles import (
+    header_fill as _header_fill,
+)
+from webapp.app_services.excel_styles import (
+    header_font as _header_font,
+)
+from webapp.app_services.excel_styles import (
+    warning_fill as _warning_fill,
+)
 from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import utcnow_iso
 
@@ -264,7 +273,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
     """Export prepayment schedule to Excel."""
     try:
         import openpyxl
-        from openpyxl.styles import Font, PatternFill
+        from openpyxl.styles import Font
         from openpyxl.utils import get_column_letter
     except ImportError as err:
         raise ImportError("openpyxl required for Excel export") from err
@@ -274,13 +283,9 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
     ws.title = "Prepayment Tracker"
 
     # Styles
-    header_fill = PatternFill(
-        start_color="0066CC", end_color="0066CC", fill_type="solid"
-    )
-    header_font = Font(bold=True, color="FFFFFF")
-    warning_fill = PatternFill(
-        start_color="FEF3C7", end_color="FEF3C7", fill_type="solid"
-    )
+    header_fill = _header_fill()
+    header_font = _header_font()
+    warning_fill = _warning_fill()
 
     result = data.get("data", {})
 
