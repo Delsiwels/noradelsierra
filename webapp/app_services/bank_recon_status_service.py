@@ -11,6 +11,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
@@ -96,11 +97,7 @@ def generate_bank_recon_status(
 
 def _fetch_bank_accounts(access_token: str, tenant_id: str) -> list[dict]:
     """Fetch bank accounts from Xero."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -145,11 +142,7 @@ def _fetch_bank_summary(
     as_at_date: str,
 ) -> dict[str, float]:
     """Fetch bank summary report for balances."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -197,11 +190,7 @@ def _fetch_unreconciled_transactions(
     account_id: str,
 ) -> list[dict]:
     """Fetch unreconciled bank transactions for an account."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         # Fetch bank transactions that are not reconciled

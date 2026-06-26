@@ -16,6 +16,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import parse_xero_date
 
 logger = logging.getLogger(__name__)
@@ -46,11 +47,7 @@ def get_pay_runs_by_status(
     Returns:
         List of pay run dicts with summary info
     """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -119,11 +116,7 @@ def get_pay_run_with_payslips(
     Returns:
         Pay run dict with Payslips array, or None on error
     """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -282,11 +275,7 @@ def get_employee_leave_balances(
 
     Returns a dict mapping employee_id -> list of leave balances.
     """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     balances: dict[str, list[dict]] = {}
 
@@ -617,12 +606,7 @@ def create_employees_in_xero(
     Returns:
         Dict with success status and results per employee
     """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id, json_content=True)
 
     results = []
     success_count = 0

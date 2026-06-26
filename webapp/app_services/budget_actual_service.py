@@ -10,6 +10,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
@@ -87,11 +88,7 @@ def _fetch_profit_and_loss(
     to_date: str,
 ) -> dict[str, Any]:
     """Fetch actual P&L data from Xero."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -186,11 +183,7 @@ def _fetch_xero_budget(
     Note: Xero Budgets API has limited availability.
     Returns None if not available.
     """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         # Try Budget Summary report

@@ -12,6 +12,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import parse_xero_date, utcnow_iso
 
 logger = logging.getLogger(__name__)
@@ -149,11 +150,7 @@ def _fetch_pay_runs(
     to_date: str,
 ) -> list[dict]:
     """Fetch pay runs for the period."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(

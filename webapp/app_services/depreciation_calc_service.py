@@ -12,6 +12,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
@@ -95,11 +96,7 @@ def _fetch_fixed_asset_accounts(
     tenant_id: str,
 ) -> list[dict]:
     """Fetch fixed asset accounts from Xero."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -143,11 +140,7 @@ def _fetch_asset_balances(
     to_date: str,
 ) -> dict[str, dict]:
     """Fetch balance sheet to get asset values."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     balances = {}
 
@@ -235,11 +228,7 @@ def _fetch_depreciation_journals(
     to_date: str,
 ) -> list[dict]:
     """Fetch journal entries related to depreciation."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         # Search for journals with depreciation in reference/narration

@@ -12,6 +12,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import parse_xero_date, utcnow_iso
 
 logger = logging.getLogger(__name__)
@@ -92,11 +93,7 @@ def _fetch_pay_runs(
     to_date: str,
 ) -> list[dict]:
     """Fetch pay runs within the date range."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -177,11 +174,7 @@ def _fetch_bas_data(
     Note: Xero API doesn't directly expose BAS data.
     This attempts to get related report data or returns placeholder.
     """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     # Try to fetch GST report which may have W1/W2 data
     try:

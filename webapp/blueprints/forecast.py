@@ -19,6 +19,8 @@ from functools import wraps
 import requests
 from flask import Blueprint, current_app, jsonify, render_template, request, session
 
+from webapp.app_services.xero_http import xero_headers
+
 logger = logging.getLogger(__name__)
 
 forecast_bp = Blueprint("forecast", __name__)
@@ -100,11 +102,7 @@ def api_cash_position():
         return jsonify({"error": "Xero not connected"}), 400
 
     try:
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Xero-Tenant-Id": tenant_id,
-            "Accept": "application/json",
-        }
+        headers = xero_headers(access_token, tenant_id)
         resp = requests.get(
             "https://api.xero.com/api.xro/2.0/Accounts",
             params={"where": 'Type=="BANK"'},
@@ -174,11 +172,7 @@ def api_generate_forecast():
         lodge_method = "self"
 
     try:
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Xero-Tenant-Id": tenant_id,
-            "Accept": "application/json",
-        }
+        headers = xero_headers(access_token, tenant_id)
 
         # 1. Fetch bank accounts
         acct_resp = requests.get(

@@ -11,6 +11,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import utcnow_iso
 
 logger = logging.getLogger(__name__)
@@ -80,11 +81,7 @@ def _fetch_aged_receivables(
     as_at_date: str,
 ) -> list[dict]:
     """Fetch aged receivables by contact."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
@@ -109,11 +106,7 @@ def _fetch_aged_payables(
     as_at_date: str,
 ) -> list[dict]:
     """Fetch aged payables by contact."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
+    headers = xero_headers(access_token, tenant_id)
 
     try:
         resp = requests.get(
