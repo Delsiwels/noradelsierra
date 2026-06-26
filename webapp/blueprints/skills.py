@@ -17,6 +17,12 @@ import uuid
 
 from flask import Blueprint, jsonify, render_template, request
 
+from webapp.blueprints._helpers import (
+    get_current_user,
+    get_user_team_id,
+    login_required,
+)
+
 # Support both local and deployed import paths
 try:
     from webapp.skills.custom_skill_service import (
@@ -67,49 +73,6 @@ MAX_SKILL_FILE_SIZE = 100 * 1024
 
 # Filename validation pattern
 SAFE_FILENAME_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*\.md$")
-
-
-def get_current_user():
-    """Get current authenticated user."""
-    from flask import current_app
-
-    if current_app.config.get("TESTING"):
-        return None
-
-    from flask_login import current_user as _current_user
-
-    if _current_user.is_authenticated:
-        return _current_user
-    return None
-
-
-def get_user_team_id():
-    """Get current user's primary team ID."""
-    user = get_current_user()
-    if user and hasattr(user, "team_id"):
-        return user.team_id
-    return None
-
-
-def login_required(f):
-    """Require login decorator. Bypassed in testing mode."""
-    from functools import wraps
-
-    from flask import current_app
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_app.config.get("TESTING"):
-            return f(*args, **kwargs)
-
-        from flask_login import current_user as _current_user
-
-        if not _current_user.is_authenticated:
-            return {"error": "Authentication required"}, 401
-
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 def validate_uuid(value: str) -> bool:

@@ -14,6 +14,8 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
+from webapp.blueprints._helpers import get_current_user, login_required
+
 logger = logging.getLogger(__name__)
 
 analytics_bp = Blueprint("analytics", __name__)
@@ -37,41 +39,6 @@ def rate_limit(limit_string):
         return f
 
     return decorator
-
-
-def get_current_user():
-    """Get current authenticated user."""
-    from flask import current_app
-
-    if current_app.config.get("TESTING"):
-        return None
-
-    from flask_login import current_user as _current_user
-
-    if _current_user.is_authenticated:
-        return _current_user
-    return None
-
-
-def login_required(f):
-    """Require login decorator. Bypassed in testing mode."""
-    from functools import wraps
-
-    from flask import current_app
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_app.config.get("TESTING"):
-            return f(*args, **kwargs)
-
-        from flask_login import current_user as _current_user
-
-        if not _current_user.is_authenticated:
-            return {"error": "Authentication required"}, 401
-
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 def _parse_int_query_arg(

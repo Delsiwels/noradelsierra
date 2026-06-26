@@ -15,6 +15,8 @@ from datetime import UTC, datetime
 
 from flask import Blueprint, jsonify, render_template, request
 
+from webapp.blueprints._helpers import login_required
+
 logger = logging.getLogger(__name__)
 
 cashflow_bp = Blueprint("cashflow", __name__)
@@ -38,47 +40,6 @@ def rate_limit(limit_string):
         return f
 
     return decorator
-
-
-def get_current_user():
-    """Get current authenticated user."""
-    from flask import current_app
-
-    if current_app.config.get("TESTING"):
-        return None
-
-    try:
-        from flask_login import current_user
-
-        if current_user.is_authenticated:
-            return current_user
-    except (ImportError, AttributeError):
-        pass
-    return None
-
-
-def login_required(f):
-    """Require login decorator. Bypassed in testing mode."""
-    from functools import wraps
-
-    from flask import current_app
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_app.config.get("TESTING"):
-            return f(*args, **kwargs)
-
-        try:
-            from flask_login import current_user
-
-            if not current_user.is_authenticated:
-                return {"error": "Authentication required"}, 401
-        except (ImportError, AttributeError):
-            pass
-
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 # Transaction category mappings for cash flow classification

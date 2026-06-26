@@ -5,6 +5,28 @@ from functools import wraps
 from flask import current_app, jsonify, session
 
 
+def get_current_user():
+    """Get the current authenticated user, or None (None in testing mode)."""
+    if current_app.config.get("TESTING"):
+        return None
+    try:
+        from flask_login import current_user
+
+        if current_user.is_authenticated:
+            return current_user
+    except (ImportError, AttributeError):
+        pass
+    return None
+
+
+def get_user_team_id():
+    """Get the current user's primary team ID, or None."""
+    user = get_current_user()
+    if user and hasattr(user, "team_id"):
+        return user.team_id
+    return None
+
+
 def login_required(f):
     """Require login decorator. Bypassed in testing mode."""
 
