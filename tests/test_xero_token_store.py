@@ -43,6 +43,26 @@ def test_token_not_stored_in_plaintext():
         assert "SUPERSECRET" not in row.encrypted_data
 
 
+def test_get_xero_credentials_prefers_store(monkeypatch):
+    """The shared credential helper reads server-side storage before session."""
+    from types import SimpleNamespace
+
+    app = create_app(_EncryptedConfig)
+    with app.app_context():
+        from webapp.blueprints import _helpers
+        from webapp.services import xero_token_store
+
+        xero_token_store.save_connection(
+            "u1", {"access_token": "STORED-TOKEN", "tenant_id": "t-stored"}
+        )
+        monkeypatch.setattr("flask_login.current_user", SimpleNamespace(id="u1"))
+        with app.test_request_context():
+            access_token, tenant_id = _helpers.get_xero_credentials()
+
+        assert access_token == "STORED-TOKEN"
+        assert tenant_id == "t-stored"
+
+
 def test_noop_without_key():
     app = create_app(TestingConfig)  # no TOKEN_ENCRYPTION_KEY
     with app.app_context():

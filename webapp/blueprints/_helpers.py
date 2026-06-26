@@ -47,8 +47,20 @@ def login_required(f):
 
 
 def get_xero_credentials() -> tuple[str | None, str | None]:
-    """Get Xero access token and tenant ID from session."""
-    conn = session.get("xero_connection", {})
+    """Get the Xero access token and tenant ID for the current user.
+
+    Prefers the encrypted server-side token store; falls back to the session
+    (and legacy flat session keys) when the store is empty or unavailable, so
+    existing connections keep working during migration.
+    """
+    from flask_login import current_user
+
+    from webapp.services import xero_token_store
+
+    user_id = getattr(current_user, "id", None)
+    conn = xero_token_store.load_connection(user_id) or session.get(
+        "xero_connection", {}
+    )
     access_token = conn.get("access_token") or session.get("xero_access_token")
     tenant_id = conn.get("tenant_id") or session.get("xero_tenant_id")
     return access_token, tenant_id

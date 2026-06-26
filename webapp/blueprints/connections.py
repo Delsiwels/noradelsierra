@@ -38,7 +38,12 @@ def _build_pkce_pair() -> tuple[str, str]:
 
 
 def _get_xero_session() -> dict:
-    """Read Xero connection data from the Flask session."""
+    """Read the active Xero connection, preferring encrypted server-side storage."""
+    from webapp.services import xero_token_store
+
+    stored = xero_token_store.load_connection(getattr(current_user, "id", None))
+    if stored:
+        return stored
     data: dict = session.get("xero_connection", {})
     return data
 
@@ -171,6 +176,10 @@ def switch_connection():
     conn["tenant_name"] = target.get("tenant_name", "Unknown")
     session["xero_connection"] = conn
     session.modified = True
+    # Write through to the encrypted store when available (no-op otherwise).
+    from webapp.services import xero_token_store
+
+    xero_token_store.save_connection(getattr(current_user, "id", None), conn)
 
     logger.info(
         "User %s switched Xero tenant to %s (%s)",

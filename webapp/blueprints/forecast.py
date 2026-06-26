@@ -15,7 +15,7 @@ Endpoints:
 import logging
 
 import requests
-from flask import Blueprint, current_app, jsonify, render_template, request, session
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 from webapp.app_services.forecast_service import (
     fetch_bank_accounts,
@@ -24,6 +24,7 @@ from webapp.app_services.forecast_service import (
 from webapp.blueprints._helpers import (
     get_current_user as _get_current_user,
 )
+from webapp.blueprints._helpers import get_xero_credentials
 from webapp.blueprints._helpers import (
     login_required as _login_required,
 )
@@ -69,8 +70,7 @@ def api_cash_position():
         - accounts: list of {name, balance, id}
         - total_cash: float
     """
-    access_token = session.get("xero_access_token")
-    tenant_id = session.get("xero_tenant_id")
+    access_token, tenant_id = get_xero_credentials()
 
     if not access_token or not tenant_id:
         return jsonify({"error": "Xero not connected"}), 400
@@ -109,8 +109,7 @@ def api_generate_forecast():
         - risk_indicators: list of risk alert objects
         - deadlines: list of BAS deadline objects
     """
-    access_token = session.get("xero_access_token")
-    tenant_id = session.get("xero_tenant_id")
+    access_token, tenant_id = get_xero_credentials()
 
     if not access_token or not tenant_id:
         return jsonify({"error": "Xero not connected"}), 400
