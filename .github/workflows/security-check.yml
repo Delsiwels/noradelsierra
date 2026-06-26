@@ -27,12 +27,16 @@ jobs:
         run: ruff check webapp/ --output-format=github
 
       - name: Bandit Security Scan
-        run: bandit -r webapp/ -ll --format json -o bandit-report.json || true
+        # Gates the build: bandit exits non-zero on medium+ findings.
+        run: bandit -r webapp/ -ll
 
       - name: MyPy Type Check
-        run: mypy webapp/ --ignore-missing-imports || true
+        # Gates the build: the tree is type-clean (see CLAUDE.md checks).
+        run: mypy webapp/ --ignore-missing-imports
 
       - name: Safety Dependency Check
+        # Left non-blocking: the current safety CLI requires account auth and
+        # would flake CI. Revisit with `pip-audit` or an authenticated scan.
         run: |
           if [ -f requirements.txt ]; then safety check -r requirements.txt || true; fi
           if [ -f requirements-dev.txt ]; then safety check -r requirements-dev.txt || true; fi
