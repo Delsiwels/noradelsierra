@@ -51,20 +51,6 @@ logger = logging.getLogger(__name__)
 payroll_review_bp = Blueprint("payroll_review", __name__, url_prefix="/payroll-review")
 
 
-def _get_current_user():
-    """Get current authenticated user."""
-    if current_app.config.get("TESTING"):
-        return None
-    try:
-        from flask_login import current_user
-
-        if current_user.is_authenticated:
-            return current_user
-    except (ImportError, AttributeError):
-        pass
-    return None
-
-
 # =============================================================================
 # Page Route
 # =============================================================================

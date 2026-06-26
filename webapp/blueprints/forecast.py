@@ -14,49 +14,21 @@ Endpoints:
 
 import logging
 from datetime import UTC, date, datetime, timedelta
-from functools import wraps
 
 import requests
 from flask import Blueprint, current_app, jsonify, render_template, request, session
 
 from webapp.app_services.xero_http import xero_headers
+from webapp.blueprints._helpers import (
+    get_current_user as _get_current_user,
+)
+from webapp.blueprints._helpers import (
+    login_required as _login_required,
+)
 
 logger = logging.getLogger(__name__)
 
 forecast_bp = Blueprint("forecast", __name__)
-
-
-def _get_current_user():
-    """Get current authenticated user."""
-    if current_app.config.get("TESTING"):
-        return None
-    try:
-        from flask_login import current_user
-
-        if current_user.is_authenticated:
-            return current_user
-    except (ImportError, AttributeError):
-        pass
-    return None
-
-
-def _login_required(f):
-    """Require login decorator. Bypassed in testing mode."""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_app.config.get("TESTING"):
-            return f(*args, **kwargs)
-        try:
-            from flask_login import current_user
-
-            if not current_user.is_authenticated:
-                return jsonify({"error": "Authentication required"}), 401
-        except (ImportError, AttributeError):
-            pass
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 # =========================================================================
