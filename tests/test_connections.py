@@ -321,17 +321,44 @@ class TestXeroCallback:
         assert res.status_code == 302
         assert "xero_auth=failed" in res.headers["Location"]
 
-    def test_success_captures_code_and_pkce_verifier(self, client):
+    def test_success_exchanges_and_stores_connection(self, client):
+        from unittest.mock import patch
+
         _register_and_login(client)
         with client.session_transaction() as sess:
             sess["xero_oauth_state"] = "state-123"
             sess["xero_pkce_verifier"] = "pkce-verifier-xyz"
 
-        res = client.get("/xero/callback?code=auth-code-1&state=state-123")
-        assert res.status_code == 302
-        assert "xero_auth=code_received" in res.headers["Location"]
+        fake_conn = {
+            "access_token": "AT",
+            "refresh_token": "RT",
+            "tenant_id": "t1",
+            "tenant_name": "Demo",
+            "tenants": [{"tenant_id": "t1", "tenant_name": "Demo"}],
+        }
+        with patch(
+            "webapp.services.xero_oauth.exchange_code", return_value=fake_conn
+        ) as exchange:
+            res = client.get("/xero/callback?code=auth-code-1&state=state-123")
 
+        assert res.status_code == 302
+        assert "xero_auth=connected" in res.headers["Location"]
+        exchange.assert_called_once_with("auth-code-1", "pkce-verifier-xyz")
         with client.session_transaction() as sess:
-            assert sess.get("xero_oauth_code") == "auth-code-1"
-            assert sess.get("xero_oauth_pkce_verifier") == "pkce-verifier-xyz"
+            # No encryption key under TestingConfig -> session fallback path.
+            assert sess["xero_connection"]["access_token"] == "AT"
+            assert sess["xero_tenants"] == fake_conn["tenants"]
             assert "xero_oauth_state" not in sess
+
+    def test_failed_exchange_redirects(self, client):
+        from unittest.mock import patch
+
+        _register_and_login(client)
+        with client.session_transaction() as sess:
+            sess["xero_oauth_state"] = "state-9"
+            sess["xero_pkce_verifier"] = "verifier-9"
+
+        with patch("webapp.services.xero_oauth.exchange_code", return_value=None):
+            res = client.get("/xero/callback?code=bad&state=state-9")
+        assert res.status_code == 302
+        assert "xero_auth=exchange_failed" in res.headers["Location"]

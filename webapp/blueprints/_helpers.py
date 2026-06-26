@@ -58,7 +58,7 @@ def get_xero_credentials() -> tuple[str | None, str | None]:
     from webapp.services import xero_token_store
 
     user_id = getattr(current_user, "id", None)
-    conn = xero_token_store.load_connection(user_id) or session.get(
+    conn = xero_token_store.load_active_connection(user_id) or session.get(
         "xero_connection", {}
     )
     access_token = conn.get("access_token") or session.get("xero_access_token")

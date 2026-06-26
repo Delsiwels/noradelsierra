@@ -38,14 +38,35 @@ def _build_pkce_pair() -> tuple[str, str]:
 
 
 def _get_xero_session() -> dict:
-    """Read the active Xero connection, preferring encrypted server-side storage."""
+    """Read the active Xero connection, preferring encrypted server-side storage.
+
+    Refreshes the access token transparently when it has expired.
+    """
     from webapp.services import xero_token_store
 
-    stored = xero_token_store.load_connection(getattr(current_user, "id", None))
+    stored = xero_token_store.load_active_connection(getattr(current_user, "id", None))
     if stored:
         return stored
     data: dict = session.get("xero_connection", {})
     return data
+
+
+def _store_connection(connection: dict) -> None:
+    """Persist a Xero connection: encrypted server-side when possible, else session."""
+    from webapp.services import xero_token_store
+
+    user_id = getattr(current_user, "id", None)
+    if xero_token_store.save_connection(user_id, connection):
+        # Tokens live in the encrypted store; drop any token from the cookie.
+        session.pop("xero_connection", None)
+        session.pop("xero_access_token", None)
+        session.pop("xero_tenant_id", None)
+    else:
+        # No encryption key configured: fall back to session (legacy behaviour).
+        session["xero_connection"] = connection
+    # Tenant names/ids aren't secret; keep them in the session for the switcher.
+    session["xero_tenants"] = connection.get("tenants", [])
+    session.modified = True
 
 
 def _compute_status(connection: dict) -> str:
@@ -170,16 +191,16 @@ def switch_connection():
     if not target:
         return jsonify({"error": "Tenant not found in available connections"}), 404
 
-    # Update the active connection in session
+    # Update the active tenant and persist: server-side store when available
+    # (no token in the cookie), else the legacy session copy.
     conn = _get_xero_session()
     conn["tenant_id"] = target["tenant_id"]
     conn["tenant_name"] = target.get("tenant_name", "Unknown")
-    session["xero_connection"] = conn
-    session.modified = True
-    # Write through to the encrypted store when available (no-op otherwise).
     from webapp.services import xero_token_store
 
-    xero_token_store.save_connection(getattr(current_user, "id", None), conn)
+    if not xero_token_store.save_connection(getattr(current_user, "id", None), conn):
+        session["xero_connection"] = conn
+        session.modified = True
 
     logger.info(
         "User %s switched Xero tenant to %s (%s)",
@@ -266,9 +287,14 @@ def xero_callback():
         session.modified = True
         return redirect("/dashboard?xero_auth=invalid_state")
 
-    # Persist callback artifacts for downstream token exchange handling.
-    session["xero_oauth_code"] = code
-    session["xero_oauth_pkce_verifier"] = verifier
-    session.modified = True
-    logger.info("Captured Xero OAuth callback code for user %s", current_user.id)
-    return redirect("/dashboard?xero_auth=code_received")
+    # Exchange the code for tokens immediately and store them server-side.
+    from webapp.services import xero_oauth
+
+    connection = xero_oauth.exchange_code(code, verifier)
+    if not connection or not connection.get("access_token"):
+        logger.warning("Xero token exchange failed for user %s", current_user.id)
+        return redirect("/dashboard?xero_auth=exchange_failed")
+
+    _store_connection(connection)
+    logger.info("Connected Xero for user %s", current_user.id)
+    return redirect("/dashboard?xero_auth=connected")
