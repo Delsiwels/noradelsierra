@@ -156,6 +156,9 @@ def skill_detail_page(skill_id: str):
     if not skill:
         return render_template("skills/index.html", error="Skill not found"), 404
 
+    if skill.scope == "private" and (user is None or skill.user_id != user.id):
+        return render_template("skills/index.html", error="Access denied"), 403
+
     return render_template("skills/detail.html", skill=skill, user=user)
 
 
@@ -180,6 +183,9 @@ def skill_edit_page(skill_id: str):
 
     if not skill:
         return render_template("skills/index.html", error="Skill not found"), 404
+
+    if skill.scope == "private" and (user is None or skill.user_id != user.id):
+        return render_template("skills/index.html", error="Access denied"), 403
 
     # Get content from R2
     content = service.get_skill_content(skill_id)
