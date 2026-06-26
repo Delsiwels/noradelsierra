@@ -34,6 +34,7 @@ from webapp.services.runtime_health_persistence import (
 )
 from webapp.services.startup_checks import (
     build_readiness_report,
+    require_secure_secret_key,
     run_startup_config_audit,
     should_fail_fast_on_config_audit,
 )
@@ -129,6 +130,10 @@ def create_app(config_class: type = Config) -> Flask:
             "Startup config audit failed with errors: "
             + "; ".join(config_audit["errors"])
         )
+
+    # Hard stop on a forgeable session key in production, regardless of the
+    # opt-in fail-fast flag above.
+    require_secure_secret_key(app)
 
     # Initialize extensions
     db.init_app(app)

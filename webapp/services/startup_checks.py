@@ -278,6 +278,28 @@ def should_fail_fast_on_config_audit(app: Flask) -> bool:
     return bool(app.config.get("STARTUP_CONFIG_AUDIT_FAIL_FAST", False))
 
 
+def is_insecure_secret_key(app: Flask) -> bool:
+    """True if SECRET_KEY is missing or the known development default."""
+    secret_key = app.config.get("SECRET_KEY")
+    return not secret_key or secret_key == _DEV_CONFIG_SENTINEL
+
+
+def require_secure_secret_key(app: Flask) -> None:
+    """Halt startup in a production context if SECRET_KEY is missing/default.
+
+    A forgeable session-signing key lets anyone mint session cookies for any
+    user, so this is enforced unconditionally — not gated on
+    STARTUP_CONFIG_AUDIT_FAIL_FAST. Dev/test contexts keep only a warning, and a
+    correctly configured production (real SECRET_KEY env var) never trips it.
+    """
+    if _is_production_context(app) and is_insecure_secret_key(app):
+        raise RuntimeError(
+            "SECRET_KEY must be set to a strong random value in production "
+            "(it is currently missing or the development default). Set the "
+            "SECRET_KEY environment variable before starting."
+        )
+
+
 def _is_production_context(app: Flask) -> bool:
     if app.config.get("TESTING"):
         return False
