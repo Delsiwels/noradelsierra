@@ -17,6 +17,7 @@ from webapp.app_services.excel_styles import (
 from webapp.app_services.excel_styles import (
     header_font as _header_font,
 )
+from webapp.app_services.excel_styles import sanitize_workbook
 from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import parse_xero_date, utcnow_iso
 
@@ -330,6 +331,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
         ws.column_dimensions[get_column_letter(col)].width = 15
 
     output = BytesIO()
+    sanitize_workbook(wb)
     wb.save(output)
     output.seek(0)
     return output

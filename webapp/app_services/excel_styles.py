@@ -44,3 +44,24 @@ def header_font():
     from openpyxl.styles import Font
 
     return Font(bold=True, color=HEADER_FONT_COLOR)
+
+
+_FORMULA_PREFIXES = ("=", "+", "-", "@")
+
+
+def sanitize_workbook(wb):
+    """Neutralize formula injection in every string cell of a workbook.
+
+    A leading ``=``, ``+``, ``-``, or ``@`` makes spreadsheet apps execute a
+    cell as a formula (CSV/Excel formula injection). Since exports embed
+    Xero-sourced text (contact/account names, descriptions, references), prefix
+    any such string value with a single quote so it is stored and shown as
+    text. Numeric cells are left untouched. Call once just before ``wb.save``.
+    """
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                value = cell.value
+                if isinstance(value, str) and value[:1] in _FORMULA_PREFIXES:
+                    cell.value = "'" + value
+    return wb

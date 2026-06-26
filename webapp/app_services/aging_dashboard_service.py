@@ -20,6 +20,7 @@ from webapp.app_services.excel_styles import (
 from webapp.app_services.excel_styles import (
     header_font as _header_font,
 )
+from webapp.app_services.excel_styles import sanitize_workbook
 from webapp.app_services.excel_styles import (
     warning_fill as _warning_fill,
 )
@@ -348,6 +349,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
     )
 
     output = BytesIO()
+    sanitize_workbook(wb)
     wb.save(output)
     output.seek(0)
     return output

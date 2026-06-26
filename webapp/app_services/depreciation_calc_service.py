@@ -24,6 +24,7 @@ from webapp.app_services.excel_styles import (
 from webapp.app_services.excel_styles import (
     ok_fill as _ok_fill,
 )
+from webapp.app_services.excel_styles import sanitize_workbook
 from webapp.app_services.excel_styles import (
     warning_fill as _warning_fill,
 )
@@ -607,6 +608,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
         ws.column_dimensions[get_column_letter(col)].width = 14
 
     output = BytesIO()
+    sanitize_workbook(wb)
     wb.save(output)
     output.seek(0)
     return output

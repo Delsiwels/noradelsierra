@@ -12,6 +12,7 @@ from typing import Any
 
 import requests
 
+from webapp.app_services.excel_styles import sanitize_workbook
 from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import parse_xero_date, utcnow_iso
 
@@ -327,6 +328,7 @@ def export_to_excel(data: dict[str, Any]) -> BytesIO:
     ws.column_dimensions["B"].width = 20
 
     output = BytesIO()
+    sanitize_workbook(wb)
     wb.save(output)
     output.seek(0)
     return output
