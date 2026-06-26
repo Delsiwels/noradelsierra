@@ -96,6 +96,83 @@ class TestSkillPageIDOR:
             assert client.get(f"/skills/{skill_id}").status_code == 200
 
 
+_SHARED_SKILL_MD = """---
+name: shared_team_skill
+description: A shared skill used to test cross-team mutation control
+version: 1.0.0
+author: TeamA
+triggers:
+  - "shared probe"
+industries:
+  - general
+tags:
+  - test
+---
+
+# Shared Team Skill
+
+Team-scoped content that only the owning team may modify.
+"""
+
+
+def _make_shared_skill_for_team_a():
+    """Within an app context: create team-A/team-B users + a team-A shared skill."""
+    from unittest.mock import MagicMock
+
+    from webapp.models import User, db
+    from webapp.skills.custom_skill_service import CustomSkillService
+    from webapp.skills.r2_skill_loader import R2SkillLoader
+
+    db.create_all()
+    owner = User(
+        email="owner@a.com", password_hash="h", name="O", role="owner",
+        team_id="team-A",
+    )
+    attacker = User(
+        email="atk@b.com", password_hash="h", name="A", role="owner",
+        team_id="team-B",
+    )
+    db.session.add_all([owner, attacker])
+    db.session.commit()
+
+    mock_r2 = MagicMock(spec=R2SkillLoader)
+    mock_r2.is_enabled = False
+    svc = CustomSkillService(r2_loader=mock_r2)
+    skill = svc.create_skill(
+        content=_SHARED_SKILL_MD,
+        scope="shared",
+        team_id="team-A",
+        created_by=owner.id,
+    )
+    return svc, skill.id, owner.id, attacker.id
+
+
+class TestSharedSkillTeamIsolation:
+    """F3: shared-skill update/delete restricted to the owning team."""
+
+    def test_cross_team_mutation_denied(self):
+        from webapp.app import create_app
+        from webapp.config import TestingConfig
+        from webapp.skills.custom_skill_service import PermissionDeniedError
+
+        app = create_app(TestingConfig)
+        with app.app_context():
+            svc, skill_id, _owner_id, attacker_id = _make_shared_skill_for_team_a()
+            with pytest.raises(PermissionDeniedError):
+                svc.delete_skill(skill_id, user_id=attacker_id)
+            with pytest.raises(PermissionDeniedError):
+                svc.update_skill(skill_id, _SHARED_SKILL_MD, user_id=attacker_id)
+
+    def test_same_team_delete_allowed(self):
+        from webapp.app import create_app
+        from webapp.config import TestingConfig
+
+        app = create_app(TestingConfig)
+        with app.app_context():
+            svc, skill_id, owner_id, _attacker_id = _make_shared_skill_for_team_a()
+            assert svc.delete_skill(skill_id, user_id=owner_id) is True
+
+
 class TestSessionCookieSecure:
     """F5: session cookie must be Secure in production, not forced elsewhere."""
 

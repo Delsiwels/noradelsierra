@@ -56,6 +56,20 @@ class PermissionDeniedError(CustomSkillServiceError):
     pass
 
 
+def _caller_in_team(user_id: str | None, team_id: str | None) -> bool:
+    """Return True if ``user_id`` identifies a user belonging to ``team_id``.
+
+    Used to gate mutation of shared (team-scoped) skills so a member of one
+    team cannot modify another team's shared skill.
+    """
+    if not user_id or not team_id:
+        return False
+    from webapp.models import User, db
+
+    caller = db.session.get(User, user_id)
+    return bool(caller and caller.team_id == team_id)
+
+
 class CustomSkillService:
     """
     Service for managing custom skills.
@@ -269,6 +283,10 @@ class CustomSkillService:
         # Permission check
         if custom_skill.scope == "private" and custom_skill.user_id != user_id:
             raise PermissionDeniedError("Cannot update another user's private skill")
+        if custom_skill.scope == "shared" and not _caller_in_team(
+            user_id, custom_skill.team_id
+        ):
+            raise PermissionDeniedError("Cannot update another team's shared skill")
 
         # Validate content
         is_valid, error, metadata = self.validate_skill_content(content)
@@ -349,6 +367,10 @@ class CustomSkillService:
         # Permission check
         if custom_skill.scope == "private" and custom_skill.user_id != user_id:
             raise PermissionDeniedError("Cannot delete another user's private skill")
+        if custom_skill.scope == "shared" and not _caller_in_team(
+            user_id, custom_skill.team_id
+        ):
+            raise PermissionDeniedError("Cannot delete another team's shared skill")
 
         storage_key = custom_skill.storage_key
 
