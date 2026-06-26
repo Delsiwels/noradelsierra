@@ -11,16 +11,13 @@ Endpoints:
 """
 
 import logging
-from functools import wraps
 
 from flask import (
     Blueprint,
-    current_app,
     jsonify,
     render_template,
     request,
     send_file,
-    session,
 )
 
 from webapp.app_services.payroll_tax_service import (
@@ -28,37 +25,16 @@ from webapp.app_services.payroll_tax_service import (
     export_to_excel,
     get_all_state_rates,
 )
+from webapp.blueprints._helpers import (
+    get_xero_credentials as _get_xero_credentials,
+)
+from webapp.blueprints._helpers import (
+    login_required as _login_required,
+)
 
 logger = logging.getLogger(__name__)
 
 payroll_tax_bp = Blueprint("payroll_tax", __name__, url_prefix="/payroll-tax")
-
-
-def _login_required(f):
-    """Require login decorator. Bypassed in testing mode."""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_app.config.get("TESTING"):
-            return f(*args, **kwargs)
-        try:
-            from flask_login import current_user
-
-            if not current_user.is_authenticated:
-                return jsonify({"error": "Authentication required"}), 401
-        except (ImportError, AttributeError):
-            pass
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-def _get_xero_credentials() -> tuple[str | None, str | None]:
-    """Get Xero access token and tenant ID from session."""
-    conn = session.get("xero_connection", {})
-    access_token = conn.get("access_token") or session.get("xero_access_token")
-    tenant_id = conn.get("tenant_id") or session.get("xero_tenant_id")
-    return access_token, tenant_id
 
 
 @payroll_tax_bp.route("/")

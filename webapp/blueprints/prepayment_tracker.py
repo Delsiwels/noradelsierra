@@ -10,21 +10,24 @@ Endpoints:
 """
 
 import logging
-from functools import wraps
 
 from flask import (
     Blueprint,
-    current_app,
     jsonify,
     render_template,
     request,
     send_file,
-    session,
 )
 
 from webapp.app_services.prepayment_tracker_service import (
     export_to_excel,
     generate_prepayment_schedule,
+)
+from webapp.blueprints._helpers import (
+    get_xero_credentials as _get_xero_credentials,
+)
+from webapp.blueprints._helpers import (
+    login_required as _login_required,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,30 +35,6 @@ logger = logging.getLogger(__name__)
 prepayment_tracker_bp = Blueprint(
     "prepayment_tracker", __name__, url_prefix="/prepayment-tracker"
 )
-
-
-def _login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_app.config.get("TESTING"):
-            return f(*args, **kwargs)
-        try:
-            from flask_login import current_user
-
-            if not current_user.is_authenticated:
-                return jsonify({"error": "Authentication required"}), 401
-        except (ImportError, AttributeError):
-            pass
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-def _get_xero_credentials() -> tuple[str | None, str | None]:
-    conn = session.get("xero_connection", {})
-    access_token = conn.get("access_token") or session.get("xero_access_token")
-    tenant_id = conn.get("tenant_id") or session.get("xero_tenant_id")
-    return access_token, tenant_id
 
 
 @prepayment_tracker_bp.route("/")
