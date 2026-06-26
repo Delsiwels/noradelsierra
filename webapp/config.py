@@ -138,6 +138,10 @@ class ProductionConfig(Config):
     """Production configuration."""
 
     DEBUG = False
+    # Only transmit the session cookie (which carries auth state and Xero
+    # tokens) over HTTPS. Left unset on the base/dev/test configs so local
+    # HTTP and the test client keep working.
+    SESSION_COOKIE_SECURE = True
 
 
 class TestingConfig(Config):
