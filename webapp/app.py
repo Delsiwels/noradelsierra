@@ -22,7 +22,6 @@ from webapp.blueprints.skills import skills_bp
 from webapp.blueprints.usage import usage_bp
 from webapp.config import Config
 from webapp.models import User, db
-from webapp.routes import api_bp
 from webapp.services.background_jobs import ManagedJob, start_background_scheduler
 from webapp.services.maintenance import (
     cleanup_expired_conversations,
@@ -160,7 +159,6 @@ def create_app(config_class: type = Config) -> Flask:
     init_analytics_service(app)
 
     # Register blueprints
-    app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(skills_bp)
