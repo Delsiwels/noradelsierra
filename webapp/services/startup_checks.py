@@ -146,13 +146,23 @@ def get_alembic_revision_status(app: Flask) -> dict[str, Any]:
         }
 
     pending_heads = sorted(set(target_heads) - set(current_heads))
+    # A DB with no Alembic stamp at all is a fresh create_all() bootstrap — the
+    # app builds the full schema from the models on startup (see app.py), so the
+    # schema is present even though no revision is stamped. Treat that as ready
+    # rather than flagging every target head as "pending". Only a DB that IS
+    # Alembic-managed but stamped behind its target heads is genuinely not ready.
+    bootstrapped = not current_heads
     return {
-        "ok": len(pending_heads) == 0,
+        "ok": bootstrapped or len(pending_heads) == 0,
         "available": True,
-        "detail": "",
+        "detail": (
+            "Schema bootstrapped via create_all (no Alembic stamp)."
+            if bootstrapped
+            else ""
+        ),
         "current_heads": current_heads,
         "target_heads": target_heads,
-        "pending_heads": pending_heads,
+        "pending_heads": [] if bootstrapped else pending_heads,
     }
 
 

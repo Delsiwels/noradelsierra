@@ -58,6 +58,43 @@ def test_runtime_health_includes_optional_blueprint_status(client):
     assert isinstance(optional["webapp.blueprints.ask_fin.ask_fin_bp"], bool)
 
 
+def test_alembic_status_ready_for_bootstrapped_db():
+    """A fresh create_all() DB (no Alembic stamp) is ready, not 'pending'."""
+    from webapp.app import create_app
+    from webapp.config import TestingConfig
+    from webapp.services.startup_checks import get_alembic_revision_status
+
+    class _NonTestingConfig(TestingConfig):
+        TESTING = False  # exercise the strict (non-testing) Alembic branch
+
+    app = create_app(_NonTestingConfig)
+    with app.app_context():
+        status = get_alembic_revision_status(app)
+
+    assert status["available"] is True
+    assert status["current_heads"] == []  # bootstrapped, never stamped
+    assert status["pending_heads"] == []
+    assert status["ok"] is True
+
+
+def test_health_ready_ok_for_bootstrapped_db(monkeypatch):
+    """/health/ready returns 200 on a fresh create_all DB (deploy-smoke case)."""
+    monkeypatch.setenv("ENABLE_BACKGROUND_JOBS", "false")
+    from webapp.app import create_app
+    from webapp.config import TestingConfig
+
+    class _NonTestingConfig(TestingConfig):
+        TESTING = False
+
+    app = create_app(_NonTestingConfig)
+    response = app.test_client().get("/health/ready")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["ready"] is True
+    assert payload["checks"]["alembic"]["ok"] is True
+
+
 def test_health_ready_reports_not_ready_when_migration_directory_missing(app):
     app.config["ALEMBIC_SCRIPT_LOCATION"] = f"nonexistent-migrations-{uuid.uuid4()}"
 
