@@ -527,3 +527,22 @@ class RuntimeHealthSnapshot(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f"<RuntimeHealthSnapshot {self.status} {self.created_at}>"
+
+
+class XeroToken(db.Model):  # type: ignore[name-defined]
+    """Server-side encrypted storage for a user's Xero connection.
+
+    Replaces keeping access/refresh tokens in the client-side session cookie.
+    The connection dict is JSON-serialized and Fernet-encrypted into
+    ``encrypted_data`` (see webapp.services.crypto / xero_token_store).
+    """
+
+    __tablename__ = "xero_tokens"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    user_id = db.Column(db.String(36), unique=True, index=True, nullable=False)
+    encrypted_data = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<XeroToken user={self.user_id}>"
