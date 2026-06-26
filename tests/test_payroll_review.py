@@ -792,13 +792,13 @@ class TestHelperFunctions:
 
     def test_is_valid_email(self):
         """Should validate email format."""
-        from webapp.app_services.payroll_review_service import _is_valid_email
+        from webapp.utils import validate_email
 
-        assert _is_valid_email("test@example.com") is True
-        assert _is_valid_email("test.user@example.com.au") is True
-        assert _is_valid_email("invalid") is False
-        assert _is_valid_email("") is False
-        assert _is_valid_email(None) is False
+        assert validate_email("test@example.com") is True
+        assert validate_email("test.user@example.com.au") is True
+        assert validate_email("invalid") is False
+        assert validate_email("") is False
+        assert validate_email(None) is False
 
     def test_parse_date_string_various_formats(self):
         """Should parse various date formats."""

@@ -84,6 +84,51 @@ def validate_uuid(value: str) -> bool:
         return False
 
 
+def _skill_too_large_response(byte_len: int, label: str):
+    """Return a 400 response if content exceeds the size limit, else None."""
+    if byte_len > MAX_SKILL_FILE_SIZE:
+        return (
+            jsonify(
+                {
+                    "error": f"{label} too large. Maximum size is {MAX_SKILL_FILE_SIZE // 1024}KB"
+                }
+            ),
+            400,
+        )
+    return None
+
+
+def _create_skill_from_content(content: str, scope: str, user):
+    """Validate scope and create a skill.
+
+    Returns ``(skill, None)`` on success or ``(None, error_response)`` when the
+    scope is invalid or a shared skill is requested without a team.
+    """
+    if scope not in ("private", "shared"):
+        return None, (
+            jsonify({"error": "Invalid scope. Must be 'private' or 'shared'"}),
+            400,
+        )
+
+    user_id = user.id
+    team_id = get_user_team_id() if scope == "shared" else None
+    if scope == "shared" and not team_id:
+        return None, (
+            jsonify({"error": "No team found. Cannot create shared skill."}),
+            400,
+        )
+
+    service = get_custom_skill_service()
+    skill = service.create_skill(
+        content=content,
+        scope=scope,
+        user_id=user_id if scope == "private" else None,
+        team_id=team_id if scope == "shared" else None,
+        created_by=user_id,
+    )
+    return skill, None
+
+
 # =============================================================================
 # Page Routes
 # =============================================================================
@@ -251,15 +296,9 @@ def api_upload_skill():
         content = file.read()
 
         # Check size
-        if len(content) > MAX_SKILL_FILE_SIZE:
-            return (
-                jsonify(
-                    {
-                        "error": f"File too large. Maximum size is {MAX_SKILL_FILE_SIZE // 1024}KB"
-                    }
-                ),
-                400,
-            )
+        too_large = _skill_too_large_response(len(content), "File")
+        if too_large:
+            return too_large
 
         # Decode content
         try:
@@ -267,30 +306,10 @@ def api_upload_skill():
         except UnicodeDecodeError:
             return jsonify({"error": "File must be UTF-8 encoded"}), 400
 
-        # Get scope
         scope = request.form.get("scope", "private")
-        if scope not in ("private", "shared"):
-            return (
-                jsonify({"error": "Invalid scope. Must be 'private' or 'shared'"}),
-                400,
-            )
-
-        # Get ownership IDs
-        user_id = user.id
-        team_id = get_user_team_id() if scope == "shared" else None
-
-        if scope == "shared" and not team_id:
-            return jsonify({"error": "No team found. Cannot create shared skill."}), 400
-
-        # Create skill
-        service = get_custom_skill_service()
-        skill = service.create_skill(
-            content=content_str,
-            scope=scope,
-            user_id=user_id if scope == "private" else None,
-            team_id=team_id if scope == "shared" else None,
-            created_by=user_id,
-        )
+        skill, error = _create_skill_from_content(content_str, scope, user)
+        if error:
+            return error
 
         return jsonify(
             {
@@ -334,40 +353,14 @@ def api_create_skill():
             return jsonify({"error": "Content is required"}), 400
 
         # Check size
-        if len(content.encode("utf-8")) > MAX_SKILL_FILE_SIZE:
-            return (
-                jsonify(
-                    {
-                        "error": f"Content too large. Maximum size is {MAX_SKILL_FILE_SIZE // 1024}KB"
-                    }
-                ),
-                400,
-            )
+        too_large = _skill_too_large_response(len(content.encode("utf-8")), "Content")
+        if too_large:
+            return too_large
 
-        # Get scope
         scope = data.get("scope", "private")
-        if scope not in ("private", "shared"):
-            return (
-                jsonify({"error": "Invalid scope. Must be 'private' or 'shared'"}),
-                400,
-            )
-
-        # Get ownership IDs
-        user_id = user.id
-        team_id = get_user_team_id() if scope == "shared" else None
-
-        if scope == "shared" and not team_id:
-            return jsonify({"error": "No team found. Cannot create shared skill."}), 400
-
-        # Create skill
-        service = get_custom_skill_service()
-        skill = service.create_skill(
-            content=content,
-            scope=scope,
-            user_id=user_id if scope == "private" else None,
-            team_id=team_id if scope == "shared" else None,
-            created_by=user_id,
-        )
+        skill, error = _create_skill_from_content(content, scope, user)
+        if error:
+            return error
 
         return jsonify(
             {
@@ -413,15 +406,9 @@ def api_update_skill(skill_id: str):
             return jsonify({"error": "Content is required"}), 400
 
         # Check size
-        if len(content.encode("utf-8")) > MAX_SKILL_FILE_SIZE:
-            return (
-                jsonify(
-                    {
-                        "error": f"Content too large. Maximum size is {MAX_SKILL_FILE_SIZE // 1024}KB"
-                    }
-                ),
-                400,
-            )
+        too_large = _skill_too_large_response(len(content.encode("utf-8")), "Content")
+        if too_large:
+            return too_large
 
         # Update skill
         service = get_custom_skill_service()

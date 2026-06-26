@@ -18,6 +18,7 @@ import requests
 
 from webapp.app_services.xero_http import xero_headers
 from webapp.time_utils import parse_xero_date
+from webapp.utils import validate_email
 
 logger = logging.getLogger(__name__)
 
@@ -533,7 +534,7 @@ def validate_employee_data(employees: list[dict]) -> list[dict]:
             errors.append("Last Name is required")
         if not emp.get("email"):
             errors.append("Email is required")
-        elif not _is_valid_email(emp.get("email", "")):
+        elif not validate_email(emp.get("email", "")):
             errors.append("Email format is invalid")
         if not emp.get("date_of_birth"):
             errors.append("Date of Birth is required")
@@ -749,14 +750,6 @@ def _parse_date_string(date_str: str | None) -> datetime | None:
             continue
 
     return None
-
-
-def _is_valid_email(email: str) -> bool:
-    """Basic email validation."""
-    if not email:
-        return False
-    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    return bool(re.match(pattern, email))
 
 
 def _build_xero_employee_payload(emp: dict) -> dict:
