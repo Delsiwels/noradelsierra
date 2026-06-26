@@ -75,6 +75,55 @@ class TestTokenTracker:
             usage = TokenUsage.query.filter_by(user_id="user-x").first()
             assert usage.total_tokens == 700  # 100 + 500 + 100, nothing lost
 
+    def test_reserve_then_settle_reconciles_to_actual(self, app):
+        with app.app_context():
+            tracker = TokenTracker(default_limit=1000)
+
+            allowed, _remaining, reserved = tracker.reserve("u", None, estimate=400)
+            assert allowed is True
+            assert reserved == 400
+            usage = TokenUsage.query.filter_by(user_id="u").first()
+            assert usage.total_tokens == 400  # reservation applied up front
+
+            tracker.settle("u", None, reserved, 100, 50)  # actual 150
+            usage = TokenUsage.query.filter_by(user_id="u").first()
+            assert usage.total_tokens == 150  # 400 - 400 + 150
+            assert usage.input_tokens == 100
+            assert usage.output_tokens == 50
+            assert usage.request_count == 1
+
+    def test_release_undoes_reservation(self, app):
+        with app.app_context():
+            tracker = TokenTracker(default_limit=1000)
+            _a, _r, reserved = tracker.reserve("u2", None, estimate=400)
+            tracker.release("u2", None, reserved)
+            usage = TokenUsage.query.filter_by(user_id="u2").first()
+            assert usage.total_tokens == 0  # reservation fully undone
+
+    def test_reserve_bounds_concurrent_over_admission(self, app):
+        """Once reservations reach the limit, further requests are blocked.
+
+        The old check_limit would admit all three (all see total=0); reserve
+        advances the counter so the third is rejected.
+        """
+        with app.app_context():
+            tracker = TokenTracker(default_limit=500)
+            a1, _r1, _res1 = tracker.reserve("u3", None, estimate=400)
+            a2, _r2, _res2 = tracker.reserve("u3", None, estimate=400)
+            a3, _r3, res3 = tracker.reserve("u3", None, estimate=400)
+            assert a1 is True  # total 0 -> 400
+            assert a2 is True  # total 400 (< 500) -> 800
+            assert a3 is False  # total 800 (>= 500) -> rejected
+            assert res3 == 0
+
+    def test_reserve_noop_when_enforcement_off(self, app):
+        with app.app_context():
+            tracker = TokenTracker(enforce_limits=False)
+            allowed, _remaining, reserved = tracker.reserve("u4", None)
+            assert allowed is True
+            assert reserved == 0
+            assert TokenUsage.query.filter_by(user_id="u4").first() is None
+
     def test_record_usage(self, app):
         """Test recording token usage."""
         with app.app_context():

@@ -207,6 +207,116 @@ class TokenTracker:
 
         return usage
 
+    @property
+    def reservation_estimate(self) -> int:
+        """Per-request token reservation used to bound concurrent over-admission."""
+        try:
+            cfg = current_app.config
+            return int(cfg.get("TOKEN_RESERVATION", cfg.get("AI_MAX_TOKENS", 2048)))
+        except RuntimeError:
+            return 2048
+
+    def reserve(
+        self,
+        user_id: str | None,
+        team_id: str | None = None,
+        estimate: int | None = None,
+    ) -> tuple[bool, int, int]:
+        """Atomically reserve tokens for an in-flight request.
+
+        Closes the check-then-record over-admission race: rather than reading
+        the counter and deciding far away from the write, this admits the
+        request only while the user is under the limit and, in the same atomic
+        UPDATE, adds a per-request reservation. Concurrent requests therefore
+        can't all pass a stale check and collectively blow the cap — once the
+        reservations reach the limit, further requests are rejected until one
+        settles. Reconcile to actual usage with ``settle`` or undo with
+        ``release``.
+
+        Returns ``(allowed, remaining, reserved)``.
+        """
+        if not self.enforce_limits or (user_id is None and team_id is None):
+            return True, self.default_limit, 0
+
+        reserve_amount = estimate if estimate is not None else self.reservation_estimate
+        usage = self._get_or_create_usage(user_id, team_id)
+        limit = (
+            usage.monthly_limit
+            if usage.monthly_limit is not None
+            else self.default_limit
+        )
+
+        # Admit only while still under the limit; add the reservation atomically.
+        updated = TokenUsage.query.filter(
+            TokenUsage.id == usage.id,
+            func.coalesce(TokenUsage.total_tokens, 0) < limit,
+        ).update(
+            {
+                TokenUsage.total_tokens: func.coalesce(TokenUsage.total_tokens, 0)
+                + reserve_amount
+            },
+            synchronize_session=False,
+        )
+        db.session.commit()
+        db.session.refresh(usage)
+        remaining = max(0, limit - (usage.total_tokens or 0))
+        if updated:
+            return True, remaining, reserve_amount
+        return False, remaining, 0
+
+    def settle(
+        self,
+        user_id: str | None,
+        team_id: str | None,
+        reserved: int,
+        input_tokens: int,
+        output_tokens: int,
+    ) -> None:
+        """Reconcile a reservation to actual usage (atomic).
+
+        The row already carries ``+reserved`` from reserve(); adjust total by
+        ``actual - reserved`` and record the real input/output/request counts.
+        With ``reserved == 0`` (enforcement off) this is a plain usage record.
+        """
+        if user_id is None and team_id is None:
+            return
+        usage = self._get_or_create_usage(user_id, team_id)
+        actual_total = input_tokens + output_tokens
+        TokenUsage.query.filter_by(id=usage.id).update(
+            {
+                TokenUsage.input_tokens: func.coalesce(TokenUsage.input_tokens, 0)
+                + input_tokens,
+                TokenUsage.output_tokens: func.coalesce(TokenUsage.output_tokens, 0)
+                + output_tokens,
+                TokenUsage.total_tokens: func.coalesce(TokenUsage.total_tokens, 0)
+                + actual_total
+                - reserved,
+                TokenUsage.request_count: func.coalesce(TokenUsage.request_count, 0)
+                + 1,
+            },
+            synchronize_session=False,
+        )
+        db.session.commit()
+
+    def release(
+        self,
+        user_id: str | None,
+        team_id: str | None,
+        reserved: int,
+    ) -> None:
+        """Undo a reservation for a request that never produced usage (atomic)."""
+        if reserved <= 0 or (user_id is None and team_id is None):
+            return
+        usage = self._get_or_create_usage(user_id, team_id)
+        TokenUsage.query.filter_by(id=usage.id).update(
+            {
+                TokenUsage.total_tokens: func.coalesce(TokenUsage.total_tokens, 0)
+                - reserved
+            },
+            synchronize_session=False,
+        )
+        db.session.commit()
+
     def get_usage(
         self,
         user_id: str | None,

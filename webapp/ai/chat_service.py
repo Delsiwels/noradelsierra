@@ -99,12 +99,12 @@ class ChatService:
             logger.debug(f"BAS context injection skipped: {e}")
         return prompt
 
-    def _check_token_limit(self, user_id: str | None, team_id: str | None) -> None:
-        """Check if user has available tokens. Raises if limit exceeded."""
+    def _reserve_tokens(self, user_id: str | None, team_id: str | None) -> int:
+        """Reserve tokens for a request. Raises if over limit; returns reserved."""
         if user_id is None and team_id is None:
-            return
+            return 0
 
-        allowed, remaining = self.token_tracker.check_limit(user_id, team_id)
+        allowed, remaining, reserved = self.token_tracker.reserve(user_id, team_id)
         if not allowed:
             from webapp.ai.token_tracker import TokenLimitExceededError
 
@@ -112,24 +112,33 @@ class ChatService:
                 f"Token limit exceeded. Remaining tokens: {remaining}",
                 remaining=remaining,
             )
+        return int(reserved)
 
-    def _record_token_usage(
+    def _settle_tokens(
         self,
         user_id: str | None,
         team_id: str | None,
+        reserved: int,
         usage: dict[str, int],
     ) -> None:
-        """Record token usage after a request."""
+        """Reconcile a reservation to the actual usage of a completed request."""
         if user_id is None and team_id is None:
             return
+        self.token_tracker.settle(
+            user_id,
+            team_id,
+            reserved,
+            usage.get("input", 0),
+            usage.get("output", 0),
+        )
 
-        input_tokens = usage.get("input", 0)
-        output_tokens = usage.get("output", 0)
-
-        if input_tokens > 0 or output_tokens > 0:
-            self.token_tracker.record_usage(
-                user_id, team_id, input_tokens, output_tokens
-            )
+    def _release_tokens(
+        self, user_id: str | None, team_id: str | None, reserved: int
+    ) -> None:
+        """Undo a reservation for a request that failed before producing usage."""
+        if reserved <= 0 or (user_id is None and team_id is None):
+            return
+        self.token_tracker.release(user_id, team_id, reserved)
 
     def _log_skill_usage(
         self,
@@ -248,9 +257,6 @@ class ChatService:
                 "Ensure ANTHROPIC_API_KEY is set or provide an ai_client."
             )
 
-        # Check token limit before making request
-        self._check_token_limit(user_id, team_id)
-
         # Build context for skill detection and injection
         context = {
             "user_message": user_message,
@@ -280,15 +286,21 @@ class ChatService:
         messages = list(conversation_history) if conversation_history else []
         messages.append({"role": "user", "content": user_message})
 
-        # Call AI
+        # Call AI. Reserve tokens immediately before the call and settle/release
+        # in finally so a failed request never leaks its reservation.
         kwargs = {}
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
 
-        response = self.ai_client.chat_sync(messages, enhanced_prompt, **kwargs)
-
-        # Record token usage
-        self._record_token_usage(user_id, team_id, response.usage)
+        reserved = self._reserve_tokens(user_id, team_id)
+        settled = False
+        try:
+            response = self.ai_client.chat_sync(messages, enhanced_prompt, **kwargs)
+            self._settle_tokens(user_id, team_id, reserved, response.usage)
+            settled = True
+        finally:
+            if not settled:
+                self._release_tokens(user_id, team_id, reserved)
 
         # Log skill usage
         skill_names = [m.skill.name for m in matches[:3]]
@@ -361,9 +373,6 @@ class ChatService:
                 "Ensure ANTHROPIC_API_KEY is set or provide an ai_client."
             )
 
-        # Check token limit before making request
-        self._check_token_limit(user_id, team_id)
-
         # Build context for skill detection and injection
         context = {
             "user_message": user_message,
@@ -403,6 +412,10 @@ class ChatService:
         final_usage = {}
         model = ""
 
+        # Reserve before streaming; settle on completion, release otherwise so a
+        # stream that errors before finishing never leaks its reservation.
+        reserved = self._reserve_tokens(user_id, team_id)
+        settled = False
         try:
             for chunk in self.ai_client.stream_chat(
                 messages, enhanced_prompt, **kwargs
@@ -413,8 +426,9 @@ class ChatService:
                 if chunk.done:
                     final_usage = chunk.usage
 
-                    # Record token usage
-                    self._record_token_usage(user_id, team_id, final_usage)
+                    # Settle the reservation against actual usage.
+                    self._settle_tokens(user_id, team_id, reserved, final_usage)
+                    settled = True
 
                     # Log skill usage
                     if skill_names:
@@ -454,6 +468,9 @@ class ChatService:
                 error=str(e),
             )
             raise
+        finally:
+            if not settled:
+                self._release_tokens(user_id, team_id, reserved)
 
     def preview_skills(
         self,
