@@ -61,7 +61,13 @@ class Config:
 
     # Xero OAuth
     XERO_CLIENT_ID = os.environ.get("XERO_CLIENT_ID")
+    XERO_CLIENT_SECRET = os.environ.get(
+        "XERO_CLIENT_SECRET"
+    )  # optional (PKCE public client)
     XERO_REDIRECT_URI = os.environ.get("XERO_REDIRECT_URI")
+    XERO_OAUTH_TOKEN_URL = os.environ.get(
+        "XERO_OAUTH_TOKEN_URL", "https://identity.xero.com/connect/token"
+    )
     XERO_OAUTH_AUTHORIZE_URL = os.environ.get(
         "XERO_OAUTH_AUTHORIZE_URL",
         "https://login.xero.com/identity/connect/authorize",

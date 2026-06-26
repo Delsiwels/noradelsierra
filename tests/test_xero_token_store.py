@@ -63,6 +63,38 @@ def test_get_xero_credentials_prefers_store(monkeypatch):
         assert tenant_id == "t-stored"
 
 
+def test_load_active_connection_refreshes_expired(monkeypatch):
+    from datetime import UTC, datetime, timedelta
+
+    app = create_app(_EncryptedConfig)
+    with app.app_context():
+        from webapp.services import xero_token_store as store
+
+        expired = (datetime.now(UTC) - timedelta(minutes=1)).isoformat()
+        store.save_connection(
+            "u9",
+            {"access_token": "OLD", "refresh_token": "RT", "token_expires_at": expired},
+        )
+
+        def fake_refresh(conn):
+            return {
+                "access_token": "NEW",
+                "refresh_token": "RT2",
+                "token_expires_at": (
+                    datetime.now(UTC) + timedelta(hours=1)
+                ).isoformat(),
+            }
+
+        monkeypatch.setattr(
+            "webapp.services.xero_oauth.refresh_connection", fake_refresh
+        )
+
+        conn = store.load_active_connection("u9")
+        assert conn["access_token"] == "NEW"
+        # Refreshed token is persisted back to the store.
+        assert store.load_connection("u9")["access_token"] == "NEW"
+
+
 def test_noop_without_key():
     app = create_app(TestingConfig)  # no TOKEN_ENCRYPTION_KEY
     with app.app_context():

@@ -61,6 +61,22 @@ def load_connection(user_id: str | None) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def load_active_connection(user_id: str | None) -> dict | None:
+    """Load a user's connection, refreshing the access token if it has expired."""
+    conn = load_connection(user_id)
+    if not conn:
+        return None
+
+    from webapp.services import xero_oauth
+
+    if conn.get("refresh_token") and xero_oauth.is_expired(conn):
+        refreshed = xero_oauth.refresh_connection(conn)
+        if refreshed and refreshed.get("access_token"):
+            save_connection(user_id, refreshed)
+            return refreshed
+    return conn
+
+
 def clear_connection(user_id: str | None) -> None:
     """Delete a user's stored Xero connection, if any."""
     if not user_id:
