@@ -295,6 +295,23 @@ def create_app(config_class: type = Config) -> Flask:
         snapshots = list_runtime_health_snapshots(limit)
         return jsonify({"count": len(snapshots), "snapshots": snapshots})
 
+    @app.after_request
+    def set_security_headers(response):
+        """Apply baseline security response headers to every response.
+
+        Uses setdefault so any route that sets its own value is preserved. A
+        strict script CSP is intentionally omitted here (it needs a frontend
+        audit); frame-ancestors covers clickjacking without touching scripts.
+        """
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'none'")
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+        )
+        return response
+
     # Register CLI commands for maintenance tasks
     @app.cli.command("cleanup-conversations")
     def cleanup_conversations_command():
