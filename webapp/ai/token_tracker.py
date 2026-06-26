@@ -10,6 +10,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from flask import current_app
+from sqlalchemy import func
 
 from webapp.models import TokenUsage, db
 from webapp.time_utils import utcnow
@@ -177,14 +178,26 @@ class TokenTracker:
             return None
 
         usage = self._get_or_create_usage(user_id, team_id)
+        total_delta = input_tokens + output_tokens
 
-        # Atomically increment counters
-        usage.input_tokens = (usage.input_tokens or 0) + input_tokens
-        usage.output_tokens = (usage.output_tokens or 0) + output_tokens
-        usage.total_tokens = (usage.total_tokens or 0) + input_tokens + output_tokens
-        usage.request_count = (usage.request_count or 0) + 1
-
+        # Increment at the database level (UPDATE ... SET col = col + delta) so
+        # concurrent requests can't lose updates via read-modify-write. coalesce
+        # guards any legacy NULL counters.
+        TokenUsage.query.filter_by(id=usage.id).update(
+            {
+                TokenUsage.input_tokens: func.coalesce(TokenUsage.input_tokens, 0)
+                + input_tokens,
+                TokenUsage.output_tokens: func.coalesce(TokenUsage.output_tokens, 0)
+                + output_tokens,
+                TokenUsage.total_tokens: func.coalesce(TokenUsage.total_tokens, 0)
+                + total_delta,
+                TokenUsage.request_count: func.coalesce(TokenUsage.request_count, 0)
+                + 1,
+            },
+            synchronize_session=False,
+        )
         db.session.commit()
+        db.session.refresh(usage)
 
         logger.debug(
             f"Recorded usage: user={user_id}, team={team_id}, "

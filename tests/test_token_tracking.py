@@ -49,6 +49,32 @@ class TestTokenTracker:
             assert allowed is True
             assert remaining == 100000
 
+    def test_record_usage_is_a_relative_db_increment(self, app):
+        """A concurrent external increment must not be clobbered (#5).
+
+        Read-modify-write would lose the external +500; a DB-level
+        ``col = col + delta`` update preserves it.
+        """
+        from sqlalchemy import text
+
+        with app.app_context():
+            tracker = TokenTracker()
+            tracker.record_usage("user-x", None, 100, 0)  # total now 100
+
+            # Simulate another worker incrementing the same row out-of-band.
+            db.session.execute(
+                text(
+                    "UPDATE token_usages SET total_tokens = total_tokens + 500 "
+                    "WHERE user_id = 'user-x'"
+                )
+            )
+            db.session.commit()  # DB total now 600; in-memory object still 100
+
+            tracker.record_usage("user-x", None, 100, 0)  # +100 relative
+
+            usage = TokenUsage.query.filter_by(user_id="user-x").first()
+            assert usage.total_tokens == 700  # 100 + 500 + 100, nothing lost
+
     def test_record_usage(self, app):
         """Test recording token usage."""
         with app.app_context():
