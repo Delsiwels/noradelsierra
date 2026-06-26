@@ -21,6 +21,7 @@ from webapp.blueprints.pages import pages_bp
 from webapp.blueprints.skills import skills_bp
 from webapp.blueprints.usage import usage_bp
 from webapp.config import Config
+from webapp.extensions import limiter
 from webapp.models import User, db
 from webapp.services.background_jobs import ManagedJob, start_background_scheduler
 from webapp.services.maintenance import (
@@ -140,6 +141,7 @@ def create_app(config_class: type = Config) -> Flask:
     bcrypt.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db, directory="migrations")
+    limiter.init_app(app)
 
     # Session config
     app.permanent_session_lifetime = timedelta(

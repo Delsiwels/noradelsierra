@@ -15,28 +15,18 @@ import logging
 from flask import Blueprint, jsonify, request
 
 from webapp.blueprints._helpers import get_current_user, login_required
+from webapp.extensions import limiter
 
 logger = logging.getLogger(__name__)
 
 analytics_bp = Blueprint("analytics", __name__)
 
-# Rate limiter (initialized after app setup)
-limiter = None
-
-
-def init_analytics_limiter(app_limiter):
-    """Initialize the rate limiter for analytics endpoints."""
-    global limiter
-    limiter = app_limiter
-
 
 def rate_limit(limit_string):
-    """Apply per-user rate limit decorator if limiter is available."""
+    """Apply a per-IP rate limit to a view (no-op when disabled via config)."""
 
     def decorator(f):
-        if limiter:
-            return limiter.limit(limit_string)(f)
-        return f
+        return limiter.limit(limit_string)(f)
 
     return decorator
 

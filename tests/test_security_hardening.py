@@ -12,6 +12,41 @@ def client():
     return app.test_client()
 
 
+class TestLoginRateLimit:
+    """#1: login must be throttled (brute-force protection) when enabled."""
+
+    def test_login_throttled_after_burst(self):
+        from webapp.app import create_app
+        from webapp.config import TestingConfig
+        from webapp.extensions import limiter
+
+        class _RateLimited(TestingConfig):
+            RATELIMIT_ENABLED = True
+
+        app = create_app(_RateLimited)
+        with app.app_context():
+            limiter.reset()  # clear any counter state from earlier in the process
+
+        client = app.test_client()
+        statuses = [
+            client.post(
+                "/api/auth/login",
+                json={"email": "brute@test.com", "password": "wrong"},
+            ).status_code
+            for _ in range(13)
+        ]
+        # 10/minute limit -> a 429 appears within the burst, but the first
+        # attempts are allowed through (proving it isn't blanket-blocking).
+        assert 429 in statuses
+        assert statuses[0] != 429
+
+    def test_rate_limit_disabled_in_default_test_config(self):
+        # Existing suites rely on rate limiting being off under TestingConfig.
+        from webapp.config import TestingConfig
+
+        assert TestingConfig.RATELIMIT_ENABLED is False
+
+
 class TestSecurityHeaders:
     """F4: baseline security response headers on every response."""
 

@@ -150,6 +150,9 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     R2_STORAGE_ENABLED = False
+    # Keep rate limiting off in tests so repeated requests aren't throttled;
+    # a dedicated test enables it explicitly.
+    RATELIMIT_ENABLED = False
     # Use mock AI client in tests
     ANTHROPIC_API_KEY = None
     AI_PROVIDER = "anthropic"

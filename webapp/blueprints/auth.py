@@ -18,6 +18,7 @@ from flask import Blueprint, jsonify, redirect, render_template, request
 from flask_bcrypt import check_password_hash, generate_password_hash
 from flask_login import current_user, login_required, login_user, logout_user
 
+from webapp.extensions import limiter
 from webapp.models import Team, User, db
 from webapp.utils import sanitize_input, validate_email
 
@@ -43,6 +44,7 @@ def register_page():
 
 
 @auth_bp.route("/api/auth/register", methods=["POST"])
+@limiter.limit("20 per hour")
 def api_register():
     """
     Register a new user account.
@@ -113,6 +115,7 @@ def api_register():
 
 
 @auth_bp.route("/api/auth/login", methods=["POST"])
+@limiter.limit("10 per minute; 100 per hour")
 def api_login():
     """
     Login with email and password.
