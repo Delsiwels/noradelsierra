@@ -694,45 +694,6 @@ def create_employees_in_xero(
     }
 
 
-def get_super_fund_by_usi(
-    access_token: str, tenant_id: str, usi: str
-) -> dict[str, Any] | None:
-    """
-    Look up a regulated super fund by USI.
-
-    Returns fund details or None if not found.
-    """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Xero-Tenant-Id": tenant_id,
-        "Accept": "application/json",
-    }
-
-    try:
-        resp = requests.get(
-            f"{XERO_PAYROLL_AU_URL}/SuperFundProducts",
-            params={"USI": usi},
-            headers=headers,
-            timeout=15,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-        products = data.get("SuperFundProducts", [])
-        if products:
-            product = products[0]
-            return {
-                "usi": product.get("USI"),
-                "product_name": product.get("ProductName"),
-                "abn": product.get("ABN"),
-            }
-        return None
-
-    except requests.RequestException as e:
-        logger.warning("Failed to look up super fund USI %s: %s", usi, e)
-        return None
-
-
 # =============================================================================
 # Helper Functions
 # =============================================================================
