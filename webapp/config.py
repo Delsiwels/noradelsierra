@@ -74,6 +74,10 @@ class Config:
         ),
     )
 
+    # At-rest encryption for stored Xero tokens (Fernet). When unset, the app
+    # falls back to keeping tokens in the session (prior behaviour).
+    TOKEN_ENCRYPTION_KEY = os.environ.get("TOKEN_ENCRYPTION_KEY")
+
     # Session config
     PERMANENT_SESSION_LIFETIME = int(
         os.environ.get("PERMANENT_SESSION_LIFETIME", "86400")
